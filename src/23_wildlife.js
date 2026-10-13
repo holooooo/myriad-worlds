@@ -39,15 +39,15 @@ function faunaTarget(f, x, z) {
   if (!GEN.habitatPath(f.kind, f.x, f.z, x, z)) return false;
   f.tx = x; f.tz = z; return true;
 }
-function groundYFor(kind, x, z) {
-  const h = GEN.heightAt(x, z);
-  if (kind === 'fish') return Math.max(h + 0.25, -0.6);
-  if (kind === 'butterfly') return Math.max(h, 0) + 1.4;
-  if (kind === 'sparrow') return Math.max(h, 0) + 1.2;
-  if (kind === 'hawk') return Math.max(h, 0) + 15;
-  if (kind === 'crane') return Math.max(h, 0) + 5;
-  if (kind === 'buffalo') return h + (GEN.sample(x, z, {}).paddy ? 0.08 : 0);
-  return h;
+function groundYFor(kind, x, z, sample = null) {
+  const s = sample || GEN.sample(x, z, {}), level = s.waterLevel == null ? 0 : s.waterLevel, surface = Math.max(s.h, level);
+  if (kind === 'fish') return Math.max(s.h + 0.25, level - 0.65);
+  if (kind === 'butterfly') return surface + 1.4;
+  if (kind === 'sparrow') return surface + 1.2;
+  if (kind === 'hawk') return surface + 15;
+  if (kind === 'crane') return surface + 5;
+  if (kind === 'buffalo') return s.h + (s.paddy ? 0.08 : 0);
+  return s.h;
 }
 function updateFauna(dt, t) {
   const c = camera.position;
@@ -65,7 +65,8 @@ function updateFauna(dt, t) {
       const x = c.x + Math.cos(a) * r, z = c.z + Math.sin(a) * r;
       const habitat = GEN.habitatAt(f.kind, x, z);
       if (!habitat || !(biomeFauna[habitat.biome] || []).includes(f.kind)) continue;
-      f.x = f.tx = x; f.z = f.tz = z; f.y = groundYFor(f.kind, x, z);
+      f.x = f.tx = x; f.z = f.tz = z; f.y = groundYFor(f.kind, x, z, habitat);
+      if (f.kind === 'fish') f.water = { level: habitat.waterLevel, bed: habitat.h, id: habitat.waterId };
       f.active = true; f.stateT = 0; f.g.visible = true;
       // Spawning replaces stale coordinates, particularly after teleporting.
       d = Math.hypot(f.x - c.x, f.z - c.z);
@@ -98,12 +99,14 @@ function updateFauna(dt, t) {
       const x = f.x + dx / length * step, z = f.z + dz / length * step;
       const habitat = GEN.habitatAt(f.kind, x, z);
       if (habitat && (!walker || Math.abs(habitat.h - f.y) < 0.45)) {
-        f.x = x; f.z = z; f.yaw = Math.atan2(dx, dz); f.y = groundYFor(f.kind, x, z);
+        f.x = x; f.z = z; f.yaw = Math.atan2(dx, dz); f.y = groundYFor(f.kind, x, z, habitat);
+        if (f.kind === 'fish') f.water = { level: habitat.waterLevel, bed: habitat.h, id: habitat.waterId };
         moving = true;
       } else { f.tx = f.x; f.tz = f.z; f.stateT = 0; }
     }
     const flutter = f.kind === 'crane' ? Math.sin(t * 0.6 + f.ph) * 0.4 : f.kind === 'hawk' ? Math.sin(t * 0.4 + f.ph) * 2 : f.kind === 'butterfly' ? Math.sin(t * 2 + f.ph) * 0.25 : f.kind === 'sparrow' ? Math.sin(t * 1.3 + f.ph) * 0.15 : f.kind === 'fish' ? Math.sin(t * 1.5 + f.ph) * 0.08 : 0;
-    f.g.position.set(f.x, f.y + flutter, f.z); f.g.rotation.y = f.yaw;
+    const drawY = f.kind === 'fish' && f.water ? clamp(f.y + flutter, f.water.bed + 0.2, f.water.level - 0.2) : f.y + flutter;
+    f.g.position.set(f.x, drawY, f.z); f.g.rotation.y = f.yaw;
     const fl = Math.sin(t * (moving ? 7 : 1.2) + f.ph) * (moving ? 0.45 : 0.04);
     if (f.g.userData.legs) f.g.userData.legs.forEach((leg, i) => { leg.rotation.x = fl * (i === 0 || i === 3 ? 1 : -1); });
     if (f.g.userData.wl) {

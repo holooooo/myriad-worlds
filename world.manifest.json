@@ -1,11 +1,40 @@
 {
   "generator": [
-    "10_gen_core.js", "10_gen_sakura.js", "10_gen_shanshui.js", "10_gen_profiles.js",
-    "10_gen_habitat.js", "11_gen_kit.js", "11_gen_plants.js", "11_gen_shanshui_arch.js", "11_gen_shanshui_assets.js",
-    "12_gen_lod.js", "12_gen_chunk.js"
+    "10_gen_core.js",
+    "10_gen_sakura.js",
+    "10_gen_shanshui.js",
+    "10_gen_profiles.js",
+    "10_gen_habitat.js",
+    "11_gen_kit.js",
+    "11_gen_plants.js",
+    "11_gen_shanshui_arch.js",
+    "11_gen_shanshui_assets.js",
+    "11_gen_landmarks.js",
+    "11_gen_palace.js",
+    "12_gen_lod.js",
+    "12_gen_chunk.js"
   ],
   "engine": [
-    "20_engine.js", "20_water.js", "20_vegetation.js", "21_stream.js", "22_atmo.js", "22_mist.js",
-    "23_fx.js", "23_unit_assets.js", "23_wildlife.js", "23_lanterns.js", "24_follow.js", "24_app.js"
+    "24_i18n.js",
+    "20_engine.js",
+    "20_light_bounds.js",
+    "20_pools.js",
+    "20_water.js",
+    "20_vegetation.js",
+    "21_stream.js",
+    "21_visibility.js",
+    "22_atmo.js",
+    "22_mist.js",
+    "22_sky_settings.js",
+    "23_fx.js",
+    "23_unit_assets.js",
+    "23_wildlife.js",
+    "23_lanterns.js",
+    "23_settlement_assets.js",
+    "23_settlements.js",
+    "24_follow.js",
+    "24_navigation.js",
+    "24_cinematic.js",
+    "24_app.js"
   ]
 }

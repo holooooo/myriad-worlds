@@ -1,6 +1,6 @@
 // City lantern colonies: fixed world-space launch sites, pooled geometry.
 // Sunlight/rain suppress release; no per-lantern lights or scene graph nodes.
-const LANTERNS = { max: 128, sites: [], x: Infinity, z: Infinity, timer: 0, active: 0, refreshes: 0 };
+const LANTERNS = { max: 768, sites: [], x: Infinity, z: Infinity, timer: 0, active: 0, refreshes: 0 };
 const lanternBodyGeo = new THREE.CylinderGeometry(0.48, 0.33, 0.78, 6, 1);
 const lanternRimGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.045, 6, 1);
 const lanternFlameGeo = new THREE.OctahedronGeometry(0.095, 0);
@@ -35,7 +35,7 @@ function updateLanterns(dt, t) {
   const amount = THEME === 'shanshui' && ['dusk', 'night'].includes(moodName) ? (1 - ATM.rain) * Math.min(1, ATM.lamps) : 0;
   const meshes = [LANTERNS.body, LANTERNS.rim, LANTERNS.flame];
   for (const mesh of meshes) mesh.visible = amount > 0.05;
-  if (amount <= 0.05) { LANTERNS.active = 0; return; }
+  if (amount <= 0.05) { LANTERNS.active = 0; for (const mesh of meshes) mesh.count = 0; return; }
   const cell = 64, x = Math.floor(camera.position.x / cell), z = Math.floor(camera.position.z / cell);
   LANTERNS.timer -= dt;
   if (LANTERNS.timer <= 0 && (x !== LANTERNS.x || z !== LANTERNS.z)) {
@@ -46,16 +46,16 @@ function updateLanterns(dt, t) {
       const pz = (gz + 0.15 + GEN.h2(gz, gx, GEN.seed + 619) * 0.7) * cell;
       const s = GEN.sample(px, pz, {});
       if (s.biome !== GEN.B.TOWN || s.h < 0.5 || s.rail > 0.1) continue;
-      for (let k = 0; k < 5; k++) {
-        const ph = GEN.h2(gx * 5 + k, gz, GEN.seed + 827), a = ph * Math.PI * 2;
-        LANTERNS.sites.push({ x: px + Math.cos(a) * 5, y: s.h + 10, z: pz + Math.sin(a) * 5, ph, scale: 0.7 + ph * 0.6 });
+      for (let k = 0; k < 20; k++) {
+        const ph = GEN.h2(gx * 20 + k, gz, GEN.seed + 827), a = ph * Math.PI * 2;
+        LANTERNS.sites.push({ x: px + Math.cos(a) * (4 + ph * 18), y: s.h + 6 + ph * 5, z: pz + Math.sin(a) * (4 + ph * 18), ph, scale: 0.7 + ph * 0.6 });
       }
     }
     LANTERNS.sites.sort((a, b) => Math.hypot(a.x - camera.position.x, a.z - camera.position.z) - Math.hypot(b.x - camera.position.x, b.z - camera.position.z));
     LANTERNS.refreshes++;
     LOG.debug('business', 'city-lantern-sites-refreshed', { sites: LANTERNS.sites.length });
   }
-  const count = Math.min(QUALITY === 'high' ? LANTERNS.max : 64, LANTERNS.sites.length);
+  const count = Math.min(QUALITY === 'high' ? LANTERNS.max : 384, LANTERNS.sites.length);
   LANTERNS.active = count;
   for (let i = 0; i < count; i++) {
     const site = LANTERNS.sites[i], age = (t * 0.5 + site.ph * 80) % 80;

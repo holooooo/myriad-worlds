@@ -1,0 +1,18 @@
+{
+  "name": "myriad-worlds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Living procedural landscapes, from Shanshui China to Hanami Japan",
+  "scripts": {
+    "build": "python3 build.py --out dist",
+    "test": "python3 tests/build.py && node tests/world.cjs && node tests/profiles.cjs && node tests/buildings.cjs && THREE_MODULE=node_modules/three/build/three.module.js node tests/creatures.cjs && node tests/settlements.mjs && node tests/mist.cjs && node tests/pools.cjs && node tests/visibility.cjs && node tests/hydrology.cjs && node tests/water.mjs node_modules/three/build/three.module.js && node tests/shores.cjs && node tests/sky.mjs && node tests/i18n.cjs && node tests/town_lod.cjs && node tests/follow_menu.cjs && node tests/cinematic.mjs",
+    "dev": "python3 build.py && python3 -m http.server 8765 --bind 127.0.0.1",
+    "deploy": "wrangler pages deploy dist --project-name myriad-worlds"
+  },
+  "dependencies": {
+    "three": "0.171.0"
+  },
+  "devDependencies": {
+    "wrangler": "4.120.0"
+  }
+}

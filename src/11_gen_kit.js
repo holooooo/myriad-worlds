@@ -357,31 +357,6 @@ function gate(x, y, z, yaw, k = 1) {
   roof(h + 0.4, w, d, { type: 'irimoya', layers: 10, over: 1.2, rise: 2.2 * k, upturn: 0.3, rafters: true });
   kit.pop();
 }
-function castle(x, y, z, yaw) {
-  kit.push(x, y, z, yaw);
-  // battered stone base (ishigaki)
-  for (let i = 0; i < 7; i++) {
-    const s = 22 - i * 1.0;
-    kit.box('solid', 0, i * 1.0 + 0.5, 0, s, 1.02, s * 0.82, i % 2 ? C(0x8f8a80) : C(0x7f7a72));
-  }
-  let yy = 7.0, w = 13.5, d = 11;
-  for (let t = 0; t < 4; t++) {
-    const h = t === 0 ? 4.2 : 3.2;
-    kit.box('solid', 0, yy + h / 2, 0, w, h, d, COL.plaster);
-    kit.box('solid', 0, yy + 0.5, 0, w + 0.06, 1.0, d + 0.06, C(0x2e2c2b));
-    const nw = Math.max(2, Math.round(w / 2.4));
-    for (let i = 0; i < nw; i++) for (const sz of [-1, 1]) {
-      kit.box('solid', -w / 2 + (i + 0.5) * w / nw, yy + h * 0.6, sz * (d / 2 + 0.04), 0.9, 0.9, 0.06, C(0x2b2a29));
-      kit.box('glow', -w / 2 + (i + 0.5) * w / nw, yy + h * 0.6, sz * (d / 2 + 0.06), 0.55, 0.55, 0.04, C(0xf2d7a8));
-    }
-    const ry = roof(yy + h, w, d, { type: t === 3 ? 'irimoya' : 'hip', layers: 7, over: 1.4, rise: 1.6 + t * 0.15, upturn: 0.45, col: C(0x3a4250), colB: C(0x323947), edge: C(0x5c6370) });
-    if (t === 1) for (const sx of [-1, 1]) roof(yy + h - 0.3, 3.5, d + 0.6, { type: 'gable', layers: 6, over: 0.6, rise: 1.6, shift: 0, col: C(0x3a4250) });
-    if (t === 3) for (const sx of [-1, 1]) { kit.box('metal', sx * (w / 2 + 0.8), ry + 0.5, 0, 0.4, 1.0, 0.7, COL.gold); kit.box('metal', sx * (w / 2 + 0.8), ry + 1.1, 0, 0.3, 0.3, 0.9, COL.gold); }
-    yy = ry - 0.4; w *= 0.78; d *= 0.8;
-  }
-  kit.light(0, 7.8, 10, 1.6);
-  kit.pop();
-}
 function shrine(x, y, z, yaw) {
   kit.push(x, y, z, yaw);
   kit.box('solid', 0, 0.2, -0.5, 9.2, 0.6, 8.0, COL.stoneDark);
@@ -408,32 +383,6 @@ function shrine(x, y, z, yaw) {
     kit.box('solid', 0, 0.85, 0.05, 0.55, 0.55, 0.65, COL.stone);
     kit.box('solid', 0, 1.3, 0.15, 0.5, 0.45, 0.45, COL.stoneLight);
     kit.box('solid', 0, 1.6, 0.05, 0.56, 0.18, 0.38, COL.moss);
-    kit.pop();
-  }
-  kit.pop();
-}
-function teahouse(x, y, z, yaw, overWater = false) {
-  kit.push(x, y, z, yaw);
-  const w = 8.4, d = 5.2, h = 2.7;
-  if (overWater) for (const px of [-w / 2, 0, w / 2]) for (const pz of [-d / 2, d / 2 + 2.6]) kit.box('solid', px, -1.6, pz, 0.26, 3.6, 0.26, COL.woodDark);
-  kit.box('solid', 0, -0.25, 0, w + 0.6, 0.7, d + 0.6, overWater ? COL.woodDark : COL.stoneDark);
-  kit.box('solid', 0, 0.2, 0, w + 0.1, 0.2, d + 0.1, COL.deck);
-  kit.push(0, 0.3, 0, 0);
-  body(w, d, 0, h, { bay: 1.7, fill: (s, i) => s === 'front' ? (i === 2 ? 'door' : 'shoji') : (s === 'back' ? (i === 1 ? 'door' : 'plaster') : (i === 1 ? 'shoji' : 'plaster')), noren: COL.indigo });
-  roof(h + 0.05, w, d, { type: 'irimoya', layers: 11, over: 1.05, rise: 2.4, upturn: 0.25, rafters: true });
-  const vd = 2.6;
-  for (let i = 0; i < 12; i++) kit.box('solid', -w / 2 + 0.35 + i * (w - 0.7) / 11, 0.0, d / 2 + vd / 2 + 0.1, (w - 0.7) / 11 - 0.04, 0.12, vd, i % 2 ? COL.deck : COL.cedar);
-  for (const px of [-w / 2 + 0.3, 0, w / 2 - 0.3]) kit.box('solid', px, 0.55, d / 2 + vd - 0.05, 0.12, 1.0, 0.12, COL.woodDark);
-  kit.box('solid', 0, 0.95, d / 2 + vd - 0.05, w - 0.4, 0.1, 0.14, COL.wood);
-  roof(h - 0.15, w + 0.2, vd * 0.9, { type: 'gable', layers: 4, over: 0.3, rise: 0.4, shift: d / 2 + vd * 0.4, barge: false, ridge: false, tileEnds: false, col: COL.tileB });
-  for (const px of [-w / 2 + 0.3, w / 2 - 0.3]) kit.box('solid', px, h / 2 - 0.1, d / 2 + vd - 0.2, 0.16, h - 0.2, 0.16, COL.woodDark);
-  for (const bx of [-2.2, 1.8]) { kit.box('solid', bx, 0.42, d / 2 + 1.4, 1.8, 0.1, 0.7, COL.wood); kit.box('solid', bx, 0.49, d / 2 + 1.4, 1.75, 0.04, 0.72, COL.felt); }
-  for (const lx of [-w / 2 - 0.2, -w / 6, w / 6, w / 2 + 0.2]) chochin(lx, h - 0.75, d / 2 + vd - 0.25, 1.0, COL.lanternRed, lx === -w / 6 ? 2.0 : 0);
-  kit.pop();
-  if (!overWater) {
-    kit.push(-1.2, 0.3, -d / 2 - 1.9, 0);
-    kit.box('solid', 0, 1.3, 0, 0.08, 2.6, 0.08, COL.woodDark);
-    for (let i = 0; i < 4; i++) kit.box('solid', 0, 2.55 + i * 0.13, 0, 3.2 - i * 0.75, 0.1, 3.2 - i * 0.75, i % 2 ? COL.felt : C(0xc2402f), 0, i * 0.3927 + 0.2, 0);
     kit.pop();
   }
   kit.pop();

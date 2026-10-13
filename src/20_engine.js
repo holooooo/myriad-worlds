@@ -1,5 +1,5 @@
 // =====================================================================
-//  SAKURA WORLD — engine: boot, renderer, materials, pools, streaming
+//  MYRIAD WORLDS — engine: boot, renderer, materials, pools, streaming
 // =====================================================================
 window.__svStarted = true;
 const LOG = (() => {
@@ -7,13 +7,14 @@ const LOG = (() => {
   function write(level, category, event, detail = {}) {
     const record = { time: new Date().toISOString(), level, category, event, ...detail };
     entries.push(record); if (entries.length > 200) entries.shift();
-    if (level !== 'debug' || new URLSearchParams(location.search).has('debug')) console[level]('[sakura-world]', record);
+    if (level !== 'debug' || new URLSearchParams(location.search).has('debug')) console[level]('[myriad-worlds]', record);
   }
   return { entries, info: (c, e, d) => write('info', c, e, d), warn: (c, e, d) => write('warn', c, e, d), error: (c, e, d) => write('error', c, e, d), debug: (c, e, d) => write('debug', c, e, d) };
 })();
 LOG.info('access', 'page-open', { path: location.pathname });
 const $ = (id) => document.getElementById(id);
 const QS = new URLSearchParams(location.search);
+I18N.applyLabels();
 let booted = false;
 const T0 = performance.now();
 const mark = (l) => { if (QS.has('timing')) console.log('[m]', Math.round(performance.now() - T0), l); };
@@ -27,12 +28,12 @@ function fatal(title, msg, detail) {
   $('fatal').hidden = false;
   $('fatalTitle').textContent = title; $('fatalMsg').textContent = msg || ''; $('fatalCode').textContent = detail || '';
 }
-window.addEventListener('error', (e) => { if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', e.message || String(e.error || e)); else LOG.error('error', 'runtime', { message: e.message }); });
-window.addEventListener('unhandledrejection', (e) => { const r = e.reason; LOG.error('error', 'promise-rejection', { message: String(r && r.stack || r) }); if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', (r && (r.stack || r.message)) || String(r)); });
+window.addEventListener('error', (e) => { if (!booted) fatal(I18N.t('error.world.title'), I18N.t('error.world.unexpected'), e.message || String(e.error || e)); else LOG.error('error', 'runtime', { message: e.message }); });
+window.addEventListener('unhandledrejection', (e) => { const r = e.reason; LOG.error('error', 'promise-rejection', { message: String(r && r.stack || r) }); if (!booted) fatal(I18N.t('error.world.title'), I18N.t('error.world.unexpected'), (r && (r.stack || r.message)) || String(r)); });
 const nextFrame = () => new Promise((r) => setTimeout(r, 16));
 const GL_LEVEL = (() => { try { const c = document.createElement('canvas'); if (c.getContext('webgl2')) return 2; if (c.getContext('webgl')) return 1; } catch (e) { /* */ } return 0; })();
 if (GL_LEVEL < 2) {
-  fatal('WebGL 2 is not available', 'This explorable world needs WebGL 2 (hardware-accelerated graphics). Enable hardware acceleration or open the page in a current Chrome, Edge, Firefox or Safari.', '');
+  fatal(I18N.t('error.webgl2.title'), I18N.t('error.webgl2.message'), '');
   throw new Error('WebGL2 unsupported');
 }
 let THREE, EffectComposer, RenderPass, UnrealBloomPass, OutputPass, ShaderPass, Pass, FullScreenQuad;
@@ -44,7 +45,7 @@ try {
   ]);
   THREE = m[0]; ({ EffectComposer } = m[1]); ({ RenderPass } = m[2]); ({ UnrealBloomPass } = m[3]); ({ OutputPass } = m[4]); ({ ShaderPass } = m[5]); ({ Pass, FullScreenQuad } = m[6]);
 } catch (e) {
-  fatal('The 3D engine could not be downloaded', 'Please check your internet connection (or any content blocker) and reload.', String(e && e.message || e));
+  fatal(I18N.t('error.engine.title'), I18N.t('error.engine.message'), String(e && e.message || e));
   throw e;
 }
 const GEN_SRC = $('gen-src').textContent;
@@ -53,7 +54,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches || QS.has
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const SMALL = Math.min(innerWidth, innerHeight) < 600;
 let QUALITY = QS.get('q') || ((COARSE || SMALL) ? 'lite' : 'high');
-let SEED = QS.get('seed') || localStorage.getItem('sakura-world-seed') || 'sakura';
+let SEED = QS.get('seed') || localStorage.getItem('myriad-worlds-seed') || localStorage.getItem('sakura-world-seed') || 'sakura';
 GEN.setSeed(SEED);
 const THEME = QS.get('theme') === 'shanshui' ? 'shanshui' : 'sakura';
 GEN.setTheme(THEME);
@@ -62,7 +63,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const C = (hex, k = 1) => new THREE.Color(hex).multiplyScalar(k);
-setProgress(0.08, 'Starting the world generator…');
+setProgress(0.08, I18N.t('loading.generator'));
 
 // ---------------------------------------------------------------------
 //  Global fog chunks (height + distance + sun glow) for every material
@@ -111,7 +112,7 @@ const FOGU = { sun: { x: 0, y: 0.2, z: -1, w: 6 }, glow: { x: 0.3, y: 0.2, z: 0.
 const canvas = $('scene');
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false }); }
-catch (e) { fatal('WebGL could not start', 'The browser refused to create a WebGL context. Try enabling hardware acceleration or closing other GPU-heavy tabs.', String(e && e.message || e)); throw e; }
+catch (e) { fatal(I18N.t('error.context.title'), I18N.t('error.context.message'), String(e && e.message || e)); throw e; }
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
@@ -121,7 +122,7 @@ let prScale = 1;
 const pixelRatioFor = (q) => (q === 'high' ? Math.min(devicePixelRatio, 1.6) : Math.min(devicePixelRatio, 1.2)) * prScale;
 renderer.setPixelRatio(pixelRatioFor(QUALITY));
 renderer.setSize(innerWidth, innerHeight, false);
-canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fatal('The graphics context was lost', 'The GPU reset or ran out of memory. Reload the page (Lite quality uses less memory).', ''); });
+canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fatal(I18N.t('error.lost.title'), I18N.t('error.lost.message'), ''); });
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x6b7aa3, 0.004, 0.04);
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.4, 7000);
@@ -144,19 +145,106 @@ scene.add(hemi, key, key.target);
 const SKY_U = {
   uTop: { value: new THREE.Color() }, uMid: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
   uGlow: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3(0, 0.1, -1) }, uSunCol: { value: new THREE.Color() },
-  uGlowPow: { value: 6 }, uSunSize: { value: 0.0004 }, uStars: { value: 0 }, uCloud: { value: 0.3 }, uTime: { value: 0 },
+  uGlowPow: { value: 32 }, uSunSize: { value: 0.000025 }, uStars: { value: 0 }, uStarCount: { value: 0 }, uStarDensity: { value: 1 }, uCloud: { value: 0.3 }, uTime: { value: 0 },
   uCloudCol: { value: new THREE.Color() }, uCloudShade: { value: new THREE.Color() },
-  uMoonDir: { value: new THREE.Vector3(0.3, 0.5, -0.8).normalize() }, uMoon: { value: 0 },
+  uMoonDir: { value: new THREE.Vector3(0.3, 0.5, -0.8).normalize() }, uMoon: { value: 0 }, uMoonPhase: { value: 0.18 },
+  uMoonRadius: { value: 0.028 }, uMoonBrightness: { value: 0.85 }, uMoonHalo: { value: 0.55 },
+  uPlanetDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() }, uPlanetType: { value: 0 },
+  uPlanetRadius: { value: 0.37 }, uPlanetBrightness: { value: 0.9 }, uRingTilt: { value: 0.55 },
 };
 const SKY_FS = /* glsl */`
   uniform vec3 uTop, uMid, uHor, uGlow, uSunDir, uSunCol, uCloudCol, uCloudShade, uMoonDir;
-  uniform float uGlowPow, uSunSize, uStars, uCloud, uTime, uMoon;
+  uniform float uGlowPow, uSunSize, uStars, uStarCount, uStarDensity, uCloud, uTime, uMoon, uMoonPhase, uMoonRadius, uMoonBrightness, uMoonHalo;
+  uniform vec3 uPlanetDir;
+  uniform float uPlanetType, uPlanetRadius, uPlanetBrightness, uRingTilt;
   varying vec3 vDir;
   float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float h31(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
   float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
     return mix(mix(h21(i), h21(i+vec2(1,0)), u.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), u.x), u.y); }
-  float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a * n2(p); p = p * 2.03 + 11.7; a *= 0.5; } return s; }
+  float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ s += a * n2(p); p = p * 2.03 + 11.7; a *= 0.5; } return s; }
+  // Valley's sky uses a smooth, plain celestial disc. Keep that restrained
+  // appearance here, with a physical terminator rather than noisy craters.
+  float lunarRadiance(float incidence) {
+    return (0.006 + smoothstep(-0.012, 0.012, incidence) * (0.86 + 0.14 * sqrt(max(incidence, 0.0)))) * 0.60;
+  }
+  float lunarHalo(float distance, float radius, float amount) {
+    float span = max(radius * radius * (1.0 + amount * 0.7), 0.000001);
+    return exp(-distance * distance / span) * amount * 0.025;
+  }
+  vec3 giantPlanet(vec3 d, vec3 background) {
+    if (uPlanetType < 0.5) return background;
+    vec3 center = uPlanetDir, right = normalize(cross(vec3(0.0, 1.0, 0.0), center)), up = cross(center, right);
+    float radius = uPlanetRadius, along = dot(d, center);
+    float discriminant = along * along - (1.0 - radius * radius);
+    float edge = max(fwidth(discriminant), 0.000015);
+    float sphereAlpha = smoothstep(-edge, edge, discriminant) * step(0.0, along);
+    float sphereDistance = along - sqrt(max(discriminant, 0.0));
+    vec3 normal = normalize(d * sphereDistance - center);
+    vec3 surface = vec3(0.0);
+    if (sphereAlpha > 0.001) {
+      vec3 bodyNormal = vec3(dot(normal, right), dot(normal, up), dot(normal, -center));
+      float longitude = atan(bodyNormal.x, bodyNormal.z) + uTime * 0.02;
+      float latitude = asin(clamp(bodyNormal.y, -1.0, 1.0));
+      // Periodic longitude coordinates keep detail continuous across the seam
+      // as every planet rotates slowly on its own axis.
+      vec2 weatherUv = vec2(sin(longitude) * 13.0 + cos(longitude) * 4.0, latitude * 17.0 + cos(longitude) * 3.0);
+      if (uPlanetType > 1.5 && uPlanetType < 2.5) {
+        // Jupiter-like latitude bands and an elliptical, swirling great storm.
+        float turbulence = n2(weatherUv) - 0.5, fine = n2(weatherUv * 3.1 + 9.2) - 0.5;
+        float bands = 0.5 + 0.5 * sin(latitude * 29.0 + turbulence * 2.1 + sin(latitude * 73.0) * 0.27 + fine * 0.24);
+        surface = mix(vec3(0.37, 0.24, 0.15), vec3(0.82, 0.72, 0.54), bands);
+        surface *= 0.86 + 0.09 * sin(latitude * 96.0 + turbulence * 3.0) + fine * 0.12;
+        float stormLongitude = atan(sin(longitude + 0.45), cos(longitude + 0.45));
+        vec2 stormUv = vec2(stormLongitude / 0.29, (latitude + 0.18) / 0.115);
+        float stormR = length(stormUv), storm = 1.0 - smoothstep(0.72, 1.13, stormR);
+        float spiral = 0.5 + 0.5 * sin(atan(stormUv.y, stormUv.x) * 3.0 - stormR * 13.0);
+        surface = mix(surface, mix(vec3(0.46, 0.17, 0.09), vec3(0.72, 0.39, 0.23), spiral), storm * 0.9);
+      } else if (uPlanetType > 2.5) {
+        // The close white planet is a calm, untextured sphere; its shape
+        // comes from broad lighting and the thin layered rings alone.
+        surface = vec3(0.84, 0.88, 0.94);
+      } else {
+        float frost = n2(weatherUv * 0.52), grains = n2(weatherUv * 3.3);
+        float fissures = 1.0 - smoothstep(0.025, 0.11, abs(sin(longitude * 17.0 + sin(latitude * 19.0) * 0.65 + frost * 2.0)));
+        float polarCap = smoothstep(0.72, 1.28, abs(latitude));
+        surface = mix(vec3(0.46, 0.65, 0.77), vec3(0.8, 0.88, 0.91), frost * 0.55 + polarCap * 0.45);
+        surface *= (0.91 + grains * 0.09) * (1.0 - fissures * 0.19);
+      }
+    }
+    vec3 light = normalize(-center * 0.55 + uSunDir * 0.45 + up * 0.18);
+    float lightSide = max(dot(normal, light), 0.0);
+    float lighting = uPlanetType > 2.5 ? 0.56 + 0.44 * sqrt(lightSide) : 0.32 + 0.68 * lightSide;
+    float limb = pow(1.0 - max(dot(normal, -d), 0.0), 3.0);
+    vec3 sphereCol = (surface * lighting + vec3(0.035, 0.05, 0.065) * limb) * uPlanetBrightness;
+    float haze = 0.11 + (1.0 - smoothstep(-0.12, 0.38, d.y)) * 0.2;
+    sphereCol = mix(sphereCol, background, haze);
+    vec3 result = mix(background, sphereCol, sphereAlpha);
+    if (uPlanetType < 1.5 || uPlanetType > 2.5) {
+      float facing = uPlanetType > 2.5 ? 0.38 : 0.16;
+      vec3 ringNormal = normalize(center * facing + (up * cos(uRingTilt) + right * sin(uRingTilt)) * sqrt(1.0 - facing * facing));
+      float denominator = dot(d, ringNormal);
+      float safeDenominator = (denominator < 0.0 ? -1.0 : 1.0) * max(abs(denominator), 0.0001);
+      float ringDistance = dot(center, ringNormal) / safeDenominator;
+      float ringR = length(d * ringDistance - center), inner = radius * 1.28, outer = radius * (uPlanetType > 2.5 ? 2.8 : 2.5);
+      float ringEdge = min(max(fwidth(ringR), 0.00015), radius * 0.08);
+      float ringAlpha = smoothstep(inner - ringEdge, inner + ringEdge, ringR) * (1.0 - smoothstep(outer - ringEdge, outer + ringEdge, ringR)) * step(0.0, ringDistance);
+      if (ringAlpha > 0.001) {
+        float radial = clamp((ringR - inner) / (outer - inner), 0.0, 1.0);
+        float stripes = 0.63 + 0.22 * sin(radial * 182.0) + 0.15 * sin(radial * 391.0);
+        float division = smoothstep(0.009, 0.032, abs(radial - 0.61));
+        ringAlpha *= (0.44 + stripes * 0.4) * mix(0.17, 1.0, division);
+        vec3 ringCol = mix(vec3(0.43, 0.53, 0.59), vec3(0.79, 0.83, 0.85), radial * 0.5 + stripes * 0.4) * uPlanetBrightness;
+        ringCol = mix(ringCol, background, haze * 1.2);
+        // Draw the far arc behind the sphere, then the near arc across it.
+        result = mix(background, ringCol, ringAlpha);
+        result = mix(result, sphereCol, sphereAlpha);
+        float frontArc = 1.0 - step(sphereDistance, ringDistance);
+        result = mix(result, ringCol, ringAlpha * frontArc * sphereAlpha);
+      }
+    }
+    return result;
+  }
   void main(){
     vec3 d = normalize(vDir);
     float y = d.y;
@@ -164,29 +252,57 @@ const SKY_FS = /* glsl */`
     col = mix(col, uTop, smoothstep(0.2, 0.9, y));
     float s = max(dot(d, uSunDir), 0.0);
     float hb = 1.0 - smoothstep(-0.06, 0.32, y);
-    col += uGlow * (pow(s, uGlowPow) * hb + pow(s, 3.0) * 0.07 * hb + pow(s, 600.0) * 0.6);
-    col += uSunCol * smoothstep(1.0 - uSunSize, 1.0 - uSunSize * 0.55, s);
-    if (uMoon > 0.0) {
-      float m = dot(d, uMoonDir);
-      float disc = smoothstep(0.99955, 0.99968, m);
-      float crescent = 1.0 - smoothstep(0.99955, 0.99968, dot(d, normalize(uMoonDir + vec3(0.012, 0.006, 0.0))));
-      col += vec3(1.0, 0.96, 0.88) * disc * crescent * 2.2 * uMoon + vec3(0.5, 0.6, 0.9) * pow(max(m, 0.0), 220.0) * 0.12 * uMoon;
+    // A small angular disc and a restrained aureole keep the warm horizon
+    // visible without turning half the sky into a white bloom source.
+    float sunDistance = length(d - uSunDir), sunRadius = sqrt(2.0 * uSunSize);
+    float sunEdge = max(fwidth(sunDistance), 0.00008);
+    col += uGlow * pow(s, max(uGlowPow, 14.0)) * hb * 0.18;
+    col += uSunCol * exp(-sunDistance * sunDistance / max(uSunSize * 16.0, 0.000001)) * 0.055;
+    col += uSunCol * (1.0 - smoothstep(max(sunRadius - sunEdge, 0.0), sunRadius + sunEdge, sunDistance));
+    float moonCover = 0.0;
+    if (uMoon > 0.0 && uMoonBrightness > 0.0) {
+      vec3 tangent = normalize(cross(vec3(0.0, 1.0, 0.0), uMoonDir)), bitangent = cross(uMoonDir, tangent);
+      float md = length(d - uMoonDir), edge = max(fwidth(md), 0.00008);
+      float disc = 1.0 - smoothstep(uMoonRadius - edge, uMoonRadius + edge, md);
+      moonCover = disc;
+      float phaseAngle = uMoonPhase * 6.2831853, phaseCos = cos(phaseAngle);
+      if (disc > 0.001) {
+        vec2 moonUv = vec2(dot(d, tangent), dot(d, bitangent)) / max(uMoonRadius * sqrt(1.0 - uMoonRadius * uMoonRadius * 0.25), 0.0001);
+        vec3 normal = vec3(moonUv, sqrt(max(1.0 - dot(moonUv, moonUv), 0.0)));
+        vec3 lunarSun = vec3(sin(phaseAngle), 0.0, -phaseCos);
+        float incidence = dot(normal, lunarSun);
+        vec3 moonCol = vec3(0.82, 0.86, 0.91) * lunarRadiance(incidence);
+        col = mix(col, moonCol * uMoon * uMoonBrightness, disc);
+      }
+      float halo = lunarHalo(md, uMoonRadius, uMoonHalo) * uMoonBrightness * uMoon * 0.5 * (1.0 - phaseCos) * (1.0 - disc);
+      col += vec3(0.72, 0.80, 0.94) * halo;
     }
+    // One bounded angular cell lookup per pixel; count/density never add
+    // geometry or a render pass. Clouds below occlude both stars and moon.
+    if (uStarCount > 0.0 && uStars > 0.0 && y > 0.0) {
+      vec2 starGrid = vec2(atan(d.z, d.x) / 6.2831853 + 0.5, asin(clamp(y, -1.0, 1.0)) / 3.1415927 + 0.5) * vec2(320.0, 160.0);
+      vec2 id = floor(starGrid); float r = h21(id + 73.4);
+      float probability = clamp(uStarCount * uStarDensity / 25600.0, 0.0, 0.19);
+      if (r < probability) {
+        vec2 center = vec2(h21(id + 19.7), h21(id + 47.1)) * 0.6 + 0.2;
+        float radius = 0.042 + h21(id + 5.3) * 0.035;
+        float aa = max(length(fwidth(starGrid)) * 0.45, 0.012);
+        float star = 1.0 - smoothstep(radius, radius + aa, length(fract(starGrid) - center));
+        float twinkle = 0.84 + 0.16 * sin(uTime * 1.3 + r * 731.0);
+        col += mix(vec3(0.74, 0.84, 1.0), vec3(1.0, 0.91, 0.76), h21(id + 8.2)) * star * twinkle * uStars * smoothstep(0.04, 0.3, y) * (1.0 - moonCover);
+      }
+    }
+    col = giantPlanet(d, col);
     if (uCloud > 0.001 && y > -0.06) {
       vec2 cp = d.xz / (max(y, 0.0) + 0.14) * 1.3 + vec2(uTime * 0.006, uTime * 0.002);
       float c = fbm(cp);
-      float cov = smoothstep(0.62 - 0.3 * uCloud, 0.98 - 0.2 * uCloud, c);
+      float cov = smoothstep(0.78 - 0.62 * uCloud, 0.94 - 0.38 * uCloud, c);
       float lit = clamp(0.5 + (fbm(cp + 0.35) - c) * 3.0, 0.0, 1.0);
-      vec3 cc = mix(uCloudShade, uCloudCol, lit) + uGlow * pow(s, 4.0) * 0.35 * lit;
+      vec3 cc = mix(uCloudShade, uCloudCol, lit) + uGlow * pow(s, 20.0) * 0.11 * lit;
       col = mix(col, cc, cov * smoothstep(-0.04, 0.1, y) * (0.55 + 0.45 * uCloud));
     }
-    if (uStars > 0.001) {
-      vec3 g = d * 240.0; vec3 id = floor(g); float r = h31(id);
-      if (r > 0.9965) { vec3 f = fract(g) - 0.5; float st = smoothstep(0.32, 0.0, length(f)) * (0.6 + 0.4 * sin(uTime * 1.7 + r * 400.0));
-        col += vec3(0.85, 0.9, 1.0) * st * uStars * smoothstep(0.12, 0.55, y); }
-    }
-    col = mix(col, uHor * 0.85, smoothstep(0.0, -0.25, y));
-    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03;
+    col = mix(col, uHor * 0.85, 1.0 - smoothstep(-0.25, 0.0, y));
+    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03 * (1.0 - moonCover);
     gl_FragColor = vec4(col, 1.0);
   }`;
 const skyMat = new THREE.ShaderMaterial({
@@ -294,81 +410,3 @@ const tuftGeo = buildGrassGeometry('grass');
 
 // Reflection exclusions are populated as instance pools are allocated.
 const HIDE_IN_MIRROR = new Set();
-
-// ---------------------------------------------------------------------
-//  Instance pools: one InstancedMesh per (LOD, material), block-allocated
-// ---------------------------------------------------------------------
-class Pool {
-  constructor(geo, mat, cap, opt = {}) {
-    this.geo = geo; this.mat = mat; this.cap = 0; this.top = 0; this.free = []; this.opt = opt; this.live = 0;
-    this.mesh = null; this.grow(cap);
-  }
-  grow(cap) {
-    const old = this.mesh;
-    const mesh = new THREE.InstancedMesh(this.geo, this.mat, cap);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
-    mesh.frustumCulled = false;
-    mesh.castShadow = !!this.opt.cast; mesh.receiveShadow = this.opt.receive !== false;
-    if (this.opt.depth) mesh.customDepthMaterial = this.opt.depth;
-    mesh.count = this.top;
-    mesh.instanceMatrix.array.fill(0);
-    if (old) {
-      mesh.instanceMatrix.array.set(old.instanceMatrix.array.subarray(0, this.top * 16));
-      mesh.instanceColor.array.set(old.instanceColor.array.subarray(0, this.top * 3));
-      scene.remove(old); old.dispose();
-      if (this.opt.noMirror) HIDE_IN_MIRROR.delete(old);
-    }
-    if (this.opt.noMirror) HIDE_IN_MIRROR.add(mesh);
-    this.mesh = mesh; this.cap = cap;
-    scene.add(mesh);
-  }
-  alloc(n) {
-    for (let i = 0; i < this.free.length; i++) {
-      const b = this.free[i];
-      if (b[1] >= n) { const s = b[0]; b[0] += n; b[1] -= n; if (!b[1]) this.free.splice(i, 1); this.live += n; return s; }
-    }
-    if (this.top + n > this.cap) this.grow(Math.max(this.cap * 2, this.top + n + 1024));
-    const s = this.top; this.top += n; this.mesh.count = this.top; this.live += n;
-    return s;
-  }
-  write(s, m, c) {
-    const M = this.mesh.instanceMatrix, Cc = this.mesh.instanceColor;
-    M.array.set(m, s * 16); Cc.array.set(c, s * 3);
-    M.addUpdateRange(s * 16, m.length); Cc.addUpdateRange(s * 3, c.length);
-    M.needsUpdate = true; Cc.needsUpdate = true;
-  }
-  clear(s, n) {
-    const M = this.mesh.instanceMatrix;
-    M.array.fill(0, s * 16, (s + n) * 16);
-    M.addUpdateRange(s * 16, n * 16); M.needsUpdate = true;
-  }
-  rewrite(s, n, m, c) {
-    const M = this.mesh.instanceMatrix, Cc = this.mesh.instanceColor;
-    M.array.set(m, s * 16); Cc.array.set(c, s * 3);
-    M.addUpdateRange(s * 16, n * 16); Cc.addUpdateRange(s * 3, c.length); M.needsUpdate = true; Cc.needsUpdate = true;
-  }
-  release(s, n) {
-    const M = this.mesh.instanceMatrix;
-    M.array.fill(0, s * 16, (s + n) * 16);
-    M.addUpdateRange(s * 16, n * 16); M.needsUpdate = true;
-    this.live -= n;
-    if (s + n === this.top) { this.top = s; this.mesh.count = this.top; this.mergeTop(); }
-    else { this.free.push([s, n]); this.free.sort((a, b) => a[0] - b[0]); for (let i = this.free.length - 1; i > 0; i--) { const a = this.free[i - 1], b = this.free[i]; if (a[0] + a[1] === b[0]) { a[1] += b[1]; this.free.splice(i, 1); } } }
-  }
-  mergeTop() { let ch = true; while (ch) { ch = false; for (let i = 0; i < this.free.length; i++) { const b = this.free[i]; if (b[0] + b[1] === this.top) { this.top = b[0]; this.free.splice(i, 1); this.mesh.count = this.top; ch = true; break; } } } }
-}
-const POOLS = [];
-for (let li = 0; li < NL; li++) {
-  const P = {};
-  const base = li === 0 ? 1 : 0.5;
-  P.solid = new Pool(boxGeo, kitMats[li].solid, Math.round(80000 * base), { cast: li === 0 });
-  P.lacquer = new Pool(boxGeo, kitMats[li].lacquer, 6000, { cast: li === 0 });
-  P.metal = new Pool(boxGeo, kitMats[li].metal, 3000, { cast: li === 0 });
-  P.leaf = new Pool(boxGeo, kitMats[li].leaf, Math.round(60000 * base), { cast: li === 0 });
-  P.glow = new Pool(boxGeo, kitMats[li].glow, 6000, { cast: false });
-  P.blossom = new Pool(blossomGeo, kitMats[li].blossom, Math.round(120000 * base), { cast: li === 0 });
-  if (li === 0) P.tuft = new Pool(tuftGeo, tuftMat, 60000, { cast: false, noMirror: true });
-  if (li >= 2) for (const k of Object.keys(P)) HIDE_IN_MIRROR.add(P[k].mesh), P[k].opt.noMirror = true;
-  POOLS.push(P);
-}

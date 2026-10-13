@@ -4,11 +4,11 @@
 // =====================================================================
 const MIRROR = {
   rt: null, cam: new THREE.PerspectiveCamera(), texMatrix: new THREE.Matrix4(),
-  active: false, scale: QUALITY === 'high' ? 0.5 : 0.33, samples: QUALITY === 'high' ? 2 : 0,
+  active: false, level: 0, scale: QUALITY === 'high' ? 0.5 : 0.33, samples: QUALITY === 'high' ? 2 : 0,
   theme: null, quality: null, failed: false, renders: 0,
 };
 const WATER_U = {
-  uTime: TIME_U, uRain: { value: 0 }, tMirror: { value: null }, uTexMatrix: { value: MIRROR.texMatrix }, uMirrorOn: { value: 0 },
+  uTime: TIME_U, uRain: { value: 0 }, tMirror: { value: null }, uTexMatrix: { value: MIRROR.texMatrix }, uMirrorOn: { value: 0 }, uMirrorLevel: { value: 0 },
   uShallow: { value: C(0x4d7d78) }, uDeep: { value: C(0x153743) }, uSky: { value: new THREE.Color(0.5, 0.55, 0.7) },
   uSun: { value: new THREE.Color(0.4, 0.4, 0.5) }, uSunDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() },
   uHorizon: { value: new THREE.Color(0.3, 0.35, 0.5) }, uZenith: { value: new THREE.Color(0.1, 0.15, 0.3) },
@@ -16,24 +16,24 @@ const WATER_U = {
   uDetail: { value: QUALITY === 'high' ? 1 : 0 }, uMirrorTexel: { value: new THREE.Vector2(1, 1) },
 };
 const WATER_VS = /* glsl */`
-  attribute float depth;
-  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv;
+  attribute float depth; attribute vec3 tint; attribute float clarity;
+  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv; varying vec3 vWaterTint; varying float vClarity;
   uniform mat4 uTexMatrix;
   #include <fog_pars_vertex>
   void main(){
     vec3 transformed = position;
     vec4 wp = modelMatrix * vec4(position, 1.0);
-    vWorld = wp.xyz; vDepth = depth;
+    vWorld = wp.xyz; vDepth = depth; vWaterTint = tint; vClarity = clarity;
     vRUv = uTexMatrix * wp;
     gl_Position = projectionMatrix * viewMatrix * wp;
     #include <fog_vertex>
   }`;
 const WATER_FS = /* glsl */`
   uniform sampler2D tMirror;
-  uniform float uTime, uRain, uMirrorOn, uClarity, uDetail;
+  uniform float uTime, uRain, uMirrorOn, uClarity, uDetail, uMirrorLevel;
   uniform vec2 uMirrorTexel;
   uniform vec3 uShallow, uDeep, uSky, uSun, uSunDir, uHorizon, uZenith, uClearShallow, uClearDeep;
-  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv;
+  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv; varying vec3 vWaterTint; varying float vClarity;
   #include <fog_pars_fragment>
   float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
@@ -72,7 +72,7 @@ const WATER_FS = /* glsl */`
     vec3 R = reflect(-V, N);
     vec3 refl = mix(uHorizon, uZenith, smoothstep(0.0, 0.65, R.y));
     #ifndef PADDY
-    if (uMirrorOn > 0.5 && vRUv.w > 0.0) {
+    if (uMirrorOn > 0.5 && vRUv.w > 0.0 && abs(vWorld.y - uMirrorLevel) < 0.05) {
       float distanceToEye = length(cameraPosition - vWorld);
       vec2 ruv = vRUv.xy / vRUv.w + N.xz * mix(0.021, 0.003, smoothstep(20.0, 240.0, distanceToEye));
       float edge = min(min(ruv.x, ruv.y), min(1.0 - ruv.x, 1.0 - ruv.y));
@@ -86,7 +86,11 @@ const WATER_FS = /* glsl */`
       refl = mix(refl, mirrorColor, mirrorWeight);
     }
     #endif
-    vec3 shallow = mix(uShallow, uClearShallow, uClarity), deep = mix(uDeep, uClearDeep, uClarity);
+    float hasTint = step(0.0001, length(vWaterTint));
+    float clear = mix(uClarity, vClarity, hasTint);
+    vec3 clearShallow = mix(uClearShallow, vWaterTint, hasTint * 0.9);
+    vec3 clearDeep = mix(uClearDeep, vWaterTint * vec3(0.22, 0.38, 0.5), hasTint * 0.8);
+    vec3 shallow = mix(uShallow, clearShallow, clear), deep = mix(uDeep, clearDeep, clear);
     // Exponential absorption preserves jade shallows and blue-green depth.
     float absorption = 1.0 - exp(-dep * 0.42);
     vec3 body = mix(shallow, deep, absorption) * uSky;
@@ -165,25 +169,42 @@ function ensureWaterTarget() {
 const _waterPlane = new THREE.Plane(), _waterNormal = new THREE.Vector3(0, 1, 0), _waterOrigin = new THREE.Vector3();
 const _mirrorPosition = new THREE.Vector3(), _mirrorTarget = new THREE.Vector3(), _mirrorLook = new THREE.Vector3();
 const _mirrorQ = new THREE.Vector4(), _mirrorClip = new THREE.Vector4(), _mirrorRotation = new THREE.Matrix4();
+function nearestWaterLevel() {
+  let distance = Infinity, level = 0;
+  for (const mesh of scene.children) {
+    if (!mesh.visible || mesh.material !== waterMat) continue;
+    const p = mesh.geometry.getAttribute('position'); if (!p) continue;
+    const stride = Math.max(1, Math.floor(p.count / 96));
+    for (let i = 0; i < p.count; i += stride) {
+      const d = (p.getX(i) - camera.position.x) ** 2 + (p.getZ(i) - camera.position.z) ** 2;
+      if (d < distance) { distance = d; level = p.getY(i); }
+    }
+  }
+  return level;
+}
 function renderMirror() {
   if (MIRROR.quality !== QUALITY) setWaterQuality(QUALITY);
   setWaterTheme(GEN.theme);
   WATER_U.uMirrorOn.value = 0;
   MIRROR.active = false;
-  // A fish's underwater camera uses the surface's sky fallback.
-  if (camera.position.y < 0.05 || MIRROR.failed) return;
+  const surface = GEN.waterAt ? GEN.waterAt(camera.position.x, camera.position.z) : null;
+  const level = surface && surface.kind !== 'paddy' ? surface.level : nearestWaterLevel();
+  MIRROR.level = level; WATER_U.uMirrorLevel.value = level;
+  // A submerged camera is relative to its own lake surface, at any elevation.
+  if (camera.position.y < level + 0.05 || MIRROR.failed) return;
   ensureWaterTarget();
   const mc = MIRROR.cam;
-  _mirrorPosition.copy(camera.position); _mirrorPosition.y = -_mirrorPosition.y;
+  _mirrorPosition.copy(camera.position); _mirrorPosition.y = 2 * level - _mirrorPosition.y;
   _mirrorRotation.extractRotation(camera.matrixWorld);
   _mirrorLook.set(0, 0, -1).applyMatrix4(_mirrorRotation).add(camera.position);
-  _mirrorTarget.copy(_mirrorLook); _mirrorTarget.y = -_mirrorTarget.y;
+  _mirrorTarget.copy(_mirrorLook); _mirrorTarget.y = 2 * level - _mirrorTarget.y;
   mc.position.copy(_mirrorPosition);
   mc.up.set(0, 1, 0).applyMatrix4(_mirrorRotation); mc.up.y = -mc.up.y;
   mc.lookAt(_mirrorTarget); mc.far = camera.far; mc.near = camera.near;
   mc.updateMatrixWorld(); mc.projectionMatrix.copy(camera.projectionMatrix);
   MIRROR.texMatrix.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
   MIRROR.texMatrix.multiply(mc.projectionMatrix).multiply(mc.matrixWorldInverse);
+  _waterOrigin.y = level;
   _waterPlane.setFromNormalAndCoplanarPoint(_waterNormal, _waterOrigin).applyMatrix4(mc.matrixWorldInverse);
   _mirrorClip.set(_waterPlane.normal.x, _waterPlane.normal.y, _waterPlane.normal.z, _waterPlane.constant);
   const pm = mc.projectionMatrix;

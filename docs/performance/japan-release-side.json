@@ -1,0 +1,36 @@
+{
+  "label": "japan-release-side",
+  "state": {
+    "seed": "sakura",
+    "theme": "sakura",
+    "language": "en",
+    "mood": "golden",
+    "quality": "high",
+    "biome": "Coast & sea"
+  },
+  "viewport": [
+    1280,
+    720
+  ],
+  "pixelRatio": 1.6,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)",
+  "seconds": 19.97109999999404,
+  "frames": 857,
+  "averageFPS": 42.912007851358,
+  "p95ms": 30.799999982118607,
+  "start": [
+    3943.0968864664774,
+    17.250002049047655,
+    302.1518342599144
+  ],
+  "end": [
+    4201.982455737636,
+    14.519791397962583,
+    296.22535552681643
+  ],
+  "follow": "train-0",
+  "view": "side",
+  "groundClearance": 25.395620203629385,
+  "errors": 0,
+  "visibleInstances": 502843
+}

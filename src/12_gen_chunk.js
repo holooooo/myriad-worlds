@@ -120,12 +120,22 @@ function genChunk(cx, cz, lod) {
     if (lod === 0) hq[k] = (s.h < -0.5) ? quant(s.h, q * 0.5) : quant(s.h, q);
     else {
       // far LODs: average the raw height over the cell footprint (kills the 1m staircase driver)
-      const avg = (s.h * 2 + natural(x + cs * 0.5, z, {}).h + natural(x - cs * 0.5, z, {}).h + natural(x, z + cs * 0.5, {}).h + natural(x, z - cs * 0.5, {}).h) / 6;
+      const avg = (s.h * 2 + sample(x + cs * 0.5, z, {}).h + sample(x - cs * 0.5, z, {}).h + sample(x, z + cs * 0.5, {}).h + sample(x, z - cs * 0.5, {}).h) / 6;
       hq[k] = avg;
     }
+    if (s.pad > 0.2) hq[k] = s.h;
+    if (s.waterLevel !== null && !s.paddy) hq[k] = Math.min(hq[k], s.waterLevel - 0.08);
     if (s.paddy) hq[k] = s.plate;
     // a cell claimed by another biome loses its paddy flat/levee (biome noise wobbles edges)
     if (s.paddy && s.biome !== B.PADDY) { info[k].paddy = 0; hq[k] = (s.h < -0.5) ? quant(s.h, q * 0.5) : quant(s.h, q); }
+    // A coarse cell overlapping the track corridor must also expose the track.
+    // Averaging its high shoulders would otherwise refill a physical rail cut.
+    const ln = railLine(z), za = railZ(ln, x - cs / 2), zb = railZ(ln, x + cs / 2), zm = railZ(ln, x);
+    if (z + cs / 2 > Math.min(za, zb, zm) - 4 && z - cs / 2 < Math.max(za, zb, zm) + 4) {
+      const floor = Math.min(railH(ln, x - cs / 2), railH(ln, x), railH(ln, x + cs / 2)) - 0.65;
+      hq[k] = Math.min(hq[k], floor);
+      if (s.paddy) { s.paddy = 0; s.waterLevel = null; s.waterKind = null; s.waterId = null; }
+    }
   }
   // gentle 3-tap smoothing on hills kills the grazing-light staircase shimmer
   if (lod === 0) {
@@ -179,7 +189,7 @@ function genChunk(cx, cz, lod) {
     const slope = Math.max(Math.abs(raw[k] - raw[k + 1]), Math.abs(raw[k] - raw[k - 1]), Math.abs(raw[k] - raw[k + W]), Math.abs(raw[k] - raw[k - W])) / cs;
     cellColor(xa + cs / 2, za + cs / 2, s, slope, lod >= 3 ? 1 : 0, top);
     if (levee[k]) top.copy(PAL.levee).multiplyScalar(0.85 + h2(i, j, 5) * 0.2);
-    const under = h < -0.15;
+    const under = s.waterLevel !== null && !s.paddy && h < s.waterLevel;
     const rocky = slope > 1.6 || (s.biome === B.SNOW && !s.snow);
     if (under) { wt.copy(top).multiplyScalar(0.8); wb.copy(PAL.bedDeep).multiplyScalar(0.8); }
     else if (s.snow) { wt.copy(top).multiplyScalar(0.94); wb.copy(PAL.snowShade).multiplyScalar(0.72); }
@@ -208,7 +218,7 @@ function genChunk(cx, cz, lod) {
     if (hW < h) wall(hW, xa, zb, xa, za, -1, 0);
     if (hN < h) wall(hN, xb, zb, xa, zb, 0, 1);
     if (hS < h) wall(hS, xa, za, xb, za, 0, -1);
-    if (h < 0) water.push(i, j);
+    if (s.waterLevel !== null && !s.paddy && h < s.waterLevel) { water.push(i, j); maxY = Math.max(maxY, s.waterLevel); }
     else if (s.paddy && !levee[k]) paddyW.push(i, j);
   }
   put(x0, bed, z0, 0, -1, 0, PAL.soilDark, 1);
@@ -217,30 +227,37 @@ function genChunk(cx, cz, lod) {
   put(x0, bed, z0 + L.size, 0, -1, 0, PAL.soilDark, 1);
   quad();
   const terrain = { pos, nor, col, idx, minY, maxY: Math.max(maxY, 0) };
-  // ---- water quads (y = 0) with per-vertex depth ----
-  const mkWater = (list, yOf, depthOf) => {
+  // ---- Water quads use the physical surface of each individual lake. ----
+  const mkWater = (list, yOf, depthOf, paddy = false) => {
     if (!list.length) return null;
     const n = list.length / 2;
-    const wp = new Float32Array(n * 12), wd = new Float32Array(n * 4);
+    const wp = new Float32Array(n * 12), wd = new Float32Array(n * 4), tint = new Float32Array(n * 12), clarity = new Float32Array(n * 4);
     const wi = n * 4 > 65535 ? new Uint32Array(n * 6) : new Uint16Array(n * 6);
     for (let t = 0; t < n; t++) {
       const i = list[t * 2], j = list[t * 2 + 1];
       const xa = x0 + (i - 1) * cs, za = z0 + (j - 1) * cs, y = yOf(i, j);
+      const s = info[j * W + i], palette = WORLD_PROFILE.water[s.waterKind] || WORLD_PROFILE.water.shallow;
+      const cc = s.waterTint ? null : C(palette), color = s.waterTint || [cc.r, cc.g, cc.b];
       const corner = [[0, 0], [0, 1], [1, 1], [1, 0]];
       for (let c = 0; c < 4; c++) {
         const ci = corner[c][0], cj = corner[c][1];
         wp[t * 12 + c * 3] = xa + ci * cs; wp[t * 12 + c * 3 + 1] = y; wp[t * 12 + c * 3 + 2] = za + cj * cs;
         let dsum = 0;
-        for (const [di, dj] of [[ci - 1, cj - 1], [ci, cj - 1], [ci - 1, cj], [ci, cj]]) dsum += depthOf(i + di, j + dj);
+        for (const [di, dj] of [[ci - 1, cj - 1], [ci, cj - 1], [ci - 1, cj], [ci, cj]]) dsum += depthOf(i + di, j + dj, y, s);
         wd[t * 4 + c] = dsum / 4;
+        tint.set(color, t * 12 + c * 3); clarity[t * 4 + c] = paddy ? 0 : s.waterClarity;
       }
       const b = t * 4, o = t * 6;
       wi[o] = b; wi[o + 1] = b + 1; wi[o + 2] = b + 2; wi[o + 3] = b; wi[o + 4] = b + 2; wi[o + 5] = b + 3;
     }
-    return { pos: wp, depth: wd, idx: wi };
+    return { pos: wp, depth: wd, idx: wi, tint, clarity };
   };
-  const waterM = mkWater(water, () => 0, (i, j) => clamp(-raw[clamp(j, 0, W - 1) * W + clamp(i, 0, W - 1)], -2, 12));
-  const paddyM = mkWater(paddyW, (i, j) => hq[j * W + i] + 0.16, (i, j) => { const k = clamp(j, 0, W - 1) * W + clamp(i, 0, W - 1); return info[k].paddy && !levee[k] ? 0.45 : -0.3; });
+  const waterM = mkWater(water, (i, j) => info[j * W + i].waterLevel, (i, j, level, source) => {
+    const k = clamp(j, 0, W - 1) * W + clamp(i, 0, W - 1), s = info[k];
+    if (s.waterId !== source.waterId || s.waterLevel !== level) return -0.12;
+    return clamp(level - hq[k], -2, 12);
+  });
+  const paddyM = mkWater(paddyW, (i, j) => hq[j * W + i] + 0.16, (i, j) => { const k = clamp(j, 0, W - 1) * W + clamp(i, 0, W - 1); return info[k].paddy && !levee[k] ? 0.45 : -0.3; }, true);
 
   // ---- decorations ----
   kit.reset();
@@ -298,7 +315,8 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
     const x = gx * gRe + h2(gx, gz, SALT[67]) * gRe, z = gz * gRe + h2(gx, gz, SALT[68]) * gRe;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k];
-    const wetShore = (s.h > -1.1 && s.h < 0.55 && (s.valley > 0.12 || s.lake > 0.03 || s.biome === B.LAKE || s.biome === B.RIVER));
+    const shoreH = shoreHeight(s);
+    const wetShore = (shoreH > -1.1 && shoreH < 0.55 && (s.valley > 0.12 || s.lake > 0.03 || s.biome === B.LAKE || s.biome === B.RIVER));
     if (!wetShore || s.street || s.rail > 0.1 || s.pad > 0.1) continue;
     if (h2(gx, gz, SALT[69]) > 0.62) continue;
     const n = 2 + Math.floor(h2(gx, gz, SALT[70]) * 3);
@@ -306,7 +324,8 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
       const rx = x + (h2(gx, j, SALT[71]) - 0.5) * 1.6, rz = z + (h2(gz, j, SALT[72]) - 0.5) * 1.6;
       const rk = cellK(rx, rz); if (rk < 0) continue;
       const rs = info[rk];
-      if (rs.h > 0.8 || rs.h < -1.4) continue;
+      const reedShoreH = shoreHeight(rs);
+      if (reedShoreH > 0.8 || reedShoreH < -1.4 || rs.street || rs.rail > 0.1 || rs.pad > 0.1) continue;
       const y = kit.G(rx, rz);
       const hh = 1.5 + h2(gx, gz + j, SALT[73]) * 1.1;
       reedPlant(rx, rz, y, hh, (h2(gx + j, gz, SALT[73]) * 1e9) | 0);
@@ -318,7 +337,8 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
     const x = gx * gr + h2(gx, gz, SALT[49]) * gr, z = gz * gr + h2(gx, gz, SALT[50]) * gr;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k], r = h2(gx, gz, SALT[51]);
-    if (s.h > -0.8 && s.h < 0.6 && s.pad < 0.1 && r < 0.35) rock(x, z, 0.4 + r * 2.2, (r * 1e9) | 0, { wet: true, y: Math.max(hq[k], -0.6) });
+    const shoreH = shoreHeight(s), shoreLevel = s.lakeLevel ?? s.waterLevel ?? 0;
+    if (shoreH > -0.8 && shoreH < 0.6 && s.pad < 0.1 && r < 0.35) rock(x, z, 0.4 + r * 2.2, (r * 1e9) | 0, { wet: true, y: Math.max(hq[k], shoreLevel - 0.6) });
   }
   const gl = 28;
   for (let gz = Math.floor(z0 / gl); gz * gl < z0 + size; gz++) for (let gx = Math.floor(x0 / gl); gx * gl < x0 + size; gx++) {
@@ -336,7 +356,8 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
   for (let t = 0; t < 6; t++) {
     const x = x0 + h2(t, x0, SALT[55] ^ z0) * size, z = z0 + h2(t, z0, SALT[56] ^ x0) * size;
     const s = info[cellK(x, z)];
-    if ((s.paddy || (s.h > 0 && s.h < 2.2 && (s.valley > 0.3 || s.lake > 0.05))) && s.biome !== B.SNOW) kit.spot('fly', x, Math.max(s.h, 0) + 1.2, z);
+    const shoreH = shoreHeight(s);
+    if ((s.paddy || (shoreH > 0 && shoreH < 2.2 && (s.valley > 0.3 || s.lake > 0.05))) && s.biome !== B.SNOW) kit.spot('fly', x, Math.max(s.h, s.waterLevel ?? s.lakeLevel ?? 0) + 1.2, z);
   }
   // river crossings on farm lanes: plank bridges
   for (let j = 1; j < W - 1; j++) for (let i = 1; i < W - 1; i++) {
@@ -354,14 +375,15 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k], r = h2(gx, gz, SALT[59]);
     let p = 0, reed = false;
-    if (s.street || s.rail > 0.1 || s.h < -0.05 || s.snow || s.pad > 0.4) continue;
+    const shoreH = shoreHeight(s);
+    if (s.street || s.rail > 0.1 || s.waterLevel != null || shoreH < -0.05 || s.snow || s.pad > 0.4) continue;
     if (s.paddy) { p = levee[k] ? 0.55 : 0; }
     else switch (s.biome) {
       case B.SATO: p = 0.5; break; case B.SAKURA: p = 0.4; break; case B.CEDAR: p = 0.1; break; case B.BAMBOO: p = 0.08; break;
       case B.BEACH: p = s.h > 1 ? 0.25 : 0; break; case B.TOWN: p = 0.04; break; case B.SNOW: p = 0.08; break;
-      case B.MEADOW: p = 0.85; break; case B.MARSH: p = s.h > 0.5 ? 0.5 : 0.85; break; case B.PINE: p = 0; break; default: p = 0.3;
+      case B.MEADOW: p = 0.85; break; case B.MARSH: p = shoreH > 0.5 ? 0.5 : 0.85; break; case B.PINE: p = 0; break; default: p = 0.3;
     }
-    if (s.h < 1.3 && (s.lake > 0.05 || s.valley > 0.2)) { p = 0.8; reed = r < 0.35; }
+    if (shoreH < 1.3 && (s.lake > 0.05 || s.valley > 0.2)) { p = 0.8; reed = r < 0.35; }
     if (s.path > 0.3) p *= 0.1;
     if (r > p) continue;
     const rr = h2(gx, gz, SALT[60]);
@@ -425,18 +447,6 @@ function emitRail(x0, z0, size, lod) {
       if (z < z0 || z >= z0 + size) continue;
       const y = railH(n, x), dz = railDZ(n, x), yaw = Math.atan2(-dz, 1);
       const nat = natural(x, z, {}).h;
-      if (nat > y + 11) {
-        // tunnel: portal where the hillside begins
-        const prev = natural(x - step, railZ(n, x - step), {}).h, next = natural(x + step, railZ(n, x + step), {}).h;
-        if (lod === 0 && (prev <= y + 11 || next <= y + 11)) {
-          kit.push(x, y, z, yaw);
-          for (const sz of [-1, 1]) kit.box('solid', 0, 2.6, sz * 2.6, 1.6, 5.4, 1.2, COL.stoneDark);
-          kit.box('solid', 0, 5.6, 0, 1.6, 1.4, 6.4, COL.stone);
-          kit.box('solid', -0.85, 2.6, 0, 0.2, 5.2, 4.0, C(0x0c0b0a));
-          kit.pop();
-        }
-        continue;
-      }
       kit.push(x, y, z, yaw);
       if (lod === 0) {
         kit.box('solid', 0, 0.08, 0, 0.26, 0.16, 2.5, C(0x3d3128));
@@ -577,16 +587,8 @@ function buildStructure(a, lod) {
       chochin(0, 2.9, 0, 1.0, COL.paper, 1.6);
       kit.pop();
       // red bridge to the nearest shore
-      let best = null;
-      for (let k = 0; k < 16 && !best; k++) for (let d = 6; d < 48; d += 2) {
-        const ang = (k / 16) * Math.PI * 2, x = a.x + Math.cos(ang) * d, z = a.z + Math.sin(ang) * d;
-        if (sample(x, z, {}).h > 0.4) { if (!best || d < best.d) best = { d, ang }; break; }
-      }
-      if (best && best.d < 46) {
-        const ex = a.x + Math.cos(best.ang) * 3.2, ez = a.z + Math.sin(best.ang) * 3.2;
-        const bx = a.x + Math.cos(best.ang) * (best.d + 1.5), bz = a.z + Math.sin(best.ang) * (best.d + 1.5);
-        arcBridge(ex, ez, bx, bz, 0.8, 2.4, Math.min(2.2, best.d * 0.12), true);
-      }
+      const bridge = pavilionBridge(a);
+      if (bridge) arcBridge(bridge.ax, bridge.az, bridge.bx, bridge.bz, 0.8, 2.4, bridge.arch, true);
       break;
     }
   }
@@ -597,6 +599,7 @@ function buildStructure(a, lod) {
 //  Finders (spawn point & biome teleports)
 // ---------------------------------------------------------------------
 function findBiome(target, x0, z0, maxR = 9000) {
+  if (target === B.LAKE && WORLD_PROFILE.id === 'shanshui') return findShanshuiLake(x0, z0, maxR);
   const step = 48;
   for (let r = 0; r <= maxR; r += step) {
     const n = Math.max(1, Math.round((2 * Math.PI * r) / step));
@@ -611,6 +614,7 @@ function findBiome(target, x0, z0, maxR = 9000) {
       }
       const s = sample(x, z, {});
       if (s.biome === target) {
+        if (target === B.LAKE && s.waterLevel !== null && s.waterLevel - s.h > 0.7) return { x, z, h: s.waterLevel, waterLevel: s.waterLevel, waterId: s.waterId };
         // require a few neighbours of the same biome so we land inside it
         let ok = 0;
         for (const [dx, dz] of [[30, 0], [-30, 0], [0, 30], [0, -30]]) if (sample(x + dx, z + dz, {}).biome === target) ok++;
@@ -646,7 +650,7 @@ function findSpawn() {
 function biomeAt(x, z) { const s = sample(x, z, {}); return { biome: s.biome, h: s.h, name: BIOME_NAMES[s.biome], rail: s.rail, snow: s.snow }; }
 
 return {
-  setSeed, setTheme, sample, heightAt, natural, habitatAt, habitatPath, genChunk, findBiome, vantage, findSpawn, biomeAt, railZ, railDZ, railH, railLine,
+  setSeed, setTheme, sample, heightAt, waterAt, railClearance, structureAt, natural, habitatAt, habitatPath, genChunk, findBiome, vantage, findSpawn, biomeAt, railZ, railDZ, railH, railLine,
   LODS, ASSET_LOD, assetCandidate, townCandidate, B, BIOME_NAMES, RAIL_SP, kit, house, roof, body, chochin, C, Col, h2, fbm, mulberry32, clamp, lerp, smoothstep,
   get seed() { return SEED; },
   get theme() { return WORLD_PROFILE.id; },

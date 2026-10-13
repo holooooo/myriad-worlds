@@ -38,12 +38,12 @@ function updateMist(dt, t) {
     }
     const px = x + (i + 0.5) * MIST.cell, pz = z + (j + 0.5) * MIST.cell, s = GEN.sample(px, pz, {});
     MIST.sampled++;
-    const water = s.h < -0.2 && s.biome !== GEN.B.OCEAN;
+    const water = s.waterLevel != null && s.waterKind !== 'ocean' && s.waterKind !== 'paddy' && s.waterLevel - s.h > 0.2;
     const forest = [GEN.B.MARSH, GEN.B.SAKURA, GEN.B.BAMBOO, GEN.B.CEDAR, GEN.B.PINE].includes(s.biome);
     const rural = s.town < 0.45 && !s.street && s.pad < 0.3 && !s.snow;
     const patch = smoothstep(-0.28, 0.32, GEN.fbm(px * 0.013, pz * 0.013, 2, 21));
     MIST.data[k] = rural ? (water ? 0.055 : forest ? 0.014 : s.paddy ? 0.012 : 0) * patch : 0;
-    MIST.data[k + 1] = water ? 0.75 : s.h + 0.8;
+    MIST.data[k + 1] = water ? s.waterLevel + 0.75 : s.h + 0.8;
     MIST.data[k + 2] = water ? 1.8 : 2.5;
     MIST.data[k + 3] = water ? 1 : 0.45;
   }

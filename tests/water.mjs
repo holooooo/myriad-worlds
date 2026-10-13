@@ -29,13 +29,15 @@ const renderer = {
     if (failure) throw new Error('simulated GPU failure');
   },
 };
-const excluded = new Set(), GEN = { theme: 'sakura' };
+let surface = null;
+const excluded = new Set(), GEN = { theme: 'sakura', waterAt: () => surface };
 const LOG = Object.fromEntries(['info', 'debug', 'error'].map(level => [level, (...args) => logs.push({ level, args })]));
 const source = fs.readFileSync(path.join(root, 'src/20_water.js'), 'utf8');
 api = new Function('THREE', 'C', 'TIME_U', 'scene', 'camera', 'renderer', 'HIDE_IN_MIRROR', 'GEN', 'LOG',
   "let QUALITY = 'high';\n" + source + '\nreturn { MIRROR,WATER_U,waterMat,paddyMat,renderMirror,setWaterTheme,setQuality(q) { QUALITY=q;setWaterQuality(q); } };')(
     THREE, hex => new THREE.Color(hex), { value: 1 }, scene, camera, renderer, excluded, GEN, LOG);
-scene.add(new THREE.Mesh(new THREE.PlaneGeometry(), api.waterMat), new THREE.Mesh(new THREE.PlaneGeometry(), api.paddyMat));
+const lakeMesh = new THREE.Mesh(new THREE.PlaneGeometry(20, 20).rotateX(-Math.PI / 2), api.waterMat);
+scene.add(lakeMesh, new THREE.Mesh(new THREE.PlaneGeometry().rotateX(-Math.PI / 2), api.paddyMat));
 const hidden = new THREE.Mesh(); hidden.visible = false; scene.add(hidden);
 const grass = new THREE.Mesh(); scene.add(grass); excluded.add(grass);
 assert.notEqual(api.waterMat.uniforms.uShallow, api.paddyMat.uniforms.uShallow);
@@ -59,6 +61,13 @@ drawSize = [10000, 5000]; api.setQuality('high'); api.renderMirror();
 assert.equal(api.MIRROR.rt.width, 1536); assert.equal(api.MIRROR.rt.height, 768);
 assert.equal(api.MIRROR.rt.samples, 2);
 allocations.boundedHigh = [api.MIRROR.rt.width, api.MIRROR.rt.height, api.MIRROR.rt.samples];
+surface = { level: 18, kind: 'lake' };
+camera.position.y = 30; camera.lookAt(0, 18, 0); camera.updateMatrixWorld(); api.renderMirror();
+assert.equal(api.MIRROR.level, 18); assert.equal(api.WATER_U.uMirrorLevel.value, 18);
+assert.equal(api.MIRROR.cam.position.y, 6, 'Mirror camera reflects around its lake elevation');
+camera.position.y = 17; const raisedPasses = passes; api.renderMirror();
+assert.equal(passes, raisedPasses, 'A camera below a raised lake uses underwater fallback');
+surface = null;
 camera.position.y = -1; const before = passes; api.renderMirror();
 assert.equal(passes, before); assert.equal(api.MIRROR.active, false); assert.equal(api.WATER_U.uMirrorOn.value, 0);
 camera.position.y = 6; camera.updateMatrixWorld(); failure = true; api.renderMirror();

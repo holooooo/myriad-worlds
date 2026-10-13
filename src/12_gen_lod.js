@@ -8,9 +8,12 @@ const ASSET_LOD = [
   { treeRate: 0.3, bambooRate: 0.06, detail: 0.16 },
   { treeRate: 0.1, bambooRate: 0.025, detail: 0.1 },
 ];
+// Raised lakes retain their level on dry banks; shore ecology uses the same
+// relative elevation as sea-level shores instead of absolute world height.
+function shoreHeight(s) { return s.h - (s.lakeLevel ?? s.waterLevel ?? 0); }
 function assetSite(x, z) {
   const s = sample(x, z, {});
-  if (s.h <= 0.35 || s.street || s.rail >= 0.05 || s.path >= 0.2 || s.pad >= 0.15 || s.paddy || s.tunnel) return null;
+  if (s.waterLevel != null || shoreHeight(s) <= 0.35 || s.street || s.rail >= 0.05 || s.path >= 0.2 || s.pad >= 0.15 || s.paddy || s.tunnel) return null;
   const slope = Math.max(
     Math.abs(s.h - sample(x - 1, z, {}).h), Math.abs(s.h - sample(x + 1, z, {}).h),
     Math.abs(s.h - sample(x, z - 1, {}).h), Math.abs(s.h - sample(x, z + 1, {}).h),
@@ -25,7 +28,7 @@ function assetCandidate(gx, gz, lod = 0) {
   const x = gx * 6 + h2(gx, gz, SALT[42]) * 6, z = gz * 6 + h2(gx, gz, SALT[43]) * 6;
   const s = assetSite(x, z);
   if (!s) return null;
-  const nearWater = s.h < 2.6 && (s.lake > 0.08 || s.valley > 0.3 || s.river > 0.05);
+  const nearWater = shoreHeight(s) < 2.6 && (s.lake > 0.08 || s.valley > 0.3 || s.river > 0.05);
   const c = { x, z, y: kit.G(x, z), seed: (h2(gx, gz, SALT[44]) * 1e9) | 0, r, r2, sample: s, scale: 1, kind: null };
   if (WORLD_PROFILE.id === 'shanshui') {
     c.kind = pickShanshuiPlant(s, r, r2, nearWater);
@@ -64,9 +67,9 @@ function assetCandidate(gx, gz, lod = 0) {
       else if (r < 0.14) c.kind = 'straw';
       break;
     case B.MARSH:
-      if (s.h < 0.6 && r < 0.16) c.kind = 'lotus';
+      if (shoreHeight(s) < 0.6 && r < 0.16) c.kind = 'lotus';
       else if (r < 0.3) c.kind = 'cattail';
-      else if (r < 0.34 && s.h > 0.5) c.kind = 'willow';
+      else if (r < 0.34 && shoreHeight(s) > 0.5) c.kind = 'willow';
       else if (r < 0.36) { c.kind = 'bush'; c.scale = 0.7 + r2 * 0.5; c.bloom = 0.1; }
       else if (r < 0.385) c.kind = 'marshTree';
       else if (r < 0.4) c.kind = 'hydrangea';
@@ -157,6 +160,9 @@ function decorateAssets(x0, z0, size, lod, inChunk) {
 function townCandidate(bx, bz, row, li) {
   const w = 6.4, d = 7.2, x = bx * 34 + 4.2 + li * 7.6 + w / 2 + 0.3;
   const z = row === 0 ? bz * 26 + 3.7 + d / 2 : (bz + 1) * 26 - 0.5 - d / 2;
+  // Include deep eaves and the front veranda in the railway footprint.
+  const buildingRadius = Math.hypot(w / 2 + 1.5, d / 2 + 2.0);
+  if (railClearance(x, z, buildingRadius) < 0) return null;
   const s = sample(x, z, {});
   if (s.town < 0.62 || s.h < 0.4 || s.pad > 0.05 || s.rail > 0 || s.street || s.river > 0.05 || s.lake > 0.05) return null;
   const r = h2(bx * 8 + li, bz * 2 + row, SALT[61]);
@@ -165,7 +171,7 @@ function townCandidate(bx, bz, row, li) {
     w: r < 0.66 ? w - 0.6 : r < 0.8 ? w : 4.6, d: r < 0.66 ? d : r < 0.8 ? d - 1.2 : 5.4 };
 }
 function emitTownHouseLOD(c, lod) {
-  if (WORLD_PROFILE.id === 'shanshui') { emitChineseHouseLOD(c); return; }
+  if (WORLD_PROFILE.id === 'shanshui') { emitChineseHouseLOD(c, lod); return; }
   const twoStorey = c.type === 'machiya' || c.type === 'shop', h = twoStorey ? 5 : c.type === 'kura' ? 3.6 : 2.7;
   const thatch = c.type === 'thatch', rise = thatch ? c.d * 0.78 : twoStorey ? 1.8 : 1.6;
   kit.push(c.x, c.y, c.z, c.yaw);
@@ -179,7 +185,7 @@ function emitTownHouseLOD(c, lod) {
   kit.box('glow', 0, twoStorey ? 3.8 : 1.6, c.d / 2 + 0.03, c.w * 0.55, 0.65, 0.06, COL.paper);
   kit.pop();
 }
-function emitChineseHouseLOD(c) {
+function emitChineseHouseLOD(c, lod = 2) {
   const shop = c.type === 'shop' || c.type === 'machiya';
   // This is the same seeded floor rule as chineseHouse, not a distance rule.
   const twoStorey = shop && mulberry32(c.seed)() < (c.type === 'shop' ? 0.36 : 0.62);
@@ -187,7 +193,9 @@ function emitChineseHouseLOD(c) {
   kit.push(c.x, c.y, c.z, c.yaw);
   kit.box('solid', 0, 0.1, 0, c.w + 1.6, 0.8, c.d + 1.6, CN.stoneDark);
   kit.box('solid', 0, 0.5 + h / 2, 0, c.w, h, c.d, shop ? CN.redDark : CN.wall);
-  for (const sx of [-1, 1]) kit.box('lacquer', sx * c.w / 2, 0.5 + h / 2, c.d / 2 + 0.28, 0.26, h, 0.26, shop ? CN.red : CN.wood);
+  // At the outer two tiers, 26 cm posts resolve below a pixel. The wall,
+  // foundation, storey rule and full roof remain at their original sites.
+  if (lod < 3) for (const sx of [-1, 1]) kit.box('lacquer', sx * c.w / 2, 0.5 + h / 2, c.d / 2 + 0.28, 0.26, h, 0.26, shop ? CN.red : CN.wood);
   kit.box('glow', 0, 2, c.d / 2 + 0.035, c.w * 0.6, 1.25, 0.05, C(0xdec59a));
   let rw = c.w, rd = c.d, roofY = h + 0.62, shift = 0;
   if (twoStorey) {
@@ -198,13 +206,14 @@ function emitChineseHouseLOD(c) {
     kit.box('solid', 0, h + 0.62, c.d / 2 + 0.35, c.w + 1, 0.2, 1.8, CN.tile, -0.1, 0, 0);
   }
   const rise = rd * 0.32, ridgeWidth = Math.max(0.7, rw - rd * 0.95 + 0.7);
-  // Three roof courses, two lifted eaves and a ridge retain the hip silhouette
-  // while a whole house uses 11 or 14 instances instead of dozens of bays.
+  // Every tier keeps all three hip-roof courses and the same ridge. The lifted
+  // strips sit inside the first course apart from a 5 cm rim, so outer tiers
+  // omit only those hidden strips (7/10 parts instead of 11/14 per house).
   for (let i = 0; i < 3; i++) {
     const f = i / 2;
     kit.box('solid', 0, roofY + rise * (i + 0.5) / 3, shift, lerp(rw + 2, ridgeWidth, f), rise / 3 + 0.05, lerp(rd + 2, 0.45, f), i === 0 ? CN.ink : CN.tile);
   }
-  for (const sz of [-1, 1]) kit.box('solid', 0, roofY + 0.22, shift + sz * (rd / 2 + 0.82), rw + 2, 0.12, 0.45, CN.jade, sz * 0.22, 0, 0);
+  if (lod < 3) for (const sz of [-1, 1]) kit.box('solid', 0, roofY + 0.22, shift + sz * (rd / 2 + 0.82), rw + 2, 0.12, 0.45, CN.jade, sz * 0.22, 0, 0);
   kit.box('solid', 0, roofY + rise + 0.13, shift, ridgeWidth + 0.35, 0.18, 0.24, CN.ink);
   kit.pop();
 }
@@ -232,17 +241,7 @@ function emitLandmarkLOD(a, lod) {
       simpleRoof(3.6, 6, 3, gz);
       break;
     }
-    case 'castle': {
-      for (let i = 0; i < 3; i++) kit.box('solid', 0, (i + 0.5) * 7 / 3, 0, 22 - i * 2.3, 7 / 3 + 0.04, (22 - i * 2.3) * 0.82, COL.stone);
-      let y = 7, w = 13.5, d = 11;
-      for (let i = 0; i < 4; i++) {
-        const h = i === 0 ? 4.2 : 3.2;
-        kit.box('solid', 0, y + h / 2, 0, w, h, d, COL.plaster);
-        kit.box('glow', 0, y + h * 0.6, d / 2 + 0.03, w * 0.55, 0.65, 0.06, C(0xf2d7a8));
-        y = simpleRoof(y + h, w, d, 0, C(0x3a4250), 1.6 + i * 0.15) - 0.4; w *= 0.78; d *= 0.8;
-      }
-      break;
-    }
+    case 'castle': castle(0, 0, 0, 0); break;
     case 'shrine':
       kit.box('solid', 0, 0.2, -4.5, 9.2, 0.6, 8, COL.stoneDark);
       kit.box('lacquer', 0, 2.65, -5.3, 5.6, 3, 4.4, COL.shuDark);
@@ -259,13 +258,7 @@ function emitLandmarkLOD(a, lod) {
       emitTownHouseLOD({ x: 7.5, y: 0, z: -4, yaw: Math.PI / 2, type: 'kura', w: 4.4, d: 5 }, lod);
       emitTownHouseLOD({ x: -8, y: 0, z: 4, yaw: 0.3, type: mulberry32(a.seed)() > 0.5 ? 'tile' : 'thatch', w: 7, d: 5.2 }, lod);
       break;
-    case 'teahouse':
-      kit.box('solid', 0, 1.6, 0, 8.4, 2.7, 5.2, COL.plasterShade);
-      simpleRoof(3.05, 8.4, 5.2, 0, COL.tile, 2.4);
-      kit.box('solid', 0, 0.35, 3.9, 8.4, 0.2, 2.6, COL.deck);
-      simpleRoof(2.85, 8.6, 2.35, 3.64, COL.tileB, 0.4);
-      kit.box('glow', 0, 1.6, 2.63, 6.4, 1.4, 0.06, COL.paper);
-      break;
+    case 'teahouse': teahouse(0, 0, 0, 0); break;
     case 'hut':
       kit.box('solid', 0, 1.4, 0, 6, 2.4, 4.6, COL.wood);
       simpleRoof(2.6, 6, 4.6, 0, C(0xe8edf3), 2.4);

@@ -1,4 +1,4 @@
-// Original Sakura World rules, kept independent of the rendering engine.
+// Hanami Japan generation rules, kept independent of the rendering engine.
 // A profile owns terrain, biome thresholds and landmark selection.
 const SAKURA_BIOME_NAMES = [
   ['海', 'Coast & sea'], ['浜', 'Pine beach'], ['里山', 'Satoyama'], ['桜', 'Sakura grove'], ['棚田', 'Rice terraces'],
@@ -65,6 +65,9 @@ function sakuraNatural(x, z, o = {}) {
   if (o.path > 0 && o.paddy) { o.paddy = 0; }
   o.beach = (1 - smoothstep(0.03, 0.2, f.C)) * (h > -0.4 && h < 2.4 ? 1 : 0);
   o.snowLine = 54 + f.detail * 8 + fbm(x * 0.01, z * 0.01, 2, 15) * 9;
+  o.waterLevel = o.paddy ? o.plate + 0.16 : h < 0 ? 0 : null;
+  o.waterKind = o.paddy ? 'paddy' : h < 0 ? f.land < 0.6 ? 'ocean' : o.lake > o.river ? 'lake' : 'river' : null;
+  o.waterId = o.paddy ? 'paddy:' + o.plate : o.waterKind; o.waterTint = null; o.waterClarity = 0.25; o.lakeLevel = null;
   o.h = h;
   o.f = f;
   return o;

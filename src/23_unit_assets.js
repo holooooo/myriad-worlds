@@ -104,27 +104,51 @@ function buildCrane(g) {
 }
 
 function buildBuffalo(g) {
-  const slate = new THREE.MeshStandardMaterial({ color: 0x495257, roughness: 0.9 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x2e3738, roughness: 0.9 });
-  const horn = new THREE.MeshStandardMaterial({ color: 0xbab49b, roughness: 0.8 });
-  const part = (geo, mat, scale, pos) => { const m = new THREE.Mesh(geo, mat); m.scale.set(...scale); m.position.set(...pos); g.add(m); return m; };
-  part(foliageGeo, slate, [0.74, 0.63, 1.38], [0, 1.0, -0.1]);
-  part(foliageGeo, dark, [0.48, 0.5, 0.63], [0, 1.18, 0.97]);
-  part(foliageGeo, slate, [0.39, 0.2, 0.28], [0, 1.0, 1.48]);
+  const slate = new THREE.MeshStandardMaterial({ color: 0x515b5b, roughness: 0.92, flatShading: true });
+  const shoulder = new THREE.MeshStandardMaterial({ color: 0x465252, roughness: 0.93, flatShading: true });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x273431, roughness: 0.94, flatShading: true });
+  const horn = new THREE.MeshStandardMaterial({ color: 0xaaa898, roughness: 0.82, flatShading: true });
+  const hoof = new THREE.MeshStandardMaterial({ color: 0x242b28, roughness: 0.95 });
+  const ivory = new THREE.MeshStandardMaterial({ color: 0xb9bda9, roughness: 0.9 });
+  const round = new THREE.SphereGeometry(1, 10, 7);
+  const part = (geo, mat, scale, pos, name, parent = g) => {
+    const m = new THREE.Mesh(geo, mat); m.scale.set(...scale); m.position.set(...pos); m.name = name || ''; parent.add(m); return m;
+  };
+  const segment = (a, b, ra, rb, mat, name, parent = g) => {
+    const av = new THREE.Vector3(...a), bv = new THREE.Vector3(...b), d = bv.clone().sub(av);
+    const m = part(new THREE.CylinderGeometry(rb, ra, d.length(), 6), mat, [1, 1, 1], av.add(bv).multiplyScalar(0.5).toArray(), name, parent);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); return m;
+  };
+  // Broad rib cage, lower belly and a muscular shoulder meet a tapered neck.
+  part(round, slate, [0.66, 0.58, 1.12], [0, 1.17, -0.12], 'buffalo-body');
+  part(round, shoulder, [0.58, 0.62, 0.55], [0, 1.24, 0.65], 'buffalo-shoulder');
+  part(round, shoulder, [0.48, 0.42, 0.61], [0, 1.0, -0.42], 'buffalo-belly');
+  const neck = part(round, shoulder, [0.4, 0.46, 0.61], [0, 1.19, 1.0], 'buffalo-neck'); neck.rotation.x = -0.2;
+  const head = new THREE.Group(); head.position.set(0, 1.2, 1.44); head.name = 'buffalo-head'; g.add(head);
+  part(round, slate, [0.34, 0.38, 0.42], [0, 0.14, 0.05], 'buffalo-skull', head);
+  part(round, shoulder, [0.3, 0.22, 0.33], [0, -0.07, 0.39], 'buffalo-muzzle', head);
+  part(round, dark, [0.29, 0.14, 0.13], [0, -0.055, 0.62], 'buffalo-nose', head);
+  for (const side of [-1, 1]) {
+    part(round, dark, [0.018, 0.026, 0.022], [side * 0.28, 0.24, 0.23], 'buffalo-eye-' + side, head);
+    part(round, ivory, [0.006, 0.007, 0.008], [side * 0.297, 0.247, 0.237], '', head);
+    part(round, hoof, [0.037, 0.023, 0.018], [side * 0.13, -0.05, 0.734], 'buffalo-nostril-' + side, head);
+    const ear = part(round, shoulder, [0.31, 0.075, 0.14], [side * 0.44, 0.27, -0.06], 'buffalo-ear-' + side, head); ear.rotation.z = side * 0.15;
+    part(round, slate, [0.22, 0.028, 0.09], [side * 0.48, 0.294, -0.052], '', head);
+    // Wide crescent horns sweep out, back and upward from the skull.
+    const points = [[side * 0.26, 0.43, -0.17], [side * 0.59, 0.43, -0.33], [side * 0.89, 0.54, -0.48], [side * 1.05, 0.78, -0.49], [side * 0.98, 0.96, -0.4]];
+    for (let i = 0; i < points.length - 1; i++) segment(points[i], points[i + 1], 0.11 - i * 0.024, i === 3 ? 0.012 : 0.087 - i * 0.024, horn, 'buffalo-horn-' + side + '-' + i, head);
+  }
   const legs = [];
   for (const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
-    legs.push(part(new THREE.CylinderGeometry(0.13, 0.09, 0.74, 5), dark, [1, 1, 1], [sx * 0.44, 0.39, sz * 0.8 - 0.12]));
+    // Animation pivots at the hip, so hooves stay connected during each stride.
+    const leg = new THREE.Group(); leg.position.set(sx * 0.46, 1.02, sz > 0 ? 0.68 : -0.91); g.add(leg); legs.push(leg);
+    segment([0, 0, 0], [sx * 0.02, -0.48, sz * 0.08], 0.17, 0.11, shoulder, 'buffalo-upper-leg', leg);
+    segment([sx * 0.02, -0.48, sz * 0.08], [0, -0.9, sz * 0.04], 0.11, 0.08, dark, 'buffalo-lower-leg', leg);
+    part(round, hoof, [0.125, 0.105, 0.17], [0, -0.92, sz * 0.04 + 0.05], 'buffalo-hoof', leg);
   }
-  for (const side of [-1, 1]) {
-    const ear = part(foliageGeo, dark, [0.3, 0.07, 0.15], [side * 0.46, 1.4, 0.92]); ear.rotation.z = side * 0.18;
-    // Three tapered segments create the broad crescent silhouette.
-    const points = [[side * 0.28, 1.55, 0.8], [side * 0.66, 1.53, 0.6], [side * 0.87, 1.77, 0.53], [side * 0.78, 1.97, 0.59]];
-    for (let i = 0; i < 3; i++) {
-      const a = new THREE.Vector3(...points[i]), b = new THREE.Vector3(...points[i + 1]), d = b.clone().sub(a);
-      const m = part(new THREE.CylinderGeometry(i === 2 ? 0.015 : 0.055 - i * 0.016, 0.08 - i * 0.025, d.length(), 5), horn, [1, 1, 1], a.add(b).multiplyScalar(0.5).toArray());
-      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
-    }
-  }
-  const tail = part(new THREE.CylinderGeometry(0.035, 0.025, 0.82, 4), dark, [1, 1, 1], [0, 0.79, -1.39]); tail.rotation.x = -0.25;
-  g.userData = { kind: 'buffalo', legs, tail };
+  const tail = new THREE.Group(); tail.position.set(0, 1.52, -1.19); tail.name = 'buffalo-tail-root'; g.add(tail);
+  segment([0, 0, 0], [0.06, -0.42, -0.13], 0.047, 0.029, shoulder, 'buffalo-tail', tail);
+  segment([0.06, -0.42, -0.13], [0.11, -0.86, -0.1], 0.029, 0.02, dark, '', tail);
+  part(round, dark, [0.085, 0.17, 0.075], [0.11, -0.93, -0.1], 'buffalo-tail-tuft', tail);
+  g.userData = { kind: 'buffalo', legs, tail, head };
 }

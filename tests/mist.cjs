@@ -23,4 +23,12 @@ GEN.seed = 4; calls = 0; api.updateMist(1, 3); assert.equal(calls, 1024, 'Seed c
 GEN.theme = 'shanshui'; GEN.profile = { mist: { cloudSea: true, base: 44 } }; calls = 0; api.updateMist(1, 4); assert.equal(calls, 1024, 'Theme change retained old fog');
 camera.position.x += 12; camera.position.z += 12; calls = 0; api.updateMist(1, 5); assert.equal(calls, 63, 'Diagonal movement must sample only new atlas borders');
 camera.position.x += 1000; calls = 0; api.updateMist(1, 6); assert.equal(calls, 1024, 'Teleport did not rebuild fog');
-console.info(JSON.stringify({ initialSamples: 1024, oneCellSamples: 32, diagonalSamples: 63, stableWorldSpace: true, seedThemeInvalidation: true }));
+GEN.sample = () => ({ h: 16, waterLevel: 22, waterKind: 'lake', biome: 3, town: 0, pad: 0, street: 0, snow: 0 });
+GEN.fbm = () => 0.5; GEN.seed++;
+api.updateMist(1, 7);
+assert(api.MIST.data[0] > 0.05, 'Raised lake must produce water mist');
+assert.equal(api.MIST.data[1], 22.75, 'Water mist must follow the actual lake surface');
+GEN.sample = () => ({ h: -6, waterLevel: 0, waterKind: 'ocean', biome: 0, town: 0, pad: 0, street: 0, snow: 0 });
+GEN.seed++; api.updateMist(1, 8);
+assert.equal(api.MIST.data[0], 0, 'Open ocean must not become a lake mist habitat');
+console.info(JSON.stringify({ initialSamples: 1024, oneCellSamples: 32, diagonalSamples: 63, stableWorldSpace: true, seedThemeInvalidation: true, raisedLakeMist: true }));

@@ -1,0 +1,36 @@
+{
+  "label": "china-release-first",
+  "state": {
+    "seed": "sakura",
+    "theme": "shanshui",
+    "language": "en",
+    "mood": "golden",
+    "quality": "high",
+    "biome": "Cloud pines"
+  },
+  "viewport": [
+    1280,
+    720
+  ],
+  "pixelRatio": 1.6,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)",
+  "seconds": 19.988299999982118,
+  "frames": 1128,
+  "averageFPS": 56.43301331283847,
+  "p95ms": 23.100000023841858,
+  "start": [
+    -252.09487518357983,
+    47.89154611407484,
+    525.6044964331882
+  ],
+  "end": [
+    17.866645319218502,
+    36.32154136557792,
+    468.70106341443454
+  ],
+  "follow": "train-0",
+  "view": "first",
+  "groundClearance": 5.823481518840261,
+  "errors": 0,
+  "visibleInstances": 503260
+}

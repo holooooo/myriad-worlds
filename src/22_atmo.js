@@ -4,23 +4,23 @@
 const MOODS = {
   morning: {
     label: ['朝霧', 'Morning mist'], icon: 'sunrise',
-    skyTop: 0x3b73bd, skyMid: 0x7eaad8, skyHor: 0xdcd6d0, glow: 0xffc690, glowPow: 7, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.00022,
+    skyTop: 0x3b73bd, skyMid: 0x7eaad8, skyHor: 0xdcd6d0, glow: 0xffc690, glowPow: 36, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.000018,
     stars: 0, moon: 0, cloud: 0.3, cloudCol: 0xfff3e8, cloudShade: 0xaab7cc,
-    fog: 0xb9c6d4, fogD: 0.005, fogFall: 0.05, haze: 0.00014, fogMax: 0.82, fogGlow: 0x7a5a38, fogGlowPow: 6,
+    fog: 0xb9c6d4, fogD: 0.005, fogFall: 0.05, haze: 0.00014, fogMax: 0.82, fogGlow: 0x7a5a38, fogGlowPow: 22,
     key: 0xffdcb8, keyI: 3.3, keyDir: [0.74, 0.36, -0.56], hemiSky: 0xb3c9ea, hemiGround: 0x5e5240, hemiI: 1.15,
     exposure: 0.95, bloom: 0.22, lamps: 0, glowWin: 0.05, blossomSelf: 0.03, fireflies: 0, rain: 0, wet: 0,
-    vDens: 0.011, vFall: 0.16, vBase: 0, vSun: 0xffd9b0, vSunI: 1.4, vAmb: 0x9fb0c6, vAmbI: 0.5, vAniso: 0.62, vNoise: 0.75,
+    vDens: 0.011, vFall: 0.16, vBase: 0, vSun: 0xffd9b0, vSunI: 0.85, vAmb: 0x9fb0c6, vAmbI: 0.5, vAniso: 0.62, vNoise: 0.75,
     shallow: 0x4d7d78, deep: 0x153743, wSun: 0xfff0d0,
     gLift: [0.0, 0.004, 0.02], gGain: [1.04, 1.0, 0.95], gSat: 1.04, gContrast: 1.04, vig: 0.5,
   },
   golden: {
     label: ['夕焼け', 'Golden hour'], icon: 'sunset',
-    skyTop: 0x2f4f8e, skyMid: 0x7c8fbd, skyHor: 0xf1b98a, glow: 0xff9a4a, glowPow: 5, sunDir: [-0.82, 0.07, -0.56], sunCol: 0xffd09a, sunSize: 0.00032,
+    skyTop: 0x2f4f8e, skyMid: 0x7c8fbd, skyHor: 0xf1b98a, glow: 0xff9a4a, glowPow: 32, sunDir: [-0.82, 0.07, -0.56], sunCol: 0xffd09a, sunSize: 0.000025,
     stars: 0, moon: 0, cloud: 0.42, cloudCol: 0xffc6a0, cloudShade: 0x6f6d8f,
-    fog: 0xc59a86, fogD: 0.0042, fogFall: 0.045, haze: 0.00028, fogMax: 0.88, fogGlow: 0xa8603a, fogGlowPow: 5,
+    fog: 0xc59a86, fogD: 0.0042, fogFall: 0.045, haze: 0.00028, fogMax: 0.88, fogGlow: 0xa8603a, fogGlowPow: 24,
     key: 0xffb27a, keyI: 3.6, keyDir: [-0.8, 0.22, -0.55], hemiSky: 0x9fb0d8, hemiGround: 0x5a4034, hemiI: 1.05,
     exposure: 0.92, bloom: 0.3, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.06, fireflies: 0, rain: 0, wet: 0,
-    vDens: 0.0035, vFall: 0.05, vBase: 0, vSun: 0xffa868, vSunI: 1.1, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.72, vNoise: 0.5,
+    vDens: 0.0035, vFall: 0.05, vBase: 0, vSun: 0xffa868, vSunI: 0.62, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.64, vNoise: 0.5,
     shallow: 0x55706a, deep: 0x1a2c38, wSun: 0xffc080,
     gLift: [0.012, 0.0, 0.03], gGain: [1.06, 0.99, 0.92], gSat: 1.06, gContrast: 1.06, vig: 0.6,
   },
@@ -122,7 +122,11 @@ const VOL_FS = `
     vec4 a = texture2D(uMistMap, (cell + 0.5) * texel), b = texture2D(uMistMap, (cell + vec2(1.5, 0.5)) * texel);
     vec4 c = texture2D(uMistMap, (cell + vec2(0.5, 1.5)) * texel), d = texture2D(uMistMap, (cell + 1.5) * texel);
     vec4 m = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    if (m.x * uMistAmount < 0.0000001) return 0.0;
     float height = (p.y - m.y) / max(m.z, 0.8);
+    // Above/below the layer its Gaussian tail is below 1e-7. Avoid eight
+    // noise hashes per step where no visible local mist can contribute.
+    if (abs(height) > 4.2) return 0.0;
     float curl = n3(p * vec3(0.055, 0.22, 0.055) - vec3(uTime * 0.025, 0.0, uTime * 0.01));
     float pulse = 0.65 + 0.35 * sin(uTime * 0.09 + p.x * 0.014 + p.z * 0.009);
     float border = smoothstep(0.0, 0.09, min(min(uv.x, uv.y), min(1.0-uv.x, 1.0-uv.y)));
@@ -130,6 +134,8 @@ const VOL_FS = `
   }
   float cloudSea(vec3 p) {
     if (uCloudSea.x < 0.001) return 0.0;
+    // Noise lies in [0,1], so no density exists outside these bounds.
+    if (p.y <= uCloudSea.y - 28.0 || p.y >= uCloudSea.y + uCloudSea.z + 9.0) return 0.0;
     float billow = n3(vec3(p.xz * 0.004 - vec2(uTime * 0.002, 0.0), 0.4));
     float top = uCloudSea.y + billow * uCloudSea.z;
     float layer = smoothstep(top - 28.0, top - 13.0, p.y) * (1.0 - smoothstep(top - 3.0, top + 9.0, p.y));
@@ -149,15 +155,19 @@ const VOL_FS = `
     const int STEPS = VOL_STEPS;
     float stepLen = dist / float(STEPS);
     float cosT = dot(rd, uSunDir);
-    vec3 sunL = uSunCol * (hg(cosT, uAniso) * 6.0 + hg(cosT, -0.25) * 1.2);
+    // Keep the forward phase peak bounded so warm fog retains depth instead
+    // of producing a screen-sized white/yellow halo around low sunlight.
+    float phase = 0.08 + min(hg(cosT, uAniso) * 1.7, 0.7) + hg(cosT, -0.25) * 0.45;
+    vec3 sunL = uSunCol * phase;
     float T = 1.0; vec3 S = vec3(0.0);
     for (int i = 0; i < STEPS; i++) {
       float t = (float(i) + ign) * stepLen;
       vec3 p = uCamPos + rd * t;
       float h = p.y - uBase;
       float dens = uDens * exp(-max(h, -8.0) * uFall);
-      if (uNoise > 0.0) dens *= max(0.0, 1.0 + uNoise * (n3(p * 0.045 + vec3(uTime * 0.35, 0.0, uTime * 0.12)) * 1.6 - 0.8 + (n3(p * 0.13 - uTime * 0.2) - 0.5) * 0.6));
+      if (uNoise > 0.0 && dens > 0.0000001) dens *= max(0.0, 1.0 + uNoise * (n3(p * 0.045 + vec3(uTime * 0.35, 0.0, uTime * 0.12)) * 1.6 - 0.8 + (n3(p * 0.13 - uTime * 0.2) - 0.5) * 0.6));
       dens += localMist(p) + cloudSea(p);
+      if (dens < 0.0000001) continue;
       float vis = 1.0;
       if (uShadowOn > 0.5) {
         vec4 sc = uShadowM * vec4(p, 1.0);
@@ -289,13 +299,13 @@ function applyAtmosphere() {
   const A = ATM;
   SKY_U.uTop.value.copy(A.skyTop); SKY_U.uMid.value.copy(A.skyMid); SKY_U.uHor.value.copy(A.skyHor);
   SKY_U.uGlow.value.copy(A.glow); SKY_U.uGlowPow.value = A.glowPow; SKY_U.uSunDir.value.copy(A.sunDir);
-  SKY_U.uSunCol.value.copy(A.sunCol).multiplyScalar(6); SKY_U.uSunSize.value = A.sunSize;
+  SKY_U.uSunCol.value.copy(A.sunCol).multiplyScalar(1.7); SKY_U.uSunSize.value = A.sunSize;
   SKY_U.uStars.value = A.stars; SKY_U.uCloud.value = A.cloud; SKY_U.uMoon.value = A.moon;
   SKY_U.uMoonDir.value.copy(A.keyDir);
   SKY_U.uCloudCol.value.copy(A.cloudCol); SKY_U.uCloudShade.value.copy(A.cloudShade);
   scene.fog.color.copy(A.fog); scene.fog.near = A.fogD; scene.fog.far = A.fogFall;
   FOGU.sun.x = A.sunDir.x; FOGU.sun.y = A.sunDir.y; FOGU.sun.z = A.sunDir.z; FOGU.sun.w = A.fogGlowPow;
-  FOGU.glow.x = A.fogGlow.r; FOGU.glow.y = A.fogGlow.g; FOGU.glow.z = A.fogGlow.b; FOGU.glow.w = A.haze;
+  FOGU.glow.x = A.fogGlow.r * 0.24; FOGU.glow.y = A.fogGlow.g * 0.24; FOGU.glow.z = A.fogGlow.b * 0.24; FOGU.glow.w = A.haze;
   FOGU.params.y = A.fogMax;
   key.color.copy(A.key); key.intensity = A.keyI;
   hemi.color.copy(A.hemiSky); hemi.groundColor.copy(A.hemiGround); hemi.intensity = A.hemiI;
@@ -317,15 +327,15 @@ function applyAtmosphere() {
   WATER_U.uSunDir.value.copy(A.keyDir);
   WATER_U.uRain.value = A.rain;
   FX_APPLY(A);
+  applySkySettings();
 }
 function setMood(name, instant = false) {
   if (!MOODS[name]) return;
   LOG.info('business', 'atmosphere-changed', { mood: name });
   moodFrom = cloneMood(ATM); moodTo = MOODC[name]; moodName = name; moodT = instant ? 1 : 0;
   if (instant) { blendMood(1); applyAtmosphere(); refreshEnv(); updateShadow(0, true); }
-  const L = MOODS[name].label;
-  const chineseLabel = { morning: '晨雾', golden: '落日', dusk: '薄暮', night: '月夜', rain: '春雨' };
-  $('moodLine').textContent = L[1] + ' · ' + (THEME === 'shanshui' ? chineseLabel[name] : L[0]);
+  $('moodLine').textContent = I18N.t('mood.' + name);
+  SKY_SETTINGS.sync();
   document.querySelectorAll('#moods button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mood === name)));
   if (typeof audio !== 'undefined') audio.setMood(name);
 }

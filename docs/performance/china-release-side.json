@@ -1,0 +1,36 @@
+{
+  "label": "china-release-side",
+  "state": {
+    "seed": "sakura",
+    "theme": "shanshui",
+    "language": "en",
+    "mood": "golden",
+    "quality": "high",
+    "biome": "Jiuzhai lakes"
+  },
+  "viewport": [
+    1280,
+    720
+  ],
+  "pixelRatio": 1.6,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)",
+  "seconds": 20.00109999999404,
+  "frames": 1152,
+  "averageFPS": 57.59683217424758,
+  "p95ms": 22.19999998807907,
+  "start": [
+    1022.8618406527087,
+    40.047194820448944,
+    292.8794618703315
+  ],
+  "end": [
+    1266.5168320140485,
+    42.288894385514716,
+    280.07072562302653
+  ],
+  "follow": "train-0",
+  "view": "side",
+  "groundClearance": 21.54019331112646,
+  "errors": 0,
+  "visibleInstances": 311403
+}

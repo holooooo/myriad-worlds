@@ -1,6 +1,7 @@
 // Shanshui assets and ecosystem selection share the same candidate seed at
 // every distance. LOD changes detail inside an asset, never its species.
 function pickShanshuiPlant(s, r, r2, nearWater) {
+  if (s.waterLevel != null) return null;
   if (s.paddy || s.snow) return s.snow && r < 0.16 ? 'rock' : null;
   switch (s.biome) {
     case B.SAKURA: return r < 0.46 ? 'peach' : r < 0.57 ? 'broadleaf' : null;
@@ -10,7 +11,7 @@ function pickShanshuiPlant(s, r, r2, nearWater) {
     case B.SATO:
       if (nearWater && r < 0.14) return 'willow';
       return r < 0.06 ? 'peach' : r < 0.19 ? 'broadleaf' : r < 0.24 ? 'cypress' : null;
-    case B.MARSH: return s.h < 0.8 && r < 0.17 ? 'lotus' : r < 0.38 ? 'reed' : r < 0.44 ? 'willow' : null;
+    case B.MARSH: return shoreHeight(s) < 0.8 && r < 0.17 ? 'lotus' : r < 0.38 ? 'reed' : r < 0.44 ? 'willow' : null;
     case B.MEADOW: return r < 0.03 ? 'peach' : r < 0.09 ? 'wildflowers' : null;
     case B.BEACH: return s.h > 1 && r < 0.18 ? 'huangshanPine' : r < 0.28 ? 'rock' : null;
     case B.TOWN: return nearWater && r < 0.12 ? 'willow' : null;
@@ -87,10 +88,12 @@ function emitShanshuiPlant(c, lod) {
   kit.detail = previous;
 }
 function buildShanshuiStructure(a, lod) {
-  if (!['changan', 'monastery', 'paifang', 'waterPavilion', 'terraceFarm', 'mountainPavilion'].includes(a.type)) return false;
+  if (!['changan', 'palace', 'chineseTeahouse', 'monastery', 'paifang', 'waterPavilion', 'terraceFarm', 'mountainPavilion'].includes(a.type)) return false;
   const previous = kit.detail; kit.detail = lod === 0 ? 1 : lod === 1 ? 0.45 : 0.25;
   kit.push(a.x, a.h, a.z, a.yaw);
   switch (a.type) {
+    case 'palace': chinesePalaceLocal(a.seed); break;
+    case 'chineseTeahouse': chineseTeahouseLocal(a.seed); break;
     case 'changan': {
       chineseWallLocal(62, 54, 4.2);
       // Open stone gateway supports a red-pillared watch hall.

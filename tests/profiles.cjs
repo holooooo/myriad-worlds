@@ -20,7 +20,7 @@ assert.throws(() => GEN.setTheme('missing'), /Unknown world theme/);
 assert.equal(GEN.theme, 'sakura', 'Rejected theme must not mutate active world');
 let landmarks = 0, instances = 0, palettes = 0;
 GEN.setTheme('shanshui');
-for (const target of GEN.profile.spawnOrder.concat('paifang')) {
+for (const target of GEN.profile.spawnOrder.concat('paifang', 'palace', 'chineseTeahouse')) {
   const a = GEN.findBiome(target, 0, 0, 7000);
   assert(a, 'Missing Chinese landmark: ' + target);
   landmarks++;

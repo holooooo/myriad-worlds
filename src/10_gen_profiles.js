@@ -2,11 +2,11 @@
 // A theme switch clears derived caches; it never changes the world seed.
 const WORLD_PROFILES = Object.freeze({
   sakura: Object.freeze({
-    id: 'sakura', label: 'Sakura World', name: '樱花世界',
+    id: 'sakura', label: 'Hanami Japan', name: '花见日本',
     natural: sakuraNatural, classify: sakuraClassify, anchor: sakuraAnchor, biomeNames: SAKURA_BIOME_NAMES,
     landmarks: [
       { key: 'temple', label: '山寺', sub: 'Mountain temple' }, { key: 'shrine', label: '朱の鳥居', sub: 'Crimson shrine' },
-      { key: 'castle', label: '城下町', sub: 'Castle town' }, { key: B.SAKURA, label: '桜の森', sub: 'Sakura grove' },
+      { key: 'castle', label: '大名の城', sub: 'Daimyo keep · bailey towers' }, { key: 'teahouse', label: '茶楼', sub: 'Tea rooms · lantern verandas' }, { key: B.SAKURA, label: '桜の森', sub: 'Sakura grove' },
       { key: B.PADDY, label: '棚田', sub: 'Rice terraces' }, { key: B.BAMBOO, label: '竹林', sub: 'Bamboo forest' },
       { key: B.MARSH, label: '湿地', sub: 'Marshland' }, { key: B.LAKE, label: '湖', sub: 'Lake shore' },
       { key: B.PINE, label: '高原', sub: 'Pine highland' }, { key: 'rail', label: '鉄道', sub: 'Railway' },
@@ -23,10 +23,12 @@ const WORLD_PROFILES = Object.freeze({
     spawnOrder: ['temple', 'castle', 'shrine', 'teahouse', 'farm'],
   }),
   shanshui: Object.freeze({
-    id: 'shanshui', label: 'Shanshui World', name: '中式山水',
+    id: 'shanshui', label: 'Shanshui China', name: '中式山水',
     natural: shanshuiNatural, classify: shanshuiClassify, anchor: shanshuiAnchor, biomeNames: SHANSHUI_BIOME_NAMES,
     landmarks: [
-      { key: 'changan', label: '长安灯市', sub: 'City walls · palaces · lanterns' },
+      { key: 'changan', label: '长安灯市', sub: 'City walls · lantern markets' },
+      { key: 'palace', label: '王宫御苑', sub: 'Grand halls · inner courts · galleries' },
+      { key: 'chineseTeahouse', label: '临风茶楼', sub: 'Tea rooms · balconies · lanterns' },
       { key: B.CEDAR, label: '黄山云海', sub: 'Granite needles · cliff pines' },
       { key: B.PADDY, label: '云岭梯田', sub: 'Contour terraces · water buffalo' },
       { key: B.LAKE, label: '九寨彩湖', sub: 'Mineral lakes · wooded shores' },

@@ -8,8 +8,8 @@ self.onmessage = function (e) {
     if (d.type === 'seed') { GEN.setTheme(d.theme || 'sakura'); GEN.setSeed(d.seed); return; }
     if (d.type === 'chunk') {
       var c = GEN.genChunk(d.cx, d.cz, d.lod), tr = [c.terrain.pos.buffer, c.terrain.nor.buffer, c.terrain.col.buffer, c.terrain.idx.buffer, c.tuft.m.buffer, c.tuft.c.buffer, c.lights.buffer, c.spots.petal.buffer, c.spots.smoke.buffer, c.spots.fly.buffer];
-      if (c.water) tr.push(c.water.pos.buffer, c.water.depth.buffer, c.water.idx.buffer);
-      if (c.paddy) tr.push(c.paddy.pos.buffer, c.paddy.depth.buffer, c.paddy.idx.buffer);
+      if (c.water) tr.push(c.water.pos.buffer, c.water.depth.buffer, c.water.idx.buffer, c.water.tint.buffer, c.water.clarity.buffer);
+      if (c.paddy) tr.push(c.paddy.pos.buffer, c.paddy.depth.buffer, c.paddy.idx.buffer, c.paddy.tint.buffer, c.paddy.clarity.buffer);
       for (var k in c.inst) tr.push(c.inst[k].m.buffer, c.inst[k].c.buffer);
       self.postMessage({ type: 'chunk', key: d.key, gen: d.gen, c: c }, tr);
     }
@@ -30,6 +30,7 @@ for (let i = 0; i < NW; i++) {
       ST.errors++;
       LOG.error('error', 'chunk-worker-failed', { key: d.key, generation: d.gen, message: d.msg });
       const ch = ST.chunks.get(d.key); if (ch && d.gen === genTag) ch.state = 'failed';
+      STREAM.needsUpdate = true;
       return;
     }
     if (d.gen !== genTag) return;
@@ -99,6 +100,8 @@ function integrate(d) {
     const wg = new THREE.BufferGeometry();
     wg.setAttribute('position', new THREE.BufferAttribute(wd.pos, 3));
     wg.setAttribute('depth', new THREE.BufferAttribute(wd.depth, 1));
+    wg.setAttribute('tint', new THREE.BufferAttribute(wd.tint, 3));
+    wg.setAttribute('clarity', new THREE.BufferAttribute(wd.clarity, 1));
     wg.setIndex(new THREE.BufferAttribute(wd.idx, 1));
     wg.boundingBox = _bb.clone(); wg.boundingSphere = g.boundingSphere.clone();
     const wm = new THREE.Mesh(wg, mat);
@@ -126,12 +129,14 @@ function integrate(d) {
     ch.blocks.push({ pool: P.tuft, s: slot, n: nn, m: tm, c: tc, dirty: true });
   }
   ch.state = 'ready';
+  STREAM.needsUpdate = true;
   ch.cx0 = c.x0 + c.size / 2; ch.cz0 = c.z0 + c.size / 2;
 }
 const ZERO16 = new Float32Array(16 * 4096);
 function setShown(ch, v) {
   if (ch.shown === v) return;
-  ch.shown = v;
+  ch.shown = v; ch.instancesVisible = v;
+  STREAM.visibilityDirty = true;
   for (const m of ch.meshes) m.visible = v;
   if (!v) { for (const b of ch.blocks) { b.pool.clear(b.s, b.n); b.dirty = true; } }
   else for (const b of ch.blocks) if (b.dirty) { b.pool.rewrite(b.s, b.n, b.m, b.c); b.dirty = false; }
@@ -144,8 +149,11 @@ function disposeChunk(ch) {
   ch.meshes = []; ch.blocks = []; ch.data = null;
   ST.chunks.delete(ch.key);
 }
-const STREAM = { regions: [], dirtyShadow: true, lastCam: new THREE.Vector3(1e9, 0, 0), readyFrac: 0, visibleWater: false };
+const STREAM = { needsUpdate: true, cell: '', regions: [], dirtyShadow: true, lastCam: new THREE.Vector3(1e9, 0, 0), readyFrac: 0, visibleWater: false };
 function streamUpdate(cam, force) {
+  const size = GEN.LODS[0].size, cell = Math.floor(cam.x / size) + ':' + Math.floor(cam.z / size);
+  if (!force && !STREAM.needsUpdate && cell === STREAM.cell) { pump(); return; }
+  STREAM.cell = cell; STREAM.needsUpdate = false;
   ST.frame++;
   const R = desired(cam);
   STREAM.regions = R;
@@ -207,7 +215,8 @@ function resetWorld(seed, theme = GEN.theme) {
   for (const w of workers) w.postMessage({ type: 'seed', seed: SEED, theme: GEN.theme });
   for (const ch of [...ST.chunks.values()]) { if (ch.state === 'ready') disposeChunk(ch); }
   ST.chunks.clear(); ST.queue = []; ST.ready = [];
-  STREAM.dirtyShadow = true;
+  STREAM.dirtyShadow = true; STREAM.needsUpdate = true;
+  SETTLEMENTS.reset();
   LOG.info('business', 'world-generation-reset', { seed: SEED, theme: GEN.theme, generation: genTag });
 }
 

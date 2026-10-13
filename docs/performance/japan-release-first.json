@@ -1,0 +1,36 @@
+{
+  "label": "japan-release-first",
+  "state": {
+    "seed": "sakura",
+    "theme": "sakura",
+    "language": "en",
+    "mood": "golden",
+    "quality": "high",
+    "biome": "Satoyama"
+  },
+  "viewport": [
+    1280,
+    720
+  ],
+  "pixelRatio": 1.6,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)",
+  "seconds": 19.97409999999404,
+  "frames": 954,
+  "averageFPS": 47.76185159783343,
+  "p95ms": 27.599999994039536,
+  "start": [
+    2357.364725980774,
+    12.824825209699647,
+    450.20502832654296
+  ],
+  "end": [
+    2626.3800281389103,
+    8.955382032677068,
+    536.2817734780552
+  ],
+  "follow": "train-0",
+  "view": "first",
+  "groundClearance": 5.184438730160656,
+  "errors": 0,
+  "visibleInstances": 512481
+}

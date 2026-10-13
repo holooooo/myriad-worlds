@@ -182,9 +182,13 @@ function railKnot(n, i) {
   const k = n + ':' + i;
   let v = railKnots.get(k);
   if (v === undefined) {
-    let s = 0;
-    for (const d of [-60, -30, 0, 30, 60]) { const x = i * RK + d; s += Math.max(natural(x, railZ(n, x), {}).h, 0); }
-    v = clamp(s / 5 + 1.6, 3.2, 58);
+    let s = 0, water = -Infinity;
+    for (const d of [-60, -30, 0, 30, 60]) {
+      const x = i * RK + d, terrain = natural(x, railZ(n, x), {});
+      s += Math.max(terrain.h, terrain.waterLevel || 0);
+      if (terrain.waterLevel !== null && !terrain.paddy) water = Math.max(water, terrain.waterLevel + 2.2);
+    }
+    v = Math.max(clamp(s / 5 + 1.6, 3.2, 100), water);
     railKnots.set(k, v);
     if (railKnots.size > 20000) railKnots.clear();
   }
@@ -194,9 +198,22 @@ function railH(n, x) {
   const i = Math.floor(x / RK), t = x / RK - i;
   const p0 = railKnot(n, i - 1), p1 = railKnot(n, i), p2 = railKnot(n, i + 1), p3 = railKnot(n, i + 2);
   const t2 = t * t, t3 = t2 * t;
-  return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+  const grade = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+  const surface = natural(x, railZ(n, x), {});
+  return surface.waterLevel !== null && !surface.paddy ? Math.max(grade, surface.waterLevel + 2.2) : grade;
 }
 function railLine(z) { return Math.round((z - 420) / RAIL_SP); }
+// Conservative clearance for an asset footprint, including trackside space.
+function railClearance(x, z, radius = 0) {
+  const line = railLine(z);
+  let clearance = Infinity;
+  for (const dx of [-radius, -radius * 0.5, 0, radius * 0.5, radius]) {
+    const px = x + dx, d = Math.abs(z - railZ(line, px)) / Math.sqrt(1 + railDZ(line, px) ** 2);
+    clearance = Math.min(clearance, d - radius - 7);
+  }
+  return clearance;
+}
+
 
 // ---------------------------------------------------------------------
 //  Structures: one candidate per 176 m region, typed by its biome
@@ -213,6 +230,7 @@ function anchor(rx, rz) {
   const nl = railLine(z), rd = Math.abs(z - railZ(nl, x));
   const roll = r();
   WORLD_PROFILE.anchor(a, n, r, roll, rd);
+  if (a.type && railClearance(a.x, a.z, Math.max(a.r, 8) + 3) < 0) { a.type = null; a.r = 0; }
   anchorCache.set(k, a);
   if (anchorCache.size > 6000) anchorCache.clear();
   return a;
@@ -227,6 +245,55 @@ function nearAnchors(x, z, out) {
   return out;
 }
 
+// Navigation reads the same waterfront footprints that the asset builders emit.
+// Dry building pads are already handled by sample(); a lake is not a building pad.
+const waterfrontAnchors = [], pavilionBridges = new WeakMap();
+function pavilionBridge(a) {
+  if (pavilionBridges.has(a)) return pavilionBridges.get(a);
+  let best = null;
+  for (let k = 0; k < 16 && !best; k++) for (let d = 6; d < 48; d += 2) {
+    const ang = (k / 16) * Math.PI * 2;
+    if (sample(a.x + Math.cos(ang) * d, a.z + Math.sin(ang) * d, {}).h > 0.4) {
+      if (!best || d < best.d) best = { d, ang };
+      break;
+    }
+  }
+  if (best && best.d < 46) {
+    const dx = Math.cos(best.ang), dz = Math.sin(best.ang);
+    best = { ax: a.x + dx * 3.2, az: a.z + dz * 3.2,
+      bx: a.x + dx * (best.d + 1.5), bz: a.z + dz * (best.d + 1.5), arch: Math.min(2.2, best.d * 0.12) };
+  } else best = null;
+  pavilionBridges.set(a, best);
+  return best;
+}
+function structureAt(x, z, padding = 0) {
+  padding = Number.isFinite(padding) ? Math.max(0, padding) : 0;
+  nearAnchors(x, z, waterfrontAnchors);
+  for (const a of waterfrontAnchors) {
+    if (a.type !== 'waterPavilion' && a.type !== 'pavilion' && a.type !== 'seaTorii') continue;
+    const dx = x - a.x, dz = z - a.z, cy = Math.cos(a.yaw), sy = Math.sin(a.yaw);
+    const lx = cy * dx - sy * dz, lz = sy * dx + cy * dz;
+    if (a.type === 'waterPavilion') {
+      if (Math.abs(lx) <= 3.4 + padding && Math.abs(lz) <= 3.4 + padding) return a;
+      if (!a.r && Math.abs(lx) <= 1.05 + padding && Math.abs(lz - 6.4) <= 3.75 + padding) return a;
+    } else if (a.type === 'seaTorii') {
+      const post = 3.6 * 2.1 / 2, half = 0.36 * 2.1 * 1.3 / 2;
+      if (Math.abs(Math.abs(lx) - post) <= half + padding && Math.abs(lz) <= half + padding) return a;
+    } else {
+      if (Math.abs(lx) <= 3.2 + padding && Math.abs(lz) <= 3.2 + padding) return a;
+      const bridge = pavilionBridge(a);
+      if (bridge) {
+        const vx = bridge.bx - bridge.ax, vz = bridge.bz - bridge.az, length = Math.hypot(vx, vz);
+        const px = x - (bridge.ax + bridge.bx) / 2, pz = z - (bridge.az + bridge.bz) / 2;
+        // arcBridge extends its deck by 0.5 m at both ends and its rails by 0.27 m.
+        if (Math.abs((px * vx + pz * vz) / length) <= length / 2 + 0.5 + padding &&
+            Math.abs((px * vz - pz * vx) / length) <= 1.47 + padding) return a;
+      }
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------
 //  Full sample: natural + town streets + rail embankments + pads
 // ---------------------------------------------------------------------
@@ -236,6 +303,8 @@ function sample(x, z, o = SS) {
   const n = natural(x, z);
   let h = n.h;
   o.nat = h; o.paddy = n.paddy; o.plate = n.plate; o.river = n.river; o.lake = n.lake; o.town = n.town; o.valley = n.valley;
+  o.waterLevel = n.waterLevel == null ? null : n.waterLevel; o.waterKind = n.waterKind || null;
+  o.waterTint = n.waterTint || null; o.waterId = n.waterId || null; o.waterClarity = n.waterClarity || 0; o.lakeLevel = n.lakeLevel == null ? null : n.lakeLevel;
   o.beach = n.beach; o.mt = n.mt; o.path = n.path; o.snowLine = n.snowLine; o.land = n.land;
   o.sak = n.f.sak; o.bam = n.f.bam; o.Hu = n.f.Hu;
   // town street grid
@@ -244,22 +313,9 @@ function sample(x, z, o = SS) {
     const gx = ((x % 34) + 34) % 34, gz = ((z % 26) + 26) % 26;
     if (gx < 3.6 || gz < 3.2) o.street = 1;
   }
-  // rail
-  o.rail = 0; o.tunnel = 0;
+  // Rail carving is applied after structure pads so no pad can refill a cut.
+  o.rail = 0; o.tunnel = 0; o.railCut = 0;
   const ln = railLine(z), rz = railZ(ln, x), rd = Math.abs(z - rz) / Math.sqrt(1 + railDZ(ln, x) ** 2);
-  if (rd < 16) {
-    const rh = railH(ln, x);
-    o.railH = rh; o.railN = ln;
-    if (h > rh + 11) o.tunnel = 1;
-    else {
-      const w = 1 - smoothstep(3.2, 10 + Math.abs(h - rh) * 0.6, rd);
-      if (h > rh - 2.2 || rd < 4.4) {
-        if (h > rh - 2.2) h = lerp(h, rh - 0.35, w);
-        o.rail = 1 - smoothstep(2.2, 2.8, rd);
-      }
-      if (o.rail > 0 || w > 0.5) { o.paddy = 0; o.path = 0; o.street = 0; }
-    }
-  }
   // structure pads
   o.pad = 0; o.padType = null;
   nearAnchors(x, z, _anc);
@@ -275,15 +331,37 @@ function sample(x, z, o = SS) {
     }
   }
   if (o.paddy) h = o.plate;
+  if (rd < 40) {
+    const rh = railH(ln, x); o.railH = rh; o.railN = ln;
+    const cut = h > rh - 0.65, shoulder = Math.min(36, 10 + Math.max(0, h - rh) * 0.45);
+    const w = 1 - smoothstep(4.6, shoulder, rd);
+    if (cut) { h = lerp(h, rh - 0.65, w); o.railCut = w; if (w > 0.001) o.paddy = 0; }
+    o.rail = 1 - smoothstep(2.5, 4.6, rd);
+    if (o.rail > 0 || w > 0.5) { o.paddy = 0; o.path = 0; o.street = 0; }
+  }
   o.h = h;
   o.snow = h > n.snowLine ? 1 : 0;
+  if (o.waterLevel !== null && (h >= o.waterLevel || o.waterKind === 'paddy' && !o.paddy)) {
+    o.waterLevel = null; o.waterKind = null; o.waterId = null;
+  }
   o.biome = classify(o, h, n, x, z);
   // biome wobble may claim a paddy cell for another biome: release the terrace flattening
   if (o.paddy && o.biome !== B.PADDY) {
     o.h = n.prePaddy !== undefined ? n.prePaddy : o.nat;   // smooth pre-terrace height
     o.paddy = 0; o.plate = 0;
   }
+  if (o.waterLevel !== null && (o.h >= o.waterLevel || o.waterKind === 'paddy' && !o.paddy)) {
+    o.waterLevel = null; o.waterKind = null; o.waterId = null;
+  }
   return o;
+}
+function waterAt(x, z) {
+  const s = sample(x, z, {});
+  if (s.waterLevel === null) return null;
+  const kind = s.waterKind || 'river', hex = WORLD_PROFILE.water[kind] || WORLD_PROFILE.water.shallow;
+  const c = s.waterTint ? null : C(hex);
+  return { level: s.waterLevel, depth: s.waterLevel - s.h, kind, id: s.waterId || kind,
+    tint: s.waterTint || [c.r, c.g, c.b], clarity: s.waterClarity, bed: s.h };
 }
 // biome-boundary noise: wobble every threshold with large-scale noise so borders curve
 function bnoise(x, z, amp) { return vn(x * 0.004 + 31.7, z * 0.004 - 12.3, SALT[25]) * amp; }
