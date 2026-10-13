@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Cherry Blossom Valley — An Explorable Japanese Landscape</title>
+<meta name="description" content="A dynamically generated, explorable 3D world of cherry blossoms, mountains, villages, and steam trains — built with procedural generation and real-time rendering.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}[hidden]{display:none!important}body{font-family:system-ui,-apple-system,sans-serif;overflow:hidden;background:#0a0e1a;color:#e8e6f0;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit;-webkit-tap-highlight-color:transparent}
+#scene{display:block;width:100vw;height:100vh;touch-action:none}
+#loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,#141824 0%,#0a0e1a 100%);z-index:999;pointer-events:none}
+#ldLogo{font-size:clamp(1.8rem,5vw,3rem);font-weight:200;letter-spacing:0.05em;color:#f2e8dc;margin-bottom:0.6em;text-align:center;line-height:1.3}
+#ldBar{width:min(26rem,80vw);height:0.25rem;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:0.7rem}
+#ldFill{width:100%;height:100%;background:linear-gradient(90deg,#f8b8c8,#e89aaa);transform-origin:left;transition:transform 0.35s ease-out}
+#ldStatus{font-size:0.9rem;color:#a8a0b8;text-align:center;max-width:90vw}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:flex;flex-direction:column;font-size:clamp(0.85rem,2vw,0.95rem)}
+#topBar{display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(0.8rem,2.5vw,1.4rem);gap:1rem;flex-wrap:wrap}
+#title{flex:1;min-width:12rem;pointer-events:auto}
+#title h1{font-size:clamp(1.1rem,2.8vw,1.45rem);font-weight:300;letter-spacing:0.02em;color:#f2e8dc;margin-bottom:0.25em;text-shadow:0 1px 6px rgba(0,0,0,0.4)}
+#moodLine{font-size:0.88em;color:#d0c8dc;opacity:0.85}
+#stats{background:rgba(12,14,22,0.65);backdrop-filter:blur(8px);border-radius:0.5rem;padding:0.6rem 0.9rem;display:flex;gap:1.2rem;flex-wrap:wrap;pointer-events:auto;border:1px solid rgba(255,255,255,0.06)}
+.stat{display:flex;flex-direction:column;align-items:center;gap:0.15rem}
+.statVal{font-size:1.05em;font-weight:500;color:#f2e8dc}
+.statLbl{font-size:0.78em;color:#a8a0b8;text-transform:uppercase;letter-spacing:0.04em}
+#controls{position:absolute;bottom:clamp(0.8rem,2.5vw,1.4rem);left:clamp(0.8rem,2.5vw,1.4rem);right:clamp(0.8rem,2.5vw,1.4rem);display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+#moods{display:flex;gap:0.5rem;flex-wrap:wrap;pointer-events:auto}
+#moods button{background:rgba(12,14,22,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:0.4rem;padding:0.55rem 0.8rem;color:#d0c8dc;transition:all 0.2s;display:flex;align-items:center;gap:0.5rem;font-size:0.88em}
+#moods button:hover{background:rgba(22,24,32,0.85);border-color:rgba(255,255,255,0.15);transform:translateY(-1px)}
+#moods button[aria-pressed="true"]{background:rgba(248,184,200,0.15);border-color:rgba(248,184,200,0.3);color:#f8b8c8}
+#moods .ico{font-size:1.15em}
+#actions{display:flex;gap:0.5rem;flex-wrap:wrap;pointer-events:auto}
+#actions button{background:rgba(12,14,22,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:0.4rem;padding:0.55rem 0.85rem;color:#d0c8dc;transition:all 0.2s;font-size:0.88em}
+#actions button:hover{background:rgba(22,24,32,0.85);border-color:rgba(255,255,255,0.15);transform:translateY(-1px)}
+#menu{display:none;position:fixed;inset:0;background:rgba(6,8,14,0.92);backdrop-filter:blur(12px);z-index:100;align-items:center;justify-content:center;pointer-events:auto}
+#menu.show{display:flex}
+#menuBox{background:rgba(18,20,28,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:0.8rem;padding:clamp(1.5rem,4vw,2.5rem);max-width:min(36rem,90vw);max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+#menuBox h2{font-size:1.5rem;font-weight:300;color:#f2e8dc;margin-bottom:1.2rem}
+#menuBox h3{font-size:1.1rem;font-weight:400;color:#e0d8ec;margin:1.4rem 0 0.6rem}
+#menuBox p{color:#b8b0c8;line-height:1.6;margin-bottom:0.8rem}
+#menuBox ul{list-style:none;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem}
+#menuBox li{padding-left:1.2rem;position:relative;color:#c8c0d8;line-height:1.6}
+#menuBox li:before{content:"·";position:absolute;left:0;color:#f8b8c8;font-size:1.4em;line-height:1}
+#menuBox label{display:flex;align-items:center;gap:0.6rem;margin:0.8rem 0;cursor:pointer;color:#c8c0d8}
+#menuBox input[type="checkbox"]{width:1.1rem;height:1.1rem}
+.btnRow{display:flex;gap:0.6rem;margin-top:1.4rem;flex-wrap:wrap}
+.btnPri,.btnSec{padding:0.7rem 1.4rem;border-radius:0.4rem;font-weight:500;transition:all 0.2s}
+.btnPri{background:linear-gradient(135deg,#f8b8c8,#e89aaa);color:#0a0e1a;border:none}
+.btnPri:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(248,184,200,0.3)}
+.btnSec{background:rgba(255,255,255,0.06);color:#d0c8dc;border:1px solid rgba(255,255,255,0.1)}
+.btnSec:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)}
+#seedBox{margin:1rem 0;display:flex;gap:0.6rem;flex-wrap:wrap}
+#seedBox input{flex:1;min-width:12rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:0.4rem;padding:0.6rem 0.8rem;color:#e8e6f0;font:inherit}
+#seedBox input:focus{outline:none;border-color:rgba(248,184,200,0.4);background:rgba(255,255,255,0.08)}
+#fatal{position:fixed;inset:0;background:#0a0e1a;z-index:999;display:flex;align-items:center;justify-content:center;padding:2rem}
+#fatal>div{max-width:40rem;text-align:center}
+#fatalTitle{font-size:1.8rem;font-weight:300;color:#f8b8c8;margin-bottom:0.8rem}
+#fatalMsg{color:#b8b0c8;line-height:1.6;margin-bottom:1.2rem}
+#fatalCode{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:0.4rem;padding:1rem;font-family:monospace;font-size:0.85rem;color:#a89cb8;text-align:left;overflow-x:auto;max-height:12rem;overflow-y:auto}
+#loadSnap{position:fixed;bottom:1rem;right:1rem;padding:0.5rem 0.9rem;background:rgba(12,14,22,0.8);border:1px solid rgba(255,255,255,0.1);border-radius:0.4rem;color:#a8a0b8;font-size:0.8rem;z-index:20;pointer-events:none}
+#toast{position:fixed;top:4.6rem;left:50%;transform:translateX(-50%);padding:0.55rem 1rem;background:rgba(12,14,22,0.8);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);border-radius:2rem;font-size:0.85rem;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:30;white-space:nowrap}
+#toast.on{opacity:1}
+body.hidden-ui #hud{opacity:0;pointer-events:none}
+#hud{transition:opacity 0.4s}
+@media(max-width:640px){#topBar{flex-direction:column;align-items:stretch;gap:0.6rem}#stats{justify-content:space-around;padding:0.5rem 0.6rem}#controls{flex-direction:column-reverse;align-items:stretch;gap:0.6rem}#moods,#actions{justify-content:center}#moods button,#actions button{padding:0.5rem 0.7rem;font-size:0.82em}#menuBox{padding:1.2rem 1.1rem;max-height:78vh}#loadSnap{bottom:auto;top:9.5rem}#toast{top:auto;bottom:11rem;white-space:normal;text-align:center;max-width:86vw}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="loader">
+  <div id="ldLogo">桜の谷<br>Cherry Blossom Valley</div>
+  <div id="ldBar"><div id="ldFill" style="transform:scaleX(0)"></div></div>
+  <div id="ldStatus">Initializing…</div>
+</div>
+<div id="hud" hidden>
+  <div id="topBar">
+    <div id="title">
+      <h1>桜の谷 · Cherry Blossom Valley</h1>
+      <div id="moodLine">Golden hour · 夕焼け</div>
+    </div>
+    <div id="stats">
+      <div class="stat"><div class="statVal" id="altVal">—</div><div class="statLbl">Altitude</div></div>
+      <div class="stat"><div class="statVal" id="bioVal">—</div><div class="statLbl">Biome</div></div>
+      <div class="stat"><div class="statVal" id="fpsVal">—</div><div class="statLbl">FPS</div></div>
+    </div>
+  </div>
+  <div id="controls">
+    <div id="moods" role="group" aria-label="Atmosphere">
+      <button data-mood="morning" aria-pressed="false"><span class="ico">🌅</span><span>Morning</span></button>
+      <button data-mood="golden" aria-pressed="true"><span class="ico">🌇</span><span>Golden</span></button>
+      <button data-mood="dusk" aria-pressed="false"><span class="ico">🌙</span><span>Dusk</span></button>
+      <button data-mood="night" aria-pressed="false"><span class="ico">⭐</span><span>Night</span></button>
+      <button data-mood="rain" aria-pressed="false"><span class="ico">🌧️</span><span>Rain</span></button>
+    </div>
+    <div id="actions">
+      <button id="btnSound" aria-pressed="false" title="Ambient sound"><span class="snd-off">🔇</span><span class="snd-on" style="display:none">🔊</span></button>
+      <button id="btnTour" aria-pressed="false" title="Orbiting camera (T)">🎬</button>
+      <button id="btnShot" title="Save screenshot (P)">📷</button>
+      <button id="btnTele">🗺️ Teleport</button>
+      <button id="btnHelp">❓ Guide</button>
+    </div>
+  </div>
+</div>
+<div id="menu">
+  <div id="menuBox" role="dialog" aria-labelledby="menuTitle"></div>
+</div>
+<div id="fatal" hidden>
+  <div><div id="fatalTitle"></div><div id="fatalMsg"></div><pre id="fatalCode"></pre></div>
+</div>
+<div id="toast" class="glass"></div>
+<div id="loadSnap" hidden></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"}}</script>
+<script id="gen-src" type="text/plain">GEN_SOURCE_PLACEHOLDER</script>
+<script type="module">
+// This script block will contain the concatenated engine, streaming, atmosphere, fx, controls, ui, and boot code
+ENGINE_STREAMING_ATMO_FX_CONTROLS_UI_BOOT_PLACEHOLDER
+</script>
+</body>
+</html>
