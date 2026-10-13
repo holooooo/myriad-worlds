@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Cherry Blossom Valley — An Explorable Japanese Landscape</title>
+<title>Sakura World — Procedural Living Landscapes</title>
 <meta name="description" content="A dynamically generated, explorable 3D world of cherry blossoms, mountains, villages, and steam trains — built with procedural generation and real-time rendering.">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}[hidden]{display:none!important}body{font-family:system-ui,-apple-system,sans-serif;overflow:hidden;background:#0a0e1a;color:#e8e6f0;-webkit-font-smoothing:antialiased}
@@ -97,6 +97,8 @@ body.hidden-ui #hud{opacity:0;pointer-events:none}
       <button id="btnSound" aria-pressed="false" title="Ambient sound"><span class="snd-off">🔇</span><span class="snd-on" style="display:none">🔊</span></button>
       <button id="btnTour" aria-pressed="false" title="Orbiting camera (T)">🎬</button>
       <button id="btnShot" title="Save screenshot (P)">📷</button>
+      <button id="btnFollow" aria-pressed="false" title="Select a moving unit · Esc to exit">跟随 · Follow</button>
+      <button id="btnWorld">世界 · World</button>
       <button id="btnTele">🗺️ Teleport</button>
       <button id="btnHelp">❓ Guide</button>
     </div>
@@ -110,7 +112,7 @@ body.hidden-ui #hud{opacity:0;pointer-events:none}
 </div>
 <div id="toast" class="glass"></div>
 <div id="loadSnap" hidden></div>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.171.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.171.0/examples/jsm/"}}</script>
 <script id="gen-src" type="text/plain">GEN_SOURCE_PLACEHOLDER</script>
 <script type="module">
 // This script block will contain the concatenated engine, streaming, atmosphere, fx, controls, ui, and boot code

@@ -26,21 +26,23 @@ let interacted = false, tour = false;
 function markInteract() { if (!interacted) { interacted = true; setTimeout(() => { const h = $('hint'); if (h) h.classList.add('gone'); }, 500); } if (introT < 1) introT = 1; if (car && car.on) stopTour(); }
 const pointers = new Map();
 let pinchD = 0;
-canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); canvas.classList.add('dragging'); markInteract(); if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); } });
+canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, moved: false }); canvas.classList.add('dragging'); markInteract(); if (pointers.size === 2) { for (const p of pointers.values()) p.moved = true; const [a, b] = [...pointers.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); } });
 canvas.addEventListener('pointermove', (e) => {
   const p = pointers.get(e.pointerId); if (!p) return;
   const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
-  if (pointers.size === 1) { const s = (e.pointerType === 'touch' ? 0.0045 : 0.0032) * (camS.fov / 55); camG.yaw -= dx * s; camG.pitch -= dy * s; }
+  p.moved ||= Math.hypot(p.x - p.startX, p.y - p.startY) > 6;
+  if (pointers.size === 1) { const s = (e.pointerType === 'touch' ? 0.0045 : 0.0032) * (camS.fov / 55); if (FOLLOW.target) lookFollow(dx, dy, s); else { camG.yaw -= dx * s; camG.pitch -= dy * s; } }
   else if (pointers.size === 2) {
     const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-    if (pinchD > 0) camG.pos.addScaledVector(fwdOf(camS.yaw, camS.pitch), (d - pinchD) * 0.10);
+    if (pinchD > 0 && !FOLLOW.target) camG.pos.addScaledVector(fwdOf(camS.yaw, camS.pitch), (d - pinchD) * 0.10);
     pinchD = d;
   }
 });
-const endPtr = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinchD = 0; if (!pointers.size) canvas.classList.remove('dragging'); };
+const endPtr = (e) => { const p = pointers.get(e.pointerId); pointers.delete(e.pointerId); if (pointers.size < 2) pinchD = 0; if (!pointers.size) canvas.classList.remove('dragging'); if (p && !p.moved && e.type === 'pointerup') selectUnit(e.clientX, e.clientY); };
 canvas.addEventListener('pointerup', endPtr); canvas.addEventListener('pointercancel', endPtr);
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault(); markInteract();
+  if (FOLLOW.target) return;
   let d = clamp(e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1), -240, 240);
   camG.pos.addScaledVector(fwdOf(camS.yaw, camS.pitch), -d * 0.035 * (1 + camS.pos.y / 70));
 }, { passive: false });
@@ -74,7 +76,9 @@ const fwdV = new THREE.Vector3(), _t = new THREE.Vector3();
 let tourT = 0, tourC = new THREE.Vector3(), tourR = 40, tourH = 12;
 function updateCamera(dt) {
   updateCarousel(dt);
-  if (tour) {
+  if (updateFollow(dt)) {
+    MOVE.eye = MOVE.eyeG = 1.7;
+  } else if (tour) {
     tourT += dt / 120;
     const a = tourT * TAU;
     const cx = tourC.x + Math.cos(a) * tourR, cz = tourC.z + Math.sin(a) * tourR * 0.7;
@@ -95,7 +99,7 @@ function updateCamera(dt) {
   camera.position.copy(camS.pos);
   const gnd = minCamY(camS.pos.x, camS.pos.z);
   const crouchK = clamp(1 - (camera.position.y - gnd) / 2.5, 0, 1);
-  camera.position.y -= (1.7 - MOVE.eye) * crouchK;
+  if (!FOLLOW.target) camera.position.y -= (1.7 - MOVE.eye) * crouchK;
   if (off > 0) { camera.position.add(fwdV.set(Math.sin(camS.yaw), 0, Math.cos(camS.yaw)).multiplyScalar(-30 * off)); camera.position.y += 6 * off; }
   fwdOf(camS.yaw, camS.pitch - off * 0.05, fwdV);
   camera.lookAt(_t.copy(camera.position).add(fwdV));
@@ -105,7 +109,7 @@ function updateCamera(dt) {
   if (Math.abs(camera.fov - fov) > 1e-3) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 // ---- scene carousel: visits the best landmarks in sequence ----
-const CAROUSEL = [
+const SAKURA_CAROUSEL = [
   { key: 'temple', dwell: 14, dist: 46, h: 13 },
   { key: 'castle', dwell: 16, dist: 74, h: 18 },
   { key: 'farm', dwell: 12, dist: 40, h: 11 },
@@ -118,6 +122,7 @@ const CAROUSEL = [
   { key: 'seaTorii', dwell: 12, dist: 40, h: 11 },
   { key: 'rail', dwell: 0, dist: 30, h: 8, train: true },
 ];
+const CAROUSEL = THEME === 'shanshui' ? GEN.profile.landmarks.map(t => ({ key: t.key, dwell: 15, dist: 50, h: 15 })) : SAKURA_CAROUSEL;
 const car = { on: false, i: 0, t: 0, leg: 'fly', from: null, dur: 0, tgt: null };
 async function carouselFind(key) {
   const f = GEN.findBiome(key, camera.position.x, camera.position.z, 12000);
@@ -127,6 +132,7 @@ async function carouselFind(key) {
   return { pos: v.pos, look: v.target };
 }
 function startTour() {
+  stopFollow(false);
   if (car.on) { stopTour(); return; }
   car.on = true; car.i = 0; car.t = 0; car.leg = 'find';
   const b = $('btnTour'); if (b) { b.setAttribute('aria-pressed', 'true'); b.textContent = '⏸'; }
@@ -186,13 +192,13 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || (e.altKey && k !== 'alt' && k !== 'c') || e.ctrlKey) && !isMove) return;
   if (e.target && /input|textarea/i.test(e.target.tagName)) return;
   if (isMove) {
-    keys.add(k); markInteract(); stopTour(); if (k.startsWith('arrow') || k === 'alt') e.preventDefault(); return;
+    stopFollow(false); keys.add(k); markInteract(); stopTour(); if (k.startsWith('arrow') || k === 'alt') e.preventDefault(); return;
   }
   if (e.repeat) return;
   if (k === 't') startTour();
   else if (k === 'h') toggleUI();
   else if (k === 'p') saveImage();
-  else if (k === 'escape') closeMenu();
+  else if (k === 'escape') { stopFollow(); closeMenu(); }
 });
 window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 window.addEventListener('blur', () => keys.clear());
@@ -231,7 +237,7 @@ function updateHUD(dt) {
 }
 // --- teleport menu -------------------------------------------------------
 const menuEl = $('menu'), menuBox = $('menuBox');
-const TELEPORTS = [
+const SAKURA_TELEPORTS = [
   { key: 'temple', label: '寺 · Temple', sub: 'Hillside temple & pagoda' },
   { key: 'castle', label: '城 · Castle', sub: 'Castle town streets' },
   { key: 'shrine', label: '社 · Shrine', sub: 'Torii path in the woods' },
@@ -246,13 +252,33 @@ const TELEPORTS = [
   { key: 3, label: '桜 · Sakura grove', sub: 'Cherry blossom forest' },
   { key: 8, label: '雪山 · Snow peaks', sub: 'Winter highlands' },
 ];
+const TELEPORTS = GEN.profile.landmarks || SAKURA_TELEPORTS;
 function openMenu(html) { menuBox.innerHTML = html; menuEl.classList.add('show'); }
 function closeMenu() { menuEl.classList.remove('show'); }
+const worldTitle = THEME === 'shanshui' ? '山水中国 · Shanshui World' : '樱之世界 · Sakura World';
+$('title').querySelector('h1').textContent = worldTitle;
+document.title = worldTitle;
+function navigateWorld(theme, seed = SEED) {
+  const query = new URLSearchParams(location.search);
+  query.set('theme', theme); query.set('seed', seed); query.set('q', QUALITY);
+  LOG.info('access', 'world-change-requested', { theme, seed });
+  location.search = query.toString();
+}
+$('btnWorld').addEventListener('click', () => {
+  openMenu('<h2 id="menuTitle">选择世界 · Worlds</h2>'
+    + '<p>同一引擎与种子，独立的地形、资产与生态规则。</p>'
+    + '<div class="btnRow"><button class="btnSec" data-world="sakura">樱之世界 · Sakura</button><button class="btnSec" data-world="shanshui">山水中国 · Shanshui</button></div>'
+    + '<p>山水中国包含黄山峰林、梯田、九寨彩湖、长安街市、仙鹤与水牛；夜间城镇有孔明灯。</p>'
+    + '<div class="btnRow"><button class="btnPri" id="menuClose">返回 · Back</button></div>');
+  menuBox.querySelectorAll('[data-world]').forEach(b => b.onclick = () => navigateWorld(b.dataset.world));
+  $('menuClose').onclick = closeMenu;
+});
 if ($('btnHelp')) $('btnHelp').addEventListener('click', () => {
   openMenu('<h2>Guide · 案内</h2>'
     + '<h3>Exploring</h3><ul><li><b>Drag</b> to look · <b>Scroll / pinch</b> to move forward and back</li>'
     + '<li><b>W A S D</b> walk · <b>Space / E</b> rise · <b>Q</b> descend · <b>Shift</b> hold to sprint (ramps to 3x) · <b>Ctrl</b> crouch</li>'
     + '<li><b>T</b> orbiting camera · <b>H</b> hide interface · <b>P</b> save a screenshot</li></ul>'
+    + '<h3>Follow · 第一视角</h3><p>Click a bird, fish, animal or train, or choose one using <b>跟随 · Follow</b>. Drag to look around. Press <b>Esc</b> or the exit button to return to the free camera.</p>'
     + '<h3>The world</h3><p>Everything is generated from your seed string: mountains, rivers, lakes, rice terraces, castle towns, bamboo groves, snow peaks, an endless steam railway and its stations. The world is infinite — walk, fly, or teleport anywhere.</p>'
     + '<h3>Atmosphere</h3><p>Five moods — morning mist, golden hour, blue hour, moonlit night and spring rain — change sky, light, fog, lanterns and weather together.</p>'
     + '<h3>Sound</h3><p>Ambient loops are synthesised locally and stay off until you press the sound button.</p>'
@@ -267,15 +293,17 @@ if ($('btnTele')) $('btnTele').addEventListener('click', () => {
     + TELEPORTS.map((t, i) => '<button class="btnSec" data-tele="' + i + '" style="text-align:left;padding:0.6rem 0.8rem"><b>' + t.label + '</b><br><span style="font-size:0.8em;opacity:0.7">' + t.sub + '</span></button>').join('')
     + '</div><div class="btnRow"><button class="btnPri" id="menuClose">Close</button></div>');
   $('menuClose').onclick = closeMenu;
-  $('seedGo').onclick = () => { const v = $('seedInput').value.trim() || 'sakura'; localStorage.setItem('sakura-world-seed', v); location.search = '?seed=' + encodeURIComponent(v); };
+  $('seedGo').onclick = () => { const v = $('seedInput').value.trim() || 'sakura'; localStorage.setItem('sakura-world-seed', v); navigateWorld(THEME, v); };
   $('seedRand').onclick = () => { $('seedInput').value = Math.random().toString(36).slice(2, 8); };
   menuBox.querySelectorAll('[data-tele]').forEach((b) => b.addEventListener('click', () => { closeMenu(); teleport(TELEPORTS[+b.dataset.tele].key); }));
 });
 async function teleport(key) {
+  stopFollow(false); stopTour();
+  LOG.info('access', 'teleport-requested', { destination: key });
   toast('Searching…');
   await nextFrame();
   const f = GEN.findBiome(key, camera.position.x, camera.position.z, 12000);
-  if (!f) { toast('Not found nearby — try another seed'); return; }
+  if (!f) { LOG.warn('business', 'teleport-destination-unavailable', { destination: key }); toast('Not found nearby — try another seed'); return; }
   let pos, tgt;
   if (f.rail) {
     const side = GEN.heightAt(f.x, f.z - 14) < GEN.heightAt(f.x, f.z + 14) ? -1 : 1;
@@ -290,6 +318,7 @@ async function teleport(key) {
     camG.pitch = camS.pitch = Math.asin(d.y);
     introT = 1;
   });
+  LOG.info('business', 'teleport-arrived', { destination: key, x: f.x, z: f.z });
   toast('Arrived');
 }
 // --- ambient sound ---------------------------------------------------------
@@ -366,7 +395,7 @@ const audio = (() => {
 if ($('btnTour')) $('btnTour').addEventListener('click', () => startTour());
 if ($('btnShot')) $('btnShot').addEventListener('click', saveImage);
 if ($('btnSound')) $('btnSound').addEventListener('click', async () => {
-  try { const on = await audio.toggle(); toast(on ? 'Ambient sound on' : 'Sound off'); } catch (e) { toast('Audio not available'); }
+  try { const on = await audio.toggle(); toast(on ? 'Ambient sound on' : 'Sound off'); } catch (e) { LOG.warn('error', 'audio-unavailable', { message: String(e.message || e) }); toast('Audio not available'); }
 });
 document.querySelectorAll('#moods button').forEach((b) => b.addEventListener('click', () => setMood(b.dataset.mood)));
 // --- main loop -----------------------------------------------------------
@@ -385,19 +414,21 @@ function loop(now) {
   clockT += dt;
   TIME_U.value = clockT; SKY_U.uTime.value = clockT;
   updateMood(dt);
+  updateTrain(dt, clockT);
+  updateBirds(clockT);
+  updateFauna(dt, clockT);
   updateCamera(dt);
+  updateMist(dt, clockT);
+  updateLanterns(dt, clockT);
   streamUpdate(camera.position);
   integrateSome(QUALITY === 'high' ? 4 : 6);
   updateShadow(dt);
   if (STREAM.visibleWater && (mirrorFrame = (mirrorFrame + 1) % (QUALITY === 'high' ? 1 : 2)) === 0) { WATER_U.uMirrorOn.value = 1; renderMirror(); }
   updateLamps(dt, ATM.lamps);
-  updateTrain(dt, clockT);
   updateSmoke(dt);
   updatePetals(dt, clockT);
   updateFlies(dt);
   updateWeather(dt);
-  updateBirds(clockT);
-  updateFauna(dt, clockT);
   updateHUD(dt);
   renderFrame(dt);
   fpsN++; fpsT += dt; if (window.__frameHook) window.__frameHook();
@@ -409,7 +440,11 @@ function loop(now) {
   }
 }
 function applyQuality(q) {
+  if (!['high', 'lite'].includes(q)) q = 'high';
   QUALITY = q;
+  LOG.info('business', 'render-quality-changed', { quality: q });
+  volPass.setQuality(q);
+  setWaterQuality(q);
   const pr = pixelRatioFor(q);
   renderer.setPixelRatio(pr); composer.setPixelRatio(pr);
   const ms = q === 'high' ? 4 : 2;
@@ -439,8 +474,10 @@ await nextFrame();
 {
   const L0 = GEN.LODS[0], cx = Math.round(spawn.target[0] / L0.size), cz = Math.round(spawn.target[2] / L0.size);
   for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const ch = requestChunk(0, cx + i, cz + j, 0);
+    ch.state = 'gen';
     const c = GEN.genChunk(cx + i, cz + j, 0);
-    integrate({ key: KEY(0, cx + i, cz + j), gen: genTag, c });
+    integrate({ key: ch.key, gen: genTag, c });
   }
   mark('primed');
 }
@@ -454,7 +491,7 @@ refreshEnv();
 updateShadow(0, true);
 setProgress(0.7, 'Compiling shaders…');
 await nextFrame();
-try { await renderer.compileAsync(scene, camera); } catch (e) { /* compile lazily */ }
+try { await renderer.compileAsync(scene, camera); } catch (e) { LOG.warn('error', 'shader-precompile-failed', { message: String(e.message || e) }); }
 mark('compiled');
 renderFrame(0);
 setProgress(1, 'Welcome to the valley');
@@ -462,9 +499,9 @@ booted = true;
 $('hud').hidden = false;
 window.__sv = {
   ready: true, GEN, camera, scene, renderer, teleport, setMood, applyQuality, startTour, stopTour, saveImage,
-  ST, STREAM, key, keys, MOVE, FAUNA,
+  ST, STREAM, key, keys, MOVE, FAUNA, FOLLOW, FX, TRAIN, MIST, LANTERNS, WATER_U, MIRROR, volPass, LOG, startFollow, stopFollow, openFollowMenu, nearbyUnits,
   goCam(x, y, z, tx, ty, tz) { snapTo([x, y, z], Math.atan2(tx - x, tz - z), Math.atan2(ty - y, Math.hypot(tx - x, tz - z)), 55); introT = 1; },
-  get state() { return { seed: SEED, mood: moodName, quality: QUALITY, biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
+  get state() { return { seed: SEED, theme: THEME, mood: moodName, quality: QUALITY, biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
 };
 requestAnimationFrame((t) => { lastNow = t; loop(t); });
 setTimeout(() => { $('loader').classList.add('done'); setTimeout(() => { const l = $('loader'); if (l) l.remove(); }, 1200); }, 250);

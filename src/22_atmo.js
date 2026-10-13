@@ -105,12 +105,37 @@ const VOL_FS = `
   uniform mat4 uInvProj, uCamWorld, uShadowM;
   uniform vec3 uCamPos, uSunDir, uSunCol, uAmb;
   uniform float uDens, uFall, uBase, uMaxDist, uTime, uAniso, uNoise, uShadowOn, uFrame;
+  uniform sampler2D uMistMap;
+  uniform vec2 uMistOrigin;
+  uniform float uMistSpan, uMistAmount;
+  uniform vec4 uCloudSea;
   varying vec2 vUv;
   float h31(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
   float n3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
     return mix(mix(mix(h31(i), h31(i+vec3(1,0,0)), f.x), mix(h31(i+vec3(0,1,0)), h31(i+vec3(1,1,0)), f.x), f.y),
                mix(mix(h31(i+vec3(0,0,1)), h31(i+vec3(1,0,1)), f.x), mix(h31(i+vec3(0,1,1)), h31(i+vec3(1,1,1)), f.x), f.y), f.z); }
   float hg(float c, float g){ float g2 = g * g; return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * c, 1.5)); }
+  float localMist(vec3 p) {
+    vec2 uv = (p.xz - uMistOrigin) / uMistSpan;
+    if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return 0.0;
+    vec2 texel = vec2(1.0 / 32.0), grid = uv / texel - 0.5, cell = floor(grid), f = fract(grid);
+    vec4 a = texture2D(uMistMap, (cell + 0.5) * texel), b = texture2D(uMistMap, (cell + vec2(1.5, 0.5)) * texel);
+    vec4 c = texture2D(uMistMap, (cell + vec2(0.5, 1.5)) * texel), d = texture2D(uMistMap, (cell + 1.5) * texel);
+    vec4 m = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    float height = (p.y - m.y) / max(m.z, 0.8);
+    float curl = n3(p * vec3(0.055, 0.22, 0.055) - vec3(uTime * 0.025, 0.0, uTime * 0.01));
+    float pulse = 0.65 + 0.35 * sin(uTime * 0.09 + p.x * 0.014 + p.z * 0.009);
+    float border = smoothstep(0.0, 0.09, min(min(uv.x, uv.y), min(1.0-uv.x, 1.0-uv.y)));
+    return m.x * exp(-height * height) * smoothstep(0.2, 0.68, curl) * pulse * uMistAmount * border;
+  }
+  float cloudSea(vec3 p) {
+    if (uCloudSea.x < 0.001) return 0.0;
+    float billow = n3(vec3(p.xz * 0.004 - vec2(uTime * 0.002, 0.0), 0.4));
+    float top = uCloudSea.y + billow * uCloudSea.z;
+    float layer = smoothstep(top - 28.0, top - 13.0, p.y) * (1.0 - smoothstep(top - 3.0, top + 9.0, p.y));
+    float holes = smoothstep(0.22, 0.55, n3(p * vec3(0.008, 0.025, 0.008) - vec3(uTime * 0.005,0.0,uTime * 0.002)));
+    return layer * holes * uCloudSea.x;
+  }
   void main(){
     float d = texture2D(tDepth, vUv).x;
     vec4 ndc = vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
@@ -132,6 +157,7 @@ const VOL_FS = `
       float h = p.y - uBase;
       float dens = uDens * exp(-max(h, -8.0) * uFall);
       if (uNoise > 0.0) dens *= max(0.0, 1.0 + uNoise * (n3(p * 0.045 + vec3(uTime * 0.35, 0.0, uTime * 0.12)) * 1.6 - 0.8 + (n3(p * 0.13 - uTime * 0.2) - 0.5) * 0.6));
+      dens += localMist(p) + cloudSea(p);
       float vis = 1.0;
       if (uShadowOn > 0.5) {
         vec4 sc = uShadowM * vec4(p, 1.0);
@@ -142,10 +168,11 @@ const VOL_FS = `
       float tr = exp(-dens * stepLen);
       S += T * Ls * (1.0 - tr);
       T *= tr;
+      if (T < 0.02) break;
     }
     gl_FragColor = vec4(S, T);
   }`;
-const VOL_STEPS = QUALITY === 'high' ? 40 : 22;
+const VOL_STEPS = QUALITY === 'high' ? 32 : 18;
 class VolumePass extends Pass {
   constructor() {
     super();
@@ -187,6 +214,11 @@ class VolumePass extends Pass {
     const sw = Math.max(2, Math.round(w * this.scale)), sh = Math.max(2, Math.round(h * this.scale));
     this.rt.setSize(sw, sh); this.rtB.setSize(sw, sh);
     this.texel = [1 / sw, 1 / sh];
+  }
+  setQuality(q) {
+    this.scale = q === 'high' ? 0.5 : 0.35;
+    this.mat.fragmentShader = VOL_FS.replace('VOL_STEPS', q === 'high' ? '32' : '18');
+    this.mat.needsUpdate = true;
   }
   render(r, writeBuffer, readBuffer) {
     const u = this.mat.uniforms;
@@ -288,10 +320,12 @@ function applyAtmosphere() {
 }
 function setMood(name, instant = false) {
   if (!MOODS[name]) return;
+  LOG.info('business', 'atmosphere-changed', { mood: name });
   moodFrom = cloneMood(ATM); moodTo = MOODC[name]; moodName = name; moodT = instant ? 1 : 0;
   if (instant) { blendMood(1); applyAtmosphere(); refreshEnv(); updateShadow(0, true); }
   const L = MOODS[name].label;
-  $('moodLine').textContent = L[1] + ' · ' + L[0];
+  const chineseLabel = { morning: '晨雾', golden: '落日', dusk: '薄暮', night: '月夜', rain: '春雨' };
+  $('moodLine').textContent = L[1] + ' · ' + (THEME === 'shanshui' ? chineseLabel[name] : L[0]);
   document.querySelectorAll('#moods button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mood === name)));
   if (typeof audio !== 'undefined') audio.setMood(name);
 }

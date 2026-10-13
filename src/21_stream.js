@@ -5,7 +5,7 @@ const WORKER_SRC = GEN_SRC + `
 self.onmessage = function (e) {
   var d = e.data;
   try {
-    if (d.type === 'seed') { GEN.setSeed(d.seed); return; }
+    if (d.type === 'seed') { GEN.setTheme(d.theme || 'sakura'); GEN.setSeed(d.seed); return; }
     if (d.type === 'chunk') {
       var c = GEN.genChunk(d.cx, d.cz, d.lod), tr = [c.terrain.pos.buffer, c.terrain.nor.buffer, c.terrain.col.buffer, c.terrain.idx.buffer, c.tuft.m.buffer, c.tuft.c.buffer, c.lights.buffer, c.spots.petal.buffer, c.spots.smoke.buffer, c.spots.fly.buffer];
       if (c.water) tr.push(c.water.pos.buffer, c.water.depth.buffer, c.water.idx.buffer);
@@ -26,12 +26,17 @@ for (let i = 0; i < NW; i++) {
   w.onmessage = (e) => {
     const d = e.data;
     w.busy--; ST.inflight--;
-    if (d.type === 'error') { ST.errors++; console.error('chunk worker:', d.msg); const ch = ST.chunks.get(d.key); if (ch && d.gen === genTag) ch.state = 'failed'; return; }
+    if (d.type === 'error') {
+      ST.errors++;
+      LOG.error('error', 'chunk-worker-failed', { key: d.key, generation: d.gen, message: d.msg });
+      const ch = ST.chunks.get(d.key); if (ch && d.gen === genTag) ch.state = 'failed';
+      return;
+    }
     if (d.gen !== genTag) return;
     ST.ready.push(d);
   };
-  w.onerror = (e) => { console.error('worker error', e.message); };
-  w.postMessage({ type: 'seed', seed: SEED });
+  w.onerror = (e) => { ST.errors++; LOG.error('error', 'chunk-worker-error', { message: e.message || String(e) }); };
+  w.postMessage({ type: 'seed', seed: SEED, theme: GEN.theme });
   workers.push(w);
 }
 const KEY = (L, cx, cz) => L + ':' + cx + ':' + cz;
@@ -101,14 +106,15 @@ function integrate(d) {
     if (mat === waterMat) { wm.userData.water = true; ch.hasWater = true; }
     scene.add(wm); ch.meshes.push(wm);
   }
-  // instances: upload ONCE here; show/hide only toggles visibility or zeroes slots
+  // A ready chunk may still be covered by its parent. Its instance slots must
+  // stay empty until the quadtree selects it, just like its terrain meshes.
   const P = POOLS[L];
   for (const [name, b] of Object.entries(c.inst)) {
     const n = b.c.length / 3;
     if (!n || !P[name]) continue;
     const slot = P[name].alloc(n);
-    P[name].write(slot, b.m, b.c);
-    ch.blocks.push({ pool: P[name], s: slot, n, m: b.m, c: b.c });
+    P[name].clear(slot, n);
+    ch.blocks.push({ pool: P[name], s: slot, n, m: b.m, c: b.c, dirty: true });
   }
   if (L === 0 && c.tuft.c.length && !window.__noTuft) {
     const n = c.tuft.c.length / 3;
@@ -116,8 +122,8 @@ function integrate(d) {
     const nn = Math.max(1, Math.floor(n * frac));
     const tm = c.tuft.m.subarray(0, nn * 16), tc = c.tuft.c.subarray(0, nn * 3);
     const slot = P.tuft.alloc(nn);
-    P.tuft.write(slot, tm, tc);
-    ch.blocks.push({ pool: P.tuft, s: slot, n: nn, m: tm, c: tc });
+    P.tuft.clear(slot, nn);
+    ch.blocks.push({ pool: P.tuft, s: slot, n: nn, m: tm, c: tc, dirty: true });
   }
   ch.state = 'ready';
   ch.cx0 = c.x0 + c.size / 2; ch.cz0 = c.z0 + c.size / 2;
@@ -193,14 +199,16 @@ function integrateSome(budgetMs) {
   while (ST.ready.length && (performance.now() - t0 < budgetMs || n === 0)) { integrate(ST.ready.shift()); n++; }
   return n;
 }
-function resetWorld(seed) {
+function resetWorld(seed, theme = GEN.theme) {
   SEED = String(seed);
   genTag++;
+  GEN.setTheme(theme);
   GEN.setSeed(SEED);
-  for (const w of workers) w.postMessage({ type: 'seed', seed: SEED });
+  for (const w of workers) w.postMessage({ type: 'seed', seed: SEED, theme: GEN.theme });
   for (const ch of [...ST.chunks.values()]) { if (ch.state === 'ready') disposeChunk(ch); }
   ST.chunks.clear(); ST.queue = []; ST.ready = [];
   STREAM.dirtyShadow = true;
+  LOG.info('business', 'world-generation-reset', { seed: SEED, theme: GEN.theme, generation: genTag });
 }
 
 // ---------------------------------------------------------------------

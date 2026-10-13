@@ -2,6 +2,16 @@
 //  SAKURA WORLD — engine: boot, renderer, materials, pools, streaming
 // =====================================================================
 window.__svStarted = true;
+const LOG = (() => {
+  const entries = [];
+  function write(level, category, event, detail = {}) {
+    const record = { time: new Date().toISOString(), level, category, event, ...detail };
+    entries.push(record); if (entries.length > 200) entries.shift();
+    if (level !== 'debug' || new URLSearchParams(location.search).has('debug')) console[level]('[sakura-world]', record);
+  }
+  return { entries, info: (c, e, d) => write('info', c, e, d), warn: (c, e, d) => write('warn', c, e, d), error: (c, e, d) => write('error', c, e, d), debug: (c, e, d) => write('debug', c, e, d) };
+})();
+LOG.info('access', 'page-open', { path: location.pathname });
 const $ = (id) => document.getElementById(id);
 const QS = new URLSearchParams(location.search);
 let booted = false;
@@ -12,12 +22,13 @@ function setProgress(p, msg) {
   if (msg) $('ldStatus').textContent = msg;
 }
 function fatal(title, msg, detail) {
+  LOG.error('error', 'fatal', { title, message: msg, detail });
   $('loader').style.display = 'none';
   $('fatal').hidden = false;
   $('fatalTitle').textContent = title; $('fatalMsg').textContent = msg || ''; $('fatalCode').textContent = detail || '';
 }
-window.addEventListener('error', (e) => { if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', e.message || String(e.error || e)); else console.error(e.error || e.message); });
-window.addEventListener('unhandledrejection', (e) => { const r = e.reason; if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', (r && (r.stack || r.message)) || String(r)); });
+window.addEventListener('error', (e) => { if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', e.message || String(e.error || e)); else LOG.error('error', 'runtime', { message: e.message }); });
+window.addEventListener('unhandledrejection', (e) => { const r = e.reason; LOG.error('error', 'promise-rejection', { message: String(r && r.stack || r) }); if (!booted) fatal('The world could not be generated', 'An unexpected error stopped the scene from loading.', (r && (r.stack || r.message)) || String(r)); });
 const nextFrame = () => new Promise((r) => setTimeout(r, 16));
 const GL_LEVEL = (() => { try { const c = document.createElement('canvas'); if (c.getContext('webgl2')) return 2; if (c.getContext('webgl')) return 1; } catch (e) { /* */ } return 0; })();
 if (GL_LEVEL < 2) {
@@ -33,7 +44,7 @@ try {
   ]);
   THREE = m[0]; ({ EffectComposer } = m[1]); ({ RenderPass } = m[2]); ({ UnrealBloomPass } = m[3]); ({ OutputPass } = m[4]); ({ ShaderPass } = m[5]); ({ Pass, FullScreenQuad } = m[6]);
 } catch (e) {
-  fatal('The 3D engine could not be downloaded', 'Three.js is loaded from the jsDelivr CDN. Please check your internet connection (or any content blocker) and reload.', String(e && e.message || e));
+  fatal('The 3D engine could not be downloaded', 'Please check your internet connection (or any content blocker) and reload.', String(e && e.message || e));
   throw e;
 }
 const GEN_SRC = $('gen-src').textContent;
@@ -44,6 +55,9 @@ const SMALL = Math.min(innerWidth, innerHeight) < 600;
 let QUALITY = QS.get('q') || ((COARSE || SMALL) ? 'lite' : 'high');
 let SEED = QS.get('seed') || localStorage.getItem('sakura-world-seed') || 'sakura';
 GEN.setSeed(SEED);
+const THEME = QS.get('theme') === 'shanshui' ? 'shanshui' : 'sakura';
+GEN.setTheme(THEME);
+LOG.info('business', 'world-profile-selected', { theme: THEME, seed: SEED });
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -276,137 +290,10 @@ function mergeBoxes(list) {
   out.setIndex(idx);
   return out;
 }
-const tuftGeo = mergeBoxes([
-  { x: 0, y: 0.25, z: 0, sx: 0.06, sy: 0.5, sz: 0.06, grad: [0.45, 1.05] },
-  { x: 0.08, y: 0.2, z: 0.02, sx: 0.05, sy: 0.42, sz: 0.05, rz: -0.35, grad: [0.45, 1.0] },
-  { x: -0.07, y: 0.21, z: -0.03, sx: 0.05, sy: 0.44, sz: 0.05, rx: 0.3, rz: 0.25, grad: [0.45, 1.0] },
-]);
+const tuftGeo = buildGrassGeometry('grass');
 
-// ---------------------------------------------------------------------
-//  Water (planar mirror shared by every water chunk)
-// ---------------------------------------------------------------------
+// Reflection exclusions are populated as instance pools are allocated.
 const HIDE_IN_MIRROR = new Set();
-const MIRROR = { rt: null, cam: new THREE.PerspectiveCamera(), texMatrix: new THREE.Matrix4(), active: false, scale: QUALITY === 'high' ? 0.5 : 0.33 };
-const WATER_U = {
-  uTime: TIME_U, uRain: { value: 0 }, tMirror: { value: null }, uTexMatrix: { value: MIRROR.texMatrix }, uMirrorOn: { value: 0 },
-  uShallow: { value: C(0x3d6a6a) }, uDeep: { value: C(0x0d2430) }, uSky: { value: new THREE.Color(0.5, 0.55, 0.7) },
-  uSun: { value: new THREE.Color(0.4, 0.4, 0.5) }, uSunDir: { value: new THREE.Vector3(0, 0.3, -1).normalize() },
-  uHorizon: { value: new THREE.Color(0.3, 0.35, 0.5) }, uZenith: { value: new THREE.Color(0.1, 0.15, 0.3) },
-};
-const WATER_VS = /* glsl */`
-  attribute float depth;
-  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv;
-  uniform mat4 uTexMatrix;
-  #include <fog_pars_vertex>
-  void main(){
-    vec3 transformed = position;
-    vec4 wp = modelMatrix * vec4(position, 1.0);
-    vWorld = wp.xyz; vDepth = depth;
-    vRUv = uTexMatrix * wp;
-    gl_Position = projectionMatrix * viewMatrix * wp;
-    #include <fog_vertex>
-  }`;
-const WATER_FS = /* glsl */`
-  uniform sampler2D tMirror; uniform float uTime, uRain, uMirrorOn;
-  uniform vec3 uShallow, uDeep, uSky, uSun, uSunDir, uHorizon, uZenith;
-  varying vec3 vWorld; varying float vDepth; varying vec4 vRUv;
-  #include <fog_pars_fragment>
-  float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
-  float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
-    return mix(mix(h21(i), h21(i+vec2(1,0)), u.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), u.x), u.y); }
-  float waves(vec2 p, float big){
-    float t = uTime;
-    return n2(p*0.32 + vec2(t*0.09, t*0.035))*0.62 + n2(p*0.85 + vec2(-t*0.14, t*0.10))*0.27 + n2(p*2.1 + vec2(t*0.22, -t*0.17))*0.11
-      + big * (sin(p.x * 0.18 + p.y * 0.05 + t * 0.9) * 0.5 + sin(p.y * 0.23 - t * 0.7) * 0.4);
-  }
-  void main(){
-    vec2 p = vWorld.xz;
-    float big = smoothstep(2.0, 9.0, vDepth) * 0.35;
-    float e = 0.2;
-    float h0 = waves(p, big), hx = waves(p + vec2(e, 0.0), big), hz = waves(p + vec2(0.0, e), big);
-    vec3 N = normalize(vec3(-(hx - h0) / e * 0.32, 1.0, -(hz - h0) / e * 0.32));
-    if (uRain > 0.01) {
-      vec2 g = p * 1.7; vec2 id = floor(g); vec2 f = fract(g) - 0.5;
-      float rnd = h21(id); vec2 c = (vec2(h21(id + 3.1), h21(id + 7.7)) - 0.5) * 0.3;
-      float ph = fract(uTime * 0.85 + rnd), r = length(f - c), rr = ph * 0.42;
-      float ring = sin((r - rr) * 60.0) * exp(-pow((r - rr) * 13.0, 2.0)) * (1.0 - ph);
-      vec2 dr = normalize(f - c + 1e-4);
-      N = normalize(N + vec3(dr.x, 0.0, dr.y) * ring * 0.45 * uRain);
-    }
-    vec3 V = normalize(cameraPosition - vWorld);
-    float fres = 0.02 + 0.98 * pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 5.0);
-    vec3 R = reflect(-V, N);
-    vec3 refl = mix(uHorizon, uZenith, smoothstep(0.0, 0.6, R.y));
-    #ifndef PADDY
-    if (uMirrorOn > 0.5) { vec2 ruv = vRUv.xy / vRUv.w + N.xz * 0.016; refl = texture2D(tMirror, ruv).rgb; }
-    #endif
-    float dep = vDepth;
-    vec3 body = mix(uShallow, uDeep, smoothstep(0.0, 4.0, dep)) * uSky;
-    float rs = clamp(mix(0.42, 1.0, fres), 0.0, 1.0);
-    vec3 col = mix(body, refl, rs);
-    col += uSun * pow(max(dot(R, uSunDir), 0.0), 300.0) * 2.0;
-    float foam = (1.0 - smoothstep(0.03, 0.42, dep)) * (0.5 + 0.5 * n2(p * 2.4 + uTime * 0.25));
-    col = mix(col, uSky * 0.75 + uHorizon * 0.25, foam * 0.3);
-    float a = mix(0.62, 0.98, smoothstep(0.1, 1.8, dep));
-    #ifdef PADDY
-      a = 0.86;
-    #endif
-    a = max(a, rs) * smoothstep(0.0, 0.14, dep);
-    if (a < 0.004) discard;
-    gl_FragColor = vec4(col, a);
-    #include <fog_fragment>
-  }`;
-const mkWaterMat = (paddy) => {
-  const m = new THREE.ShaderMaterial({
-    uniforms: Object.assign({}, WATER_U, THREE.UniformsUtils.clone(THREE.UniformsLib.fog)),
-    vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, fog: true, defines: paddy ? { PADDY: 1 } : {},
-  });
-  for (const k of Object.keys(WATER_U)) m.uniforms[k] = WATER_U[k];
-  return m;
-};
-const waterMat = mkWaterMat(false), paddyMat = mkWaterMat(true);
-paddyMat.uniforms.uShallow.value = C(0x5a7a4a);
-paddyMat.uniforms.uDeep.value = C(0x2c4428);
-const _rp = new THREE.Plane(), _rn = new THREE.Vector3(0, 1, 0), _rv = new THREE.Vector3(), _rt = new THREE.Vector3(), _rq = new THREE.Vector4(), _rc = new THREE.Vector4();
-const _rm = new THREE.Matrix4(), _look = new THREE.Vector3();
-function renderMirror() {
-  const mc = MIRROR.cam;
-  if (camera.position.y < 0.05) { MIRROR.active = false; return; }
-  _rv.copy(camera.position); _rv.y = -_rv.y;
-  _rm.extractRotation(camera.matrixWorld);
-  _look.set(0, 0, -1).applyMatrix4(_rm).add(camera.position);
-  _rt.copy(_look); _rt.y = -_rt.y;
-  mc.position.copy(_rv);
-  mc.up.set(0, 1, 0).applyMatrix4(_rm); mc.up.y = -mc.up.y;
-  mc.lookAt(_rt);
-  mc.far = camera.far; mc.near = camera.near;
-  mc.updateMatrixWorld();
-  mc.projectionMatrix.copy(camera.projectionMatrix);
-  MIRROR.texMatrix.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
-  MIRROR.texMatrix.multiply(mc.projectionMatrix).multiply(mc.matrixWorldInverse);
-  // oblique near plane = water plane
-  _rp.setFromNormalAndCoplanarPoint(_rn, new THREE.Vector3(0, 0, 0));
-  _rp.applyMatrix4(mc.matrixWorldInverse);
-  _rc.set(_rp.normal.x, _rp.normal.y, _rp.normal.z, _rp.constant);
-  const pm = mc.projectionMatrix;
-  _rq.x = (Math.sign(_rc.x) + pm.elements[8]) / pm.elements[0];
-  _rq.y = (Math.sign(_rc.y) + pm.elements[9]) / pm.elements[5];
-  _rq.z = -1.0; _rq.w = (1.0 + pm.elements[10]) / pm.elements[14];
-  _rc.multiplyScalar(2.0 / _rc.dot(_rq));
-  pm.elements[2] = _rc.x; pm.elements[6] = _rc.y; pm.elements[10] = _rc.z + 1.0 - 0.003; pm.elements[14] = _rc.w;
-  const hidden = [];
-  for (const o of HIDE_IN_MIRROR) if (o.visible) { o.visible = false; hidden.push(o); }
-  const rt0 = renderer.getRenderTarget();
-  const auto = renderer.shadowMap.autoUpdate; const need = renderer.shadowMap.needsUpdate;
-  renderer.shadowMap.needsUpdate = false;
-  renderer.setRenderTarget(MIRROR.rt);
-  renderer.clear();
-  renderer.render(scene, mc);
-  renderer.setRenderTarget(rt0);
-  renderer.shadowMap.autoUpdate = auto; renderer.shadowMap.needsUpdate = need;
-  for (const o of hidden) o.visible = true;
-  MIRROR.active = true;
-}
 
 // ---------------------------------------------------------------------
 //  Instance pools: one InstancedMesh per (LOD, material), block-allocated
@@ -423,6 +310,7 @@ class Pool {
     mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
     mesh.frustumCulled = false;
     mesh.castShadow = !!this.opt.cast; mesh.receiveShadow = this.opt.receive !== false;
+    if (this.opt.depth) mesh.customDepthMaterial = this.opt.depth;
     mesh.count = this.top;
     mesh.instanceMatrix.array.fill(0);
     if (old) {
