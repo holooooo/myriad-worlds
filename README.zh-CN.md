@@ -104,6 +104,10 @@ npm run deploy:preview  # 先构建，再发布 preview.myriad-worlds.pages.dev
 
 两个本地命令都会重新构建，并显式指定分支，避免本机 `master` 分支误选环境。预览链接公开可访问，请勿在其中发布隐私数据。凭据、token、构建目录和浏览器测试录屏均不提交到 Git。
 
+## 致谢
+
+参考[宝玉 @dotey 的提示词](https://x.com/dotey/status/2102565403109085669)，用 Opus 5.5 打底子，再由 GLM 5.3F 完成 Demo 开发。[X 发布文案](docs/x-post.txt)可配合实机景色视频使用。
+
 ## 实景参考
 
 生成规则参考了[九寨沟树正群海](https://en.wikipedia.org/wiki/Jiuzhaigou)与[稻城亚丁牛奶海](https://en.wikipedia.org/wiki/Yading)的真实照片，提取沿谷湖盆、林岸堤坝、浅色湖底等地形与色彩关系。没有将参考照片复制为世界资产，文档截图和视频均为本项目实机画面。

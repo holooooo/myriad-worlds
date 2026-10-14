@@ -1,0 +1,7 @@
+参考 @dotey 宝玉的提示词，做了个浏览器里的「万境」🌸
+
+Opus 5.5 打底，GLM 5.3F 完成 Demo。
+中式山水、日式樱林，切换晨雾、细雨和月夜。视频都是实机录屏。
+
+试玩：https://myriad-worlds.pages.dev/
+提示词：https://x.com/dotey/status/2102565403109085669

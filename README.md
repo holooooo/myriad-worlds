@@ -104,6 +104,10 @@ npm run deploy:preview  # Build, then publish preview.myriad-worlds.pages.dev
 
 Both local commands rebuild first and set the branch explicitly, so a local `master` checkout cannot accidentally select the wrong environment. Preview URLs are public; do not publish private data in them. Tokens, local credentials, build output and browser test recordings are excluded from Git.
 
+## Credits
+
+Inspired by [宝玉 / @dotey's prompt](https://x.com/dotey/status/2102565403109085669). Opus 5.5 provided the initial foundation, and GLM 5.3F completed development of the demo. [X post draft](docs/x-post.txt) accompanies the real browser scenery film.
+
 ## Landscape references
 
 Lake shapes and colour relationships were studied from real photographs of [Jiuzhaigou / Shuzheng Lakes](https://en.wikipedia.org/wiki/Jiuzhaigou) and [Daocheng Yading / Milk Lake](https://en.wikipedia.org/wiki/Yading). Their lessons inform procedural valley basins, wooded dams and pale shallows. No photographs were copied into world assets; screenshots and videos here come from this project.
