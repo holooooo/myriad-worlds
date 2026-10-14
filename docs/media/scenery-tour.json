@@ -1,8 +1,15 @@
 {
-  "sourceURL": "https://myriad-worlds.pages.dev/",
+  "sourceURL": "https://preview.myriad-worlds.pages.dev/",
   "seed": "sakura",
   "encodedFPS": 30,
   "recordedLive": true,
+  "captureMethod": "completed-render-canvas",
+  "resolution": [
+    3840,
+    2160
+  ],
+  "perShotBlackFades": false,
+  "encodingCRF": 18,
   "shots": [
     {
       "theme": "shanshui",
@@ -29,21 +36,34 @@
         "h": 11.65
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 421,
-      "elapsedSeconds": 7.013899999976158,
-      "meanRenderFPS": 60.02366728944397,
-      "errors": []
+      "renderFrames": 190,
+      "elapsedSeconds": 7.062800000011921,
+      "meanRenderFPS": 26.951119180640404,
+      "capturedFrames": 190,
+      "captureFPS": 26.951119180640404,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 19854942,
+      "brightness": {
+        "min": 139.71869331597293,
+        "max": 139.79212118055585,
+        "maxDelta": 0.02022100694443907
+      },
+      "errors": [],
+      "nativeDecodedFrames": 185,
+      "nativeDurationSeconds": 6.804467
     },
     {
       "theme": "shanshui",
@@ -70,21 +90,34 @@
         "h": 3.25
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 421,
-      "elapsedSeconds": 7.003899999976158,
-      "meanRenderFPS": 60.10936763823486,
-      "errors": []
+      "renderFrames": 208,
+      "elapsedSeconds": 7.048,
+      "meanRenderFPS": 29.516943860993376,
+      "capturedFrames": 208,
+      "captureFPS": 29.516943860993376,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 15664391,
+      "brightness": {
+        "min": 104.47148385416712,
+        "max": 104.7051068576391,
+        "maxDelta": 0.01776467013890226
+      },
+      "errors": [],
+      "nativeDecodedFrames": 204,
+      "nativeDurationSeconds": 6.826233
     },
     {
       "theme": "shanshui",
@@ -111,21 +144,34 @@
         "h": 10.086370821656693
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 391,
-      "elapsedSeconds": 7.0125,
-      "meanRenderFPS": 55.75757575757576,
-      "errors": []
+      "renderFrames": 181,
+      "elapsedSeconds": 7.052300000011921,
+      "meanRenderFPS": 25.690886122619865,
+      "capturedFrames": 181,
+      "captureFPS": 25.690886122619865,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 17527434,
+      "brightness": {
+        "min": 87.74378949652777,
+        "max": 87.88343880208325,
+        "maxDelta": 0.08004149305553199
+      },
+      "errors": [],
+      "nativeDecodedFrames": 177,
+      "nativeDurationSeconds": 6.784267
     },
     {
       "theme": "shanshui",
@@ -152,21 +198,34 @@
         "h": 9.5
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 421,
-      "elapsedSeconds": 7.013,
-      "meanRenderFPS": 60.0313703122772,
-      "errors": []
+      "renderFrames": 200,
+      "elapsedSeconds": 7.05,
+      "meanRenderFPS": 28.402635764502786,
+      "capturedFrames": 200,
+      "captureFPS": 28.402635764502786,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 14714119,
+      "brightness": {
+        "min": 80.77040199652768,
+        "max": 80.98137447916669,
+        "maxDelta": 0.09212751736110647
+      },
+      "errors": [],
+      "nativeDecodedFrames": 196,
+      "nativeDurationSeconds": 6.811133
     },
     {
       "theme": "shanshui",
@@ -193,21 +252,34 @@
         "h": 3.5
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 421,
-      "elapsedSeconds": 7.005899999976158,
-      "meanRenderFPS": 60.09220799632206,
-      "errors": []
+      "renderFrames": 181,
+      "elapsedSeconds": 7.0738000000119206,
+      "meanRenderFPS": 25.63412596136628,
+      "capturedFrames": 181,
+      "captureFPS": 25.63412596136628,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 21729788,
+      "brightness": {
+        "min": 36.515703385416664,
+        "max": 38.041717795138815,
+        "maxDelta": 0.10034236111111738
+      },
+      "errors": [],
+      "nativeDecodedFrames": 177,
+      "nativeDurationSeconds": 6.7567
     },
     {
       "theme": "sakura",
@@ -234,21 +306,34 @@
         "h": 3
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 336,
-      "elapsedSeconds": 7.0105,
-      "meanRenderFPS": 47.92810783824263,
-      "errors": []
+      "renderFrames": 128,
+      "elapsedSeconds": 7.084899999976158,
+      "meanRenderFPS": 18.08599324598143,
+      "capturedFrames": 128,
+      "captureFPS": 18.08599324598143,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 12479802,
+      "brightness": {
+        "min": 134.04549027777787,
+        "max": 134.5687772569445,
+        "maxDelta": 0.03842404513889619
+      },
+      "errors": [],
+      "nativeDecodedFrames": 124,
+      "nativeDurationSeconds": 6.6935
     },
     {
       "theme": "sakura",
@@ -275,21 +360,34 @@
         "h": 10.279118942352913
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 316,
-      "elapsedSeconds": 7.0113000000119206,
-      "meanRenderFPS": 45.07010112239709,
-      "errors": []
+      "renderFrames": 144,
+      "elapsedSeconds": 7.039300000011921,
+      "meanRenderFPS": 20.478398134155675,
+      "capturedFrames": 144,
+      "captureFPS": 20.478398134155675,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 28771539,
+      "brightness": {
+        "min": 127.79950833333353,
+        "max": 128.16615998263907,
+        "maxDelta": 0.09766171875011764
+      },
+      "errors": [],
+      "nativeDecodedFrames": 140,
+      "nativeDurationSeconds": 6.689233
     },
     {
       "theme": "sakura",
@@ -316,21 +414,34 @@
         "h": 0
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 294,
-      "elapsedSeconds": 7.003600000023842,
-      "meanRenderFPS": 41.97841110271848,
-      "errors": []
+      "renderFrames": 110,
+      "elapsedSeconds": 7.095,
+      "meanRenderFPS": 15.515684947042836,
+      "capturedFrames": 110,
+      "captureFPS": 15.515684947042836,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 14876702,
+      "brightness": {
+        "min": 94.86943758680526,
+        "max": 95.23570902777765,
+        "maxDelta": 0.06415390625008399
+      },
+      "errors": [],
+      "nativeDecodedFrames": 106,
+      "nativeDurationSeconds": 6.595033
     },
     {
       "theme": "sakura",
@@ -357,21 +468,34 @@
         "h": 8.25
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 406,
-      "elapsedSeconds": 7.006600000023842,
-      "meanRenderFPS": 57.945365797764744,
-      "errors": []
+      "renderFrames": 116,
+      "elapsedSeconds": 7.058899999976158,
+      "meanRenderFPS": 16.447368421163834,
+      "capturedFrames": 116,
+      "captureFPS": 16.447368421163834,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 14806053,
+      "brightness": {
+        "min": 106.87698784722245,
+        "max": 107.20054461805555,
+        "maxDelta": 0.08214947916668791
+      },
+      "errors": [],
+      "nativeDecodedFrames": 112,
+      "nativeDurationSeconds": 6.578533
     },
     {
       "theme": "sakura",
@@ -398,21 +522,34 @@
         "h": 2.75
       },
       "viewport": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "canvas": [
-        1920,
-        1080
+        3840,
+        2160
       ],
       "pixelRatio": 1,
       "cloudSeaEnabled": false,
       "maxCloudSeaStrength": 0,
       "recordedLive": true,
-      "renderFrames": 377,
-      "elapsedSeconds": 7.010899999976158,
-      "meanRenderFPS": 53.773409976077545,
-      "errors": []
+      "renderFrames": 112,
+      "elapsedSeconds": 7.122400000035762,
+      "meanRenderFPS": 15.744046782284057,
+      "capturedFrames": 112,
+      "captureFPS": 15.744046782284057,
+      "stableCapture": true,
+      "captureMethod": "completed-render-canvas",
+      "nativeMimeType": "video/mp4;codecs=avc1.640033",
+      "nativeBytes": 12760431,
+      "brightness": {
+        "min": 61.11688906250007,
+        "max": 64.80201336805554,
+        "maxDelta": 0.28027638888896433
+      },
+      "errors": [],
+      "nativeDecodedFrames": 108,
+      "nativeDurationSeconds": 6.670633
     }
   ],
   "video": {
@@ -420,14 +557,14 @@
     "stream_groups": [],
     "streams": [
       {
-        "width": 1920,
-        "height": 1080,
+        "width": 3840,
+        "height": 2160,
         "avg_frame_rate": "30/1"
       }
     ],
     "format": {
       "duration": "70.000000",
-      "size": "22772371"
+      "size": "92360013"
     }
   },
   "requestedDurationSeconds": 70.0

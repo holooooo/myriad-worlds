@@ -4676,7 +4676,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 let prScale = 1;
-const pixelRatioFor = (q) => (q === 'high' ? Math.min(devicePixelRatio, 1.6) : Math.min(devicePixelRatio, 1.2)) * prScale;
+const pixelRatioFor = (q) => (QS.get('capture') === 'stable' ? 1 : q === 'high' ? Math.min(devicePixelRatio, 1.6) : Math.min(devicePixelRatio, 1.2)) * prScale;
 renderer.setPixelRatio(pixelRatioFor(QUALITY));
 renderer.setSize(innerWidth, innerHeight, false);
 canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fatal(I18N.t('error.lost.title'), I18N.t('error.lost.message'), ''); });
@@ -4700,6 +4700,7 @@ scene.add(hemi, key, key.target);
 //  Sky dome (gradient, sun / moon, clouds, stars)
 // ---------------------------------------------------------------------
 const SKY_U = {
+  uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 },
   uTop: { value: new THREE.Color() }, uMid: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
   uGlow: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3(0, 0.1, -1) }, uSunCol: { value: new THREE.Color() },
   uGlowPow: { value: 32 }, uSunSize: { value: 0.000025 }, uStars: { value: 0 }, uStarCount: { value: 0 }, uStarDensity: { value: 1 }, uCloud: { value: 0.3 }, uTime: { value: 0 },
@@ -4711,7 +4712,7 @@ const SKY_U = {
 };
 const SKY_FS = /* glsl */`
   uniform vec3 uTop, uMid, uHor, uGlow, uSunDir, uSunCol, uCloudCol, uCloudShade, uMoonDir;
-  uniform float uGlowPow, uSunSize, uStars, uStarCount, uStarDensity, uCloud, uTime, uMoon, uMoonPhase, uMoonRadius, uMoonBrightness, uMoonHalo;
+  uniform float uStableCapture, uGlowPow, uSunSize, uStars, uStarCount, uStarDensity, uCloud, uTime, uMoon, uMoonPhase, uMoonRadius, uMoonBrightness, uMoonHalo;
   uniform vec3 uPlanetDir;
   uniform float uPlanetType, uPlanetRadius, uPlanetBrightness, uRingTilt;
   varying vec3 vDir;
@@ -4910,7 +4911,7 @@ const SKY_FS = /* glsl */`
       col = mix(col, cc, cov * smoothstep(-0.04, 0.1, y) * (0.55 + 0.45 * uCloud));
     }
     col = mix(col, uHor * 0.85, 1.0 - smoothstep(-0.25, 0.0, y));
-    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03 * (1.0 - moonCover);
+    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03 * (1.0 - moonCover) * (1.0 - uStableCapture);
     gl_FragColor = vec4(col, 1.0);
   }`;
 const skyMat = new THREE.ShaderMaterial({
@@ -5901,7 +5902,7 @@ const VOL_FS = `
   uniform sampler2D tDepth, tShadow;
   uniform mat4 uInvProj, uCamWorld, uShadowM;
   uniform vec3 uCamPos, uSunDir, uSunCol, uAmb;
-  uniform float uDens, uFall, uBase, uMaxDist, uTime, uAniso, uNoise, uShadowOn, uFrame;
+  uniform float uStableCapture, uDens, uFall, uBase, uMaxDist, uTime, uAniso, uNoise, uShadowOn, uFrame;
   uniform sampler2D uMistMap;
   uniform vec2 uMistOrigin;
   uniform float uMistSpan, uMistAmount;
@@ -5987,7 +5988,8 @@ const VOL_FS = `
     float dist = length(rd); rd /= max(dist, 1e-4);
     if (d >= 0.99999) dist = uMaxDist;
     dist = min(dist, uMaxDist);
-    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + uFrame * vec2(5.588, 3.142), vec2(0.06711056, 0.00583715))));
+    float jitterFrame = uStableCapture > 0.5 ? 0.0 : uFrame;
+    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + jitterFrame * vec2(5.588, 3.142), vec2(0.06711056, 0.00583715))));
     const int STEPS = VOL_STEPS;
     float stepLen = dist / float(STEPS);
     float cosT = dot(rd, uSunDir);
@@ -6028,6 +6030,7 @@ class VolumePass extends Pass {
     this.rtB = this.rt.clone();
     this.mat = new THREE.ShaderMaterial({
       uniforms: {
+        uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 },
         tDepth: { value: null }, tShadow: { value: null }, uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, uShadowM: { value: new THREE.Matrix4() },
         uCamPos: { value: new THREE.Vector3() }, uSunDir: { value: new THREE.Vector3() }, uSunCol: { value: new THREE.Color() }, uAmb: { value: new THREE.Color() },
         uDens: { value: 0.01 }, uFall: { value: 0.05 }, uBase: { value: 0 }, uMaxDist: { value: 420 }, uTime: { value: 0 }, uAniso: { value: 0.6 }, uNoise: { value: 0.5 }, uShadowOn: { value: 0 }, uFrame: { value: 0 },
@@ -6094,9 +6097,9 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uVig: { value: 0.55 }, uTime: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) }, uSat: { value: 1 }, uContrast: { value: 1 } },
+  uniforms: { uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 }, tDiffuse: { value: null }, uVig: { value: 0.55 }, uTime: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) }, uSat: { value: 1 }, uContrast: { value: 1 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uVig, uTime, uSat, uContrast; uniform vec3 uLift, uGain; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStableCapture, uVig, uTime, uSat, uContrast; uniform vec3 uLift, uGain; varying vec2 vUv;
     void main(){ vec4 c = texture2D(tDiffuse, vUv);
       vec3 x = c.rgb;
       float l = dot(x, vec3(0.2126, 0.7152, 0.0722));
@@ -6106,7 +6109,7 @@ const grade = new ShaderPass({
       vec2 d = vUv - 0.5; d.x *= 1.25;
       x *= 1.0 - dot(d, d) * uVig;
       float n = fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 61.0, vec2(12.9898, 78.233))) * 43758.5453);
-      x += (n - 0.5) * (1.8 / 255.0);
+      x += (n - 0.5) * (1.8 / 255.0) * (1.0 - uStableCapture);
       gl_FragColor = vec4(clamp(x, 0.0, 1.0), c.a); }`,
 });
 composer.addPass(grade);
@@ -9430,7 +9433,7 @@ window.__sv = {
     get ready() { return car.on && car.leg === 'dwell'; }, next: carouselNext },
   ST, STREAM, POOLS, key, keys, MOVE, FAUNA, SETTLEMENTS, FOLLOW, FX, TRAIN, MIST, LANTERNS, WATER_U, MIRROR, volPass, LOG, startFollow, stopFollow, setFollowViewMode, openFollowMenu, nearbyUnits,
   goCam(x, y, z, tx, ty, tz) { snapTo([x, y, z], Math.atan2(tx - x, tz - z), Math.atan2(ty - y, Math.hypot(tx - x, tz - z)), 55); introT = 1; },
-  get state() { return { seed: SEED, theme: THEME, language: I18N.lang, mood: moodName, quality: QUALITY, biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
+  get state() { return { seed: SEED, theme: THEME, language: I18N.lang, mood: moodName, quality: QUALITY, stableCapture: QS.get('capture') === 'stable', biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
 };
 requestAnimationFrame((t) => { lastNow = t; loop(t); });
 setTimeout(() => { $('loader').classList.add('done'); setTimeout(() => { const l = $('loader'); if (l) l.remove(); }, 1200); }, 250);

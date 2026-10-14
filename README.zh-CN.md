@@ -9,11 +9,11 @@
 
 **[打开在线世界 →](https://myriad-worlds.pages.dev/)**：WebGL 2 实时生成，无预渲染场景，无需账号或后端，内置中、日、英三种界面语言。
 
-[![天气与景点实机演示](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)
+[![天气与景点实机演示](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/releases/download/v1.0.2/scenery-tour-4k.mp4)
 
-**[观看 70 秒景色演示 · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)**：十段真实浏览器录屏，覆盖两种世界的彩湖、王宫、竹海、亭榭、灯市、山寺、樱林、湖畔、神社和城下町，以及晨雾、暮光、细雨、薄暮和月夜。
+**[观看 70 秒 4K 景色演示 · MP4](https://github.com/holooooo/myriad-worlds/releases/download/v1.0.2/scenery-tour-4k.mp4)**：十段真实浏览器录屏，覆盖两种世界的彩湖、王宫、竹海、亭榭、灯市、山寺、樱林、湖畔、神社和城下町，以及晨雾、暮光、细雨、薄暮和月夜。
 
-使用 [scripts/record_scenery.py](scripts/record_scenery.py)复录或自定义片单；[录屏指南](docs/recording.md)说明如何修改天气、景点、种子和竖屏格式。当前视频和截图均采用 **1920 × 1080 高清模式**；中国场景关闭云海，保留局部晨雾和天气。JSON 清单记录实际画布、质量和云海强度。截图由 [scripts/capture_screenshots.py](scripts/capture_screenshots.py)直接导出实机渲染画布。
+使用 [scripts/record_scenery.py](scripts/record_scenery.py)复录或自定义片单；[录屏指南](docs/recording.md)说明如何修改天气、景点、种子和竖屏格式。视频采用 **3840 × 2160 原生 4K 高清模式**，体积雾使用固定采样相位，停用逐帧装饰颗粒与逐镜黑场；现有截图集为独立采集的 1920 × 1080。中国场景关闭云海，保留局部晨雾和天气。JSON 清单记录实际画布、质量和云海强度。截图由 [scripts/capture_screenshots.py](scripts/capture_screenshots.py)直接导出实机渲染画布。
 
 ![中式王宫与长安城镇](docs/screenshots/shanshui-palace.jpg)
 

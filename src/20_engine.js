@@ -119,7 +119,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 let prScale = 1;
-const pixelRatioFor = (q) => (q === 'high' ? Math.min(devicePixelRatio, 1.6) : Math.min(devicePixelRatio, 1.2)) * prScale;
+const pixelRatioFor = (q) => (QS.get('capture') === 'stable' ? 1 : q === 'high' ? Math.min(devicePixelRatio, 1.6) : Math.min(devicePixelRatio, 1.2)) * prScale;
 renderer.setPixelRatio(pixelRatioFor(QUALITY));
 renderer.setSize(innerWidth, innerHeight, false);
 canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fatal(I18N.t('error.lost.title'), I18N.t('error.lost.message'), ''); });
@@ -143,6 +143,7 @@ scene.add(hemi, key, key.target);
 //  Sky dome (gradient, sun / moon, clouds, stars)
 // ---------------------------------------------------------------------
 const SKY_U = {
+  uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 },
   uTop: { value: new THREE.Color() }, uMid: { value: new THREE.Color() }, uHor: { value: new THREE.Color() },
   uGlow: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3(0, 0.1, -1) }, uSunCol: { value: new THREE.Color() },
   uGlowPow: { value: 32 }, uSunSize: { value: 0.000025 }, uStars: { value: 0 }, uStarCount: { value: 0 }, uStarDensity: { value: 1 }, uCloud: { value: 0.3 }, uTime: { value: 0 },
@@ -154,7 +155,7 @@ const SKY_U = {
 };
 const SKY_FS = /* glsl */`
   uniform vec3 uTop, uMid, uHor, uGlow, uSunDir, uSunCol, uCloudCol, uCloudShade, uMoonDir;
-  uniform float uGlowPow, uSunSize, uStars, uStarCount, uStarDensity, uCloud, uTime, uMoon, uMoonPhase, uMoonRadius, uMoonBrightness, uMoonHalo;
+  uniform float uStableCapture, uGlowPow, uSunSize, uStars, uStarCount, uStarDensity, uCloud, uTime, uMoon, uMoonPhase, uMoonRadius, uMoonBrightness, uMoonHalo;
   uniform vec3 uPlanetDir;
   uniform float uPlanetType, uPlanetRadius, uPlanetBrightness, uRingTilt;
   varying vec3 vDir;
@@ -353,7 +354,7 @@ const SKY_FS = /* glsl */`
       col = mix(col, cc, cov * smoothstep(-0.04, 0.1, y) * (0.55 + 0.45 * uCloud));
     }
     col = mix(col, uHor * 0.85, 1.0 - smoothstep(-0.25, 0.0, y));
-    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03 * (1.0 - moonCover);
+    col *= 1.0 + (h21(gl_FragCoord.xy + fract(uTime)) - 0.5) * 0.03 * (1.0 - moonCover) * (1.0 - uStableCapture);
     gl_FragColor = vec4(col, 1.0);
   }`;
 const skyMat = new THREE.ShaderMaterial({

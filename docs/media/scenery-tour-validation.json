@@ -1,0 +1,116 @@
+{
+  "video": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 3840,
+        "height": 2160,
+        "pix_fmt": "yuv420p",
+        "avg_frame_rate": "30/1",
+        "nb_read_frames": "2100"
+      }
+    ],
+    "format": {
+      "duration": "70.000000",
+      "size": "92360013"
+    }
+  },
+  "totalBlackFrames": 0,
+  "shots": [
+    {
+      "title": "九寨彩湖 · 晨雾",
+      "sourceCaptureFPS": 26.95,
+      "blackFrames": 0,
+      "meanBrightness": 137.21,
+      "maxBrightnessDelta": 0.063,
+      "maxMeanPixelDelta": 0.229,
+      "nativeDecodedFrames": 185
+    },
+    {
+      "title": "王宫御苑 · 暮光",
+      "sourceCaptureFPS": 29.52,
+      "blackFrames": 0,
+      "meanBrightness": 105.2,
+      "maxBrightnessDelta": 0.049,
+      "maxMeanPixelDelta": 0.204,
+      "nativeDecodedFrames": 204
+    },
+    {
+      "title": "江南竹海 · 细雨",
+      "sourceCaptureFPS": 25.69,
+      "blackFrames": 0,
+      "meanBrightness": 84.65,
+      "maxBrightnessDelta": 0.089,
+      "maxMeanPixelDelta": 0.25,
+      "nativeDecodedFrames": 177
+    },
+    {
+      "title": "湖心亭榭 · 薄暮",
+      "sourceCaptureFPS": 28.4,
+      "blackFrames": 0,
+      "meanBrightness": 78.66,
+      "maxBrightnessDelta": 0.061,
+      "maxMeanPixelDelta": 0.208,
+      "nativeDecodedFrames": 196
+    },
+    {
+      "title": "长安灯市 · 月夜",
+      "sourceCaptureFPS": 25.63,
+      "blackFrames": 0,
+      "meanBrightness": 35.7,
+      "maxBrightnessDelta": 0.061,
+      "maxMeanPixelDelta": 0.288,
+      "nativeDecodedFrames": 177
+    },
+    {
+      "title": "山寺古院 · 晨雾",
+      "sourceCaptureFPS": 18.09,
+      "blackFrames": 0,
+      "meanBrightness": 133.92,
+      "maxBrightnessDelta": 0.091,
+      "maxMeanPixelDelta": 0.237,
+      "nativeDecodedFrames": 124
+    },
+    {
+      "title": "樱花山林 · 暮光",
+      "sourceCaptureFPS": 20.48,
+      "blackFrames": 0,
+      "meanBrightness": 130.07,
+      "maxBrightnessDelta": 0.105,
+      "maxMeanPixelDelta": 0.198,
+      "nativeDecodedFrames": 140
+    },
+    {
+      "title": "湖畔雨景 · 细雨",
+      "sourceCaptureFPS": 15.52,
+      "blackFrames": 0,
+      "meanBrightness": 92.32,
+      "maxBrightnessDelta": 0.096,
+      "maxMeanPixelDelta": 0.214,
+      "nativeDecodedFrames": 106
+    },
+    {
+      "title": "朱红神社 · 薄暮",
+      "sourceCaptureFPS": 16.45,
+      "blackFrames": 0,
+      "meanBrightness": 105.97,
+      "maxBrightnessDelta": 0.088,
+      "maxMeanPixelDelta": 0.256,
+      "nativeDecodedFrames": 112
+    },
+    {
+      "title": "大名城下町 · 月夜",
+      "sourceCaptureFPS": 15.74,
+      "blackFrames": 0,
+      "meanBrightness": 62.11,
+      "maxBrightnessDelta": 0.187,
+      "maxMeanPixelDelta": 0.598,
+      "nativeDecodedFrames": 108
+    }
+  ],
+  "allNative4kHigh": true,
+  "allChineseCloudSeaOff": true,
+  "continuousBrightnessSpikes": 0
+}

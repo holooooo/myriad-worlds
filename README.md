@@ -9,11 +9,11 @@ Living, seed-generated landscapes in your browser. Wander on foot, fly above the
 
 **[Explore the live world →](https://myriad-worlds.pages.dev/)** — real-time WebGL 2, no pre-rendered scenery, account or backend required. Chinese, Japanese and English interfaces are included.
 
-[![Weather and scenery film](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)
+[![Weather and scenery film](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/releases/download/v1.0.2/scenery-tour-4k.mp4)
 
-**[Watch the 70-second scenery film · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)** — ten real browser recordings across both worlds: mineral lakes, palace gardens, bamboo, pavilions, lantern markets, temples, blossom forests, lakesides, shrines and castle towns, under morning mist, golden hour, rain, dusk and moonlight.
+**[Watch the 70-second 4K scenery film · MP4](https://github.com/holooooo/myriad-worlds/releases/download/v1.0.2/scenery-tour-4k.mp4)** — ten real browser recordings across both worlds: mineral lakes, palace gardens, bamboo, pavilions, lantern markets, temples, blossom forests, lakesides, shrines and castle towns, under morning mist, golden hour, rain, dusk and moonlight.
 
-Re-record or customize the shot list with [scripts/record_scenery.py](scripts/record_scenery.py); the [recording guide](docs/recording.md) covers weather, destinations, seeds and portrait output. The current film and screenshots use **high mode at 1920 × 1080**; Chinese captures disable the cloud sea while retaining local mist and weather. Capture manifests record the actual canvas, quality and cloud-sea strength. Screenshots are exported from the running render canvas with [scripts/capture_screenshots.py](scripts/capture_screenshots.py).
+Re-record or customize the shot list with [scripts/record_scenery.py](scripts/record_scenery.py); the [recording guide](docs/recording.md) covers weather, destinations, seeds and portrait output. The film uses **native 3840 × 2160 high mode** with stable volumetric sampling and no animated cosmetic grain or per-shot black fades; the existing screenshot set is captured at 1920 × 1080. Chinese captures disable the cloud sea while retaining local mist and weather. Capture manifests record the actual canvas, quality and cloud-sea strength. Screenshots are exported from the running render canvas with [scripts/capture_screenshots.py](scripts/capture_screenshots.py).
 
 ![Shanshui palace and city](docs/screenshots/shanshui-palace.jpg)
 

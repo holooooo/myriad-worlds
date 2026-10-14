@@ -1,6 +1,6 @@
 # 景点与天气实机录屏 · Live scenery recording
 
-脚本 [`scripts/record_scenery.py`](../scripts/record_scenery.py)在真实浏览器里寻找景点、切换实际天气、等待近景地形加载，再逐段录屏。每段有缓慢横移和中文景点字幕；只录制已加载的场景，不把寻景与加载画面放进成片。
+脚本 [`scripts/record_scenery.py`](../scripts/record_scenery.py)在真实浏览器里寻找景点、切换实际天气、等待近景地形加载，再逐段录屏。每段使用固定的已检查机位和中文景点字幕；只录制已加载的场景，不把寻景与加载画面放进成片。
 
 ## 默认片单
 
@@ -17,7 +17,7 @@
 | 花见日本 | 朱红神社 | 薄暮 |
 | 花见日本 | 大名城下町 | 月夜 |
 
-默认每镜 7 秒，横屏 1920 × 1080，使用当前 `q=high` 高清模式；中国场景默认关闭云海，晨雾、雨雾和其他天气设置继续生效。逐帧核验中国云海的 shader 强度始终为零。录屏封装为 30 FPS；实际 WebGL 帧率取决于机器，记录在 JSON 中，不能将视频编码帧率当作渲染性能。`--resolution 720p` 可选择较小输出。
+默认每镜 7 秒，横屏 **3840 × 2160 原生 4K**，使用当前 `q=high` 高清模式和 `capture=stable` 稳定采集设置。录制时固定体积雾采样相位，关闭天空／调色的逐帧颗粒；雨、雾、云层、植被和角色的正常运动继续生效。使用固定机位避免跨 LOD／阴影网格跳变。中国场景关闭云海，逐帧核验实际 shader 强度为零。采集仅在完整渲染结束后拷贝同尺寸画布，不放大旧视频，不插入逐镜黑场。H.264 使用 CRF 18，封装为 30 FPS；实际渲染和采集帧率另存于 JSON，遇到渲染停止或严重缺帧会失败。`--resolution 1080p` / `720p` 可选择较小输出。
 
 ## 运行
 
@@ -62,7 +62,7 @@ python3 scripts/record_scenery.py --url http://127.0.0.1:8765/
 ]
 ```
 
-同一景点重复配置不同 `mood` 即可录制天气对比。`distance` 与 `height` 控制取景距离和离地高度；脚本调用引擎的地形视线取景函数，在同一景点寻找通透的机位，然后做轻微横移。
+同一景点重复配置不同 `mood` 即可录制天气对比。`distance` 与 `height` 控制取景距离和离地高度；脚本调用引擎的地形视线取景函数，在同一景点寻找通透的机位并保持固定，保留真实天气与角色运动。
 
 ## 高清截图
 
@@ -72,14 +72,12 @@ python3 scripts/record_scenery.py --url http://127.0.0.1:8765/
 python3 scripts/capture_screenshots.py --url https://myriad-worlds.pages.dev/
 ```
 
-## X 发布
+## X 文案
 
-[`media/myriad-worlds-x.mp4`](media/myriad-worlds-x.mp4)为 40 秒短版：保留全部十个景点与天气镜头，每镜 4 秒，H.264、1920 × 1080、30 FPS，无音轨，可直接上传 X。录制采用当前高清模式，中国云海关闭。搭配 [`x-post.txt`](x-post.txt)中的简短文案使用。短版从 70 秒实机录屏逐镜裁切；也可用 `--seconds 4`重新录制 40 秒片单。
-
-参考宝玉的提示词与开发模型分工已写入文案和 README。X 发布完成后，使用帖文的公开链接更新 README 视频入口。
+[`x-post.txt`](x-post.txt)保留简短文案、宝玉的提示词来源与 Opus 5.5 / GLM 5.3F 的开发分工。视频只发布 4K 完整版，不再生成或发布单独的 X 短片。X 发布完成后，使用帖文的公开链接更新 README 视频入口。
 
 ## 产物
 
-`docs/media/` 保留最终 MP4、短 GIF 预览、JPG 封面和 JSON 录制清单；原始 WebM、逐镜 MP4／截图写入被 Git 忽略的 `output/scenery/`。JSON 包含来源 URL、种子、机位、景点、天气、分辨率、实际帧数和错误列表，便于复录与核验。
+完整 4K 成片与原始素材写入被 Git 忽略的 `output/media/` / `output/scenery/`，成片作为 GitHub Release 附件分发。`docs/media/`只保留 GIF 预览、JPG 封面和 JSON 清单。JSON 记录原生画布、质量、稳定采样、实际采集速率、逐帧亮度与云海强度、错误列表以及最终时长。大文件不加入 Git 当前代码树；X 短片已移除。
 
 另有 [`scripts/record_demos.py`](../scripts/record_demos.py)用于录制巡游、天空滑块和火车视角等操作演示；这里的脚本专门展示不同天气的景点景色。

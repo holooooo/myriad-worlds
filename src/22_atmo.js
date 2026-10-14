@@ -117,7 +117,7 @@ const VOL_FS = `
   uniform sampler2D tDepth, tShadow;
   uniform mat4 uInvProj, uCamWorld, uShadowM;
   uniform vec3 uCamPos, uSunDir, uSunCol, uAmb;
-  uniform float uDens, uFall, uBase, uMaxDist, uTime, uAniso, uNoise, uShadowOn, uFrame;
+  uniform float uStableCapture, uDens, uFall, uBase, uMaxDist, uTime, uAniso, uNoise, uShadowOn, uFrame;
   uniform sampler2D uMistMap;
   uniform vec2 uMistOrigin;
   uniform float uMistSpan, uMistAmount;
@@ -203,7 +203,8 @@ const VOL_FS = `
     float dist = length(rd); rd /= max(dist, 1e-4);
     if (d >= 0.99999) dist = uMaxDist;
     dist = min(dist, uMaxDist);
-    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + uFrame * vec2(5.588, 3.142), vec2(0.06711056, 0.00583715))));
+    float jitterFrame = uStableCapture > 0.5 ? 0.0 : uFrame;
+    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + jitterFrame * vec2(5.588, 3.142), vec2(0.06711056, 0.00583715))));
     const int STEPS = VOL_STEPS;
     float stepLen = dist / float(STEPS);
     float cosT = dot(rd, uSunDir);
@@ -244,6 +245,7 @@ class VolumePass extends Pass {
     this.rtB = this.rt.clone();
     this.mat = new THREE.ShaderMaterial({
       uniforms: {
+        uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 },
         tDepth: { value: null }, tShadow: { value: null }, uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, uShadowM: { value: new THREE.Matrix4() },
         uCamPos: { value: new THREE.Vector3() }, uSunDir: { value: new THREE.Vector3() }, uSunCol: { value: new THREE.Color() }, uAmb: { value: new THREE.Color() },
         uDens: { value: 0.01 }, uFall: { value: 0.05 }, uBase: { value: 0 }, uMaxDist: { value: 420 }, uTime: { value: 0 }, uAniso: { value: 0.6 }, uNoise: { value: 0.5 }, uShadowOn: { value: 0 }, uFrame: { value: 0 },
@@ -310,9 +312,9 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uVig: { value: 0.55 }, uTime: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) }, uSat: { value: 1 }, uContrast: { value: 1 } },
+  uniforms: { uStableCapture: { value: QS.get('capture') === 'stable' ? 1 : 0 }, tDiffuse: { value: null }, uVig: { value: 0.55 }, uTime: { value: 0 }, uLift: { value: new THREE.Vector3() }, uGain: { value: new THREE.Vector3(1, 1, 1) }, uSat: { value: 1 }, uContrast: { value: 1 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uVig, uTime, uSat, uContrast; uniform vec3 uLift, uGain; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStableCapture, uVig, uTime, uSat, uContrast; uniform vec3 uLift, uGain; varying vec2 vUv;
     void main(){ vec4 c = texture2D(tDiffuse, vUv);
       vec3 x = c.rgb;
       float l = dot(x, vec3(0.2126, 0.7152, 0.0722));
@@ -322,7 +324,7 @@ const grade = new ShaderPass({
       vec2 d = vUv - 0.5; d.x *= 1.25;
       x *= 1.0 - dot(d, d) * uVig;
       float n = fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 61.0, vec2(12.9898, 78.233))) * 43758.5453);
-      x += (n - 0.5) * (1.8 / 255.0);
+      x += (n - 0.5) * (1.8 / 255.0) * (1.0 - uStableCapture);
       gl_FragColor = vec4(clamp(x, 0.0, 1.0), c.a); }`,
 });
 composer.addPass(grade);

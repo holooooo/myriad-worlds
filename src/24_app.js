@@ -870,7 +870,7 @@ window.__sv = {
     get ready() { return car.on && car.leg === 'dwell'; }, next: carouselNext },
   ST, STREAM, POOLS, key, keys, MOVE, FAUNA, SETTLEMENTS, FOLLOW, FX, TRAIN, MIST, LANTERNS, WATER_U, MIRROR, volPass, LOG, startFollow, stopFollow, setFollowViewMode, openFollowMenu, nearbyUnits,
   goCam(x, y, z, tx, ty, tz) { snapTo([x, y, z], Math.atan2(tx - x, tz - z), Math.atan2(ty - y, Math.hypot(tx - x, tz - z)), 55); introT = 1; },
-  get state() { return { seed: SEED, theme: THEME, language: I18N.lang, mood: moodName, quality: QUALITY, biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
+  get state() { return { seed: SEED, theme: THEME, language: I18N.lang, mood: moodName, quality: QUALITY, stableCapture: QS.get('capture') === 'stable', biome: HUD.biome >= 0 ? GEN.BIOME_NAMES[HUD.biome][1] : '?' }; },
 };
 requestAnimationFrame((t) => { lastNow = t; loop(t); });
 setTimeout(() => { $('loader').classList.add('done'); setTimeout(() => { const l = $('loader'); if (l) l.remove(); }, 1200); }, 250);
