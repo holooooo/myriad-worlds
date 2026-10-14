@@ -17,9 +17,16 @@ function updateMist(dt, t) {
   const lowSun = 1 - smoothstep(0.12, 0.55, ATM.sunDir.y);
   u.uMistAmount.value = 0.35 + lowSun * 0.65 + ATM.rain * 0.3;
   const cloud = GEN.profile.mist;
-  const mountainView = smoothstep(25, 65, camera.position.y);
-  u.uCloudSea.value.set(cloud?.cloudSea ? (0.012 + lowSun * 0.013) * mountainView : 0, cloud?.base || 42, 20, 0);
-  u.uMaxDist.value = cloud?.cloudSea ? 1200 : 420;
+  // Cloud sea presence is gated on *camera* altitude: standing at ground level
+  // there must be no deck at all (it reads as smog), while climbing to the
+  // peaks reveals a rolling sea. The shader also fades it per-ray using
+  // camera Y (packed into .w), so both the layer and the total absence agree.
+  const camY = camera.position.y;
+  const base = cloud?.base || 42;
+  const lift = smoothstep(base - 22, base + 14, camY);
+  const strength = cloud?.cloudSea ? (0.010 + lowSun * 0.012) * lift : 0;
+  u.uCloudSea.value.set(strength, base, cloud?.thickness || 20, camY);
+  u.uMaxDist.value = strength > 0.0005 ? 1600 : 420;
   MIST.timer -= dt;
   const x = Math.floor(camera.position.x / MIST.cell) * MIST.cell - MIST.size * MIST.cell / 2;
   const z = Math.floor(camera.position.z / MIST.cell) * MIST.cell - MIST.size * MIST.cell / 2;

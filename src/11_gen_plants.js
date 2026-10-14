@@ -122,7 +122,9 @@ function cherryTree(x, z, kind, seed, S = 1, detail = 0.55) {
   }
   for (const t of tips) {
     cluster(t.p, K.cl * S * t.s * RR(0.85, 1.2), t.d);
-    if (K.strands && rng() < K.strands) strand(t.p, RR(3.5, 6.5) * S);
+    // Weeping cherries hang a second, longer curtain of blossom from the
+    // outer tips, which is what reads as "shidare" at a distance.
+    if (K.strands && rng() < K.strands * 1.45) strand(t.p, RR(3.8, 8.2) * S);
   }
 }
 function conifer(x, z, s, seed, snowy = false, y) {
@@ -177,27 +179,149 @@ function pine(x, z, s, seed) {
   for (let k = 0; k < 3; k++) kit.box('leaf', p.x + (rng() - 0.5) * 1.2 * s, p.y + 0.3 * s, p.z + (rng() - 0.5) * 1.2 * s, 1.6 * s, 0.5 * s, 1.6 * s, COL.pine, 0, rng() * 3, 0);
 }
 function bamboo(x, z, seed) {
+  // High-fidelity bamboo: segmented culm with node rings, tapered diameter,
+  // lateral branch pairs at each node, and cascading leaf fans.
   const rng = mulberry32(seed);
-  const y = G(x, z), H = 8 + rng() * 7, lean = (rng() - 0.5) * 0.09, lean2 = (rng() - 0.5) * 0.09;
-  const c = C(rng() > 0.5 ? 0x7d9c50 : 0x6d8c46).multiplyScalar(0.85 + rng() * 0.25);
-  kit.box('solid', x + lean * H * 0.5, y + H / 2, z + lean2 * H * 0.5, 0.13, H, 0.13, c, lean2, 0, -lean);
-  for (let n = 1; n < 5; n++) kit.box('solid', x + lean * H * n / 5, y + H * n / 5, z + lean2 * H * n / 5, 0.16, 0.045, 0.16, c.clone().multiplyScalar(0.8));
-  for (let k = 0; k < 3; k++) kit.box('leaf', x + lean * H + (rng() - 0.5) * 1.4, y + H - rng() * 2.4, z + lean2 * H + (rng() - 0.5) * 1.4, 0.75 + rng() * 0.5, 0.16, 0.75 + rng() * 0.5, C(0x7a9c4c).multiplyScalar(0.8 + rng() * 0.3), (rng() - 0.5) * 0.5, rng() * 3, (rng() - 0.5) * 0.5);
+  const y = G(x, z);
+  const H = 9 + rng() * 8;           // culm height 9–17
+  const S = 0.9 + rng() * 0.3;       // size scalar
+  // Lean: gentle arc in a random direction
+  const leanDir = rng() * Math.PI * 2;
+  const leanAmt = 0.04 + rng() * 0.06;
+  const lx = Math.cos(leanDir) * leanAmt;
+  const lz = Math.sin(leanDir) * leanAmt;
+  // Culm colours: moso (yellow-green) or madake (cooler green)
+  const culmHex = rng() > 0.45 ? 0x8aaa52 : 0x6e9448;
+  const culmC = C(culmHex);
+  const nodeC = C(culmHex).multiplyScalar(0.72);
+  const segments = 7 + Math.floor(rng() * 4);   // 7–10 internodes
+  const segH = H / segments;
+  // Draw each internode as a tapered box
+  for (let i = 0; i < segments; i++) {
+    const t = i / segments;
+    const baseY = y + i * segH;
+    const midY = baseY + segH * 0.5;
+    const cx = x + lx * (i + 0.5) * segH;
+    const cz = z + lz * (i + 0.5) * segH;
+    const diam = (0.16 - t * 0.09) * S;         // tapers from base to tip
+    const shade = 0.78 + t * 0.22;              // darker at base, brighter tip
+    kit.box('solid', cx, midY, cz, diam, segH * 0.98, diam,
+      culmC.clone().multiplyScalar(shade), lz, 0, -lx);
+    // Node ring (slightly wider, darker band)
+    if (i > 0) {
+      const nx = x + lx * i * segH, nz = z + lz * i * segH;
+      kit.box('solid', nx, baseY, nz, diam * 1.28, 0.055 * S, diam * 1.28, nodeC);
+    }
+    // Lateral branches from mid-culm upward
+    if (i >= Math.floor(segments * 0.35)) {
+      const branchCount = i >= Math.floor(segments * 0.6) ? 2 : 1;
+      for (let b = 0; b < branchCount; b++) {
+        const angle = leanDir + Math.PI * b + rng() * 0.6 - 0.3;
+        const bLen = (0.9 + rng() * 1.1) * S * (0.5 + t * 0.7);
+        const bx = x + lx * i * segH, bz = z + lz * i * segH;
+        const tipX = bx + Math.cos(angle) * bLen;
+        const tipZ = bz + Math.sin(angle) * bLen;
+        const tipY = baseY + segH * (0.35 + rng() * 0.3) + bLen * 0.18;
+        // Branch stem
+        const bmx = (bx + tipX) * 0.5, bmy = (baseY + segH * 0.4 + tipY) * 0.5, bmz = (bz + tipZ) * 0.5;
+        kit.box('solid', bmx, bmy, bmz, 0.05 * S, bLen * 1.05, 0.05 * S,
+          nodeC, (tipY - baseY - segH * 0.4) / bLen * 0.8, angle, 0);
+        // Leaf fan at branch tip: 3–5 narrow leaf blades
+        const leafCount = 3 + Math.floor(rng() * 3);
+        const leafC = C(rng() > 0.5 ? 0x8eb858 : 0x7aab50).multiplyScalar(0.82 + rng() * 0.22);
+        for (let k = 0; k < leafCount; k++) {
+          const la = angle + (k - leafCount * 0.5) * 0.32 + rng() * 0.15;
+          const lLen = (0.55 + rng() * 0.55) * S;
+          const lx2 = tipX + Math.cos(la) * lLen * 0.5;
+          const lz2 = tipZ + Math.sin(la) * lLen * 0.5;
+          const ly2 = tipY - lLen * 0.12;
+          kit.box('leaf', lx2, ly2, lz2,
+            lLen * 0.22, 0.06 * S, lLen,
+            leafC.clone().multiplyScalar(0.88 + rng() * 0.24),
+            -0.18 - rng() * 0.22, la, (rng() - 0.5) * 0.25);
+        }
+      }
+    }
+  }
+  // Crown tuft at apex
+  const topX = x + lx * H, topZ = z + lz * H, topY = y + H;
+  const crownC = C(0x90c05a).multiplyScalar(0.85 + rng() * 0.18);
+  for (let k = 0; k < 5; k++) {
+    const a = leanDir + k * 1.257 + rng() * 0.4;
+    const r = (0.5 + rng() * 0.6) * S;
+    kit.box('leaf', topX + Math.cos(a) * r * 0.6, topY - rng() * 0.8, topZ + Math.sin(a) * r * 0.6,
+      r * 0.2, 0.07 * S, r,
+      crownC.clone().multiplyScalar(0.9 + rng() * 0.2),
+      -0.25 - rng() * 0.2, a, (rng() - 0.5) * 0.3);
+  }
 }
 function willow(x, z, seed, gy) {
-  const rng = mulberry32(seed), y = gy === undefined ? G(x, z) : gy, scale = 0.85 + rng() * 0.65;
-  const yaw = rng() * Math.PI * 2, leanX = (rng() - 0.5) * 0.6 * scale, leanZ = (rng() - 0.5) * 0.6 * scale;
-  const top = [x + leanX, y + 3.7 * scale, z + leanZ];
-  kit.beam('solid', x, y - 0.15, z, ...top, 0.36 * scale, 0.32 * scale, C(0x514738));
-  for (let i = 0; i < 5; i++) {
-    const a = yaw + i * 2.399, r = (1.7 + rng() * 1.2) * scale;
-    const bx = top[0] + Math.cos(a) * r, bz = top[2] + Math.sin(a) * r, by = top[1] + (0.3 + rng() * 0.8) * scale;
-    kit.beam('solid', ...top, bx, by, bz, 0.13 * scale, 0.11 * scale, C(0x61543f));
-    kit.box('foliage', bx, by + 0.05, bz, 1.5 * scale, 0.7 * scale, 1.35 * scale, C(0x708950).multiplyScalar(0.87 + rng() * 0.17), 0, a, 0);
-    for (let j = 0; j < 4; j++) {
-      const t = 0.42 + j * 0.18, px = lerp(top[0], bx, t) + (rng() - 0.5) * 0.6 * scale, pz = lerp(top[2], bz, t) + (rng() - 0.5) * 0.6 * scale;
-      const py = lerp(top[1], by, t), length = (1.5 + rng() * 1.7) * scale;
-      kit.box('willow', px, py, pz, 1.0 * scale, length, scale, C([0x92a86a, 0x819c59, 0x65854c][j % 3]).multiplyScalar(0.88 + rng() * 0.2), 0, a + rng(), 0);
+  // High-fidelity weeping willow: gnarled tapered trunk, radiating primary
+  // boughs, dense weeping curtains of cascading strands, layered crown foliage.
+  const rng = mulberry32(seed);
+  const y = gy === undefined ? G(x, z) : gy;
+  const scale = 1.1 + rng() * 0.75;            // larger, more imposing
+  const yaw = rng() * Math.PI * 2;
+  // Slight lean
+  const leanDir = yaw + rng() * 0.5;
+  const leanAmt = 0.08 + rng() * 0.1;
+  const lx = Math.cos(leanDir) * leanAmt * scale;
+  const lz = Math.sin(leanDir) * leanAmt * scale;
+  // Trunk: two segments for a slightly bent silhouette
+  const trunkH = (3.2 + rng() * 1.4) * scale;
+  const midTrunk = [x + lx * 0.4, y + trunkH * 0.45, z + lz * 0.4];
+  const crown = [x + lx, y + trunkH, z + lz];
+  const barkC = C(0x4a3d2e);
+  const barkMid = C(0x584637);
+  kit.beam('solid', x, y - 0.2, z, midTrunk[0], midTrunk[1], midTrunk[2],
+    0.44 * scale, 0.38 * scale, barkC);
+  kit.beam('solid', midTrunk[0], midTrunk[1], midTrunk[2], crown[0], crown[1], crown[2],
+    0.38 * scale, 0.28 * scale, barkMid);
+  // Crown canopy foliage blob (gives the tree its silhouette mass)
+  const canopyC = C(0x6a8e44).multiplyScalar(0.8 + rng() * 0.22);
+  const cw = (2.6 + rng() * 1.0) * scale, ch = (2.0 + rng() * 0.8) * scale;
+  kit.box('foliage', crown[0], crown[1] + ch * 0.3, crown[2], cw, ch, cw * 0.92, canopyC);
+  // Primary boughs: 5–7 radiating arms from crown
+  const boughCount = 5 + Math.floor(rng() * 3);
+  for (let i = 0; i < boughCount; i++) {
+    const a = yaw + i * (Math.PI * 2 / boughCount) + rng() * 0.4;
+    const boughR = (1.5 + rng() * 1.4) * scale;
+    const bx = crown[0] + Math.cos(a) * boughR;
+    const bz = crown[2] + Math.sin(a) * boughR;
+    const by = crown[1] + (rng() * 0.9 - 0.1) * scale;   // slight droop
+    kit.beam('solid', crown[0], crown[1], crown[2], bx, by, bz,
+      0.14 * scale, 0.09 * scale, barkMid);
+    // Secondary foliage pad at bough tip
+    const leafC = C([0x7da84e, 0x86b052, 0x6e9a44][i % 3]).multiplyScalar(0.84 + rng() * 0.2);
+    kit.box('foliage', bx, by + 0.15 * scale, bz,
+      (1.2 + rng() * 0.6) * scale, 0.55 * scale, (1.1 + rng() * 0.6) * scale,
+      leafC, 0, a, 0);
+    // Weeping curtain from each bough: 4–6 cascading strand pairs
+    const strandCount = 4 + Math.floor(rng() * 3);
+    for (let j = 0; j < strandCount; j++) {
+      // Spread strands along the bough arm
+      const t = 0.3 + j / strandCount * 0.65;
+      const sx = lerp(crown[0], bx, t) + (rng() - 0.5) * 0.8 * scale;
+      const sz = lerp(crown[2], bz, t) + (rng() - 0.5) * 0.8 * scale;
+      const sy = lerp(crown[1], by, t) + rng() * 0.3 * scale;
+      const strandLen = (1.8 + rng() * 2.2) * scale;
+      // The weeping strand — a narrow tall box hanging down
+      const strandC = C([0x8ab858, 0x7dac4e, 0x6b9840, 0x92c060][j % 4])
+        .multiplyScalar(0.82 + rng() * 0.24);
+      const strandW = (0.32 + rng() * 0.28) * scale;
+      kit.box('willow', sx, sy - strandLen * 0.5, sz,
+        strandW, strandLen, strandW * 0.6,
+        strandC, -0.06 - rng() * 0.12, a + (rng() - 0.5) * 0.6, (rng() - 0.5) * 0.1);
+      // A second shorter inner strand offset inward for layering
+      if (rng() > 0.38) {
+        const ix = sx + Math.cos(a) * (-0.3 - rng() * 0.3) * scale;
+        const iz = sz + Math.sin(a) * (-0.3 - rng() * 0.3) * scale;
+        const iLen = strandLen * (0.5 + rng() * 0.4);
+        kit.box('willow', ix, sy - iLen * 0.5, iz,
+          strandW * 0.75, iLen, strandW * 0.5,
+          strandC.clone().multiplyScalar(0.9 + rng() * 0.15),
+          -0.04 - rng() * 0.08, a + (rng() - 0.5) * 0.8, 0);
+      }
     }
   }
 }

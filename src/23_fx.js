@@ -21,88 +21,199 @@ function kitToGroup(build) {
   }
   return g;
 }
-const TCOL = { black: GEN.C(0x1d1e21), iron: GEN.C(0x2b2d31), red: GEN.C(0x8e2a22), brass: GEN.C(0xb8923e), maroon: GEN.C(0x5b2a23), roof: GEN.C(0x2c2a2a), win: GEN.C(0xf3dcb0), gold: GEN.C(0xc8a14c) };
+const TCOL = { black: GEN.C(0x1d1e21), iron: GEN.C(0x35383d), red: GEN.C(0x8e2a22), brass: GEN.C(0xb8923e), maroon: GEN.C(0x5b2a23), roof: GEN.C(0x2c2a2a), win: GEN.C(0xf3dcb0), gold: GEN.C(0xc8a14c), steel: GEN.C(0x4a4e54), smoke: GEN.C(0x23262a) };
+// British-built 4-6-0 export type: tapered boiler, outside cylinders, a tall
+// copper-capped chimney and a cab with a wide front spectacle plate.
 function buildLoco(K) {
   // local frame: +x forward, y up, rails at y=0
-  for (const sx of [-3.4, -1.6, 0.2, 2.0]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.75, sz, 1.5, 1.5, 0.16, TCOL.red);
-  for (const sx of [3.9, 4.8]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.45, sz, 0.8, 0.8, 0.14, TCOL.red);
-  K.box('solid', 0, 1.35, 0, 10, 0.4, 2.4, TCOL.iron);
-  K.box('solid', 0.8, 2.25, 0, 7.4, 1.7, 1.75, TCOL.black);
-  K.box('solid', 0.8, 2.25, 0, 7.0, 1.9, 1.5, TCOL.black);
-  for (const x of [-0.8, 1.6, 3.4]) K.box('metal', x, 2.3, 0, 0.12, 2.0, 1.9, TCOL.brass);
-  K.box('solid', 4.6, 2.25, 0, 0.3, 1.8, 1.8, TCOL.iron);
-  K.box('glow', 4.85, 2.4, 0, 0.12, 0.5, 0.5, GEN.C(0xfff2c8));
-  K.box('solid', 3.6, 3.6, 0, 0.6, 1.4, 0.6, TCOL.black);
-  K.box('solid', 3.6, 4.35, 0, 0.85, 0.25, 0.85, TCOL.black);
-  K.box('metal', 1.6, 3.35, 0, 0.7, 0.6, 0.7, TCOL.brass);
-  K.box('solid', -0.4, 3.3, 0, 0.6, 0.55, 0.6, TCOL.black);
-  K.box('solid', -3.6, 2.6, 0, 2.8, 2.6, 2.5, TCOL.black);
-  K.box('solid', -3.6, 4.05, 0, 3.2, 0.25, 2.8, TCOL.roof);
-  for (const sz of [-1.26, 1.26]) K.box('glow', -3.3, 2.9, sz, 1.1, 0.8, 0.04, TCOL.win);
-  K.box('solid', 5.1, 0.6, 0, 0.5, 0.5, 2.4, TCOL.red);
-  K.box('solid', 4.7, 1.0, 0, 0.3, 0.3, 2.0, TCOL.iron);
+  const WHEEL = GEN.C(0x2a2d31), RIM = GEN.C(0x53575d);
+  // driving wheels: three axles, each a squat box with a brighter rim band
+  for (const x of [0.1, 2.05, 4.0]) for (const sz of [-1.13, 1.13]) {
+    K.box('metal', x, 0.78, sz, 1.62, 1.56, 0.17, WHEEL, 0, 0, Math.PI / 4);
+    K.box('metal', x, 0.78, sz * 1.03, 1.72, 1.66, 0.05, RIM, 0, 0, Math.PI / 4);
+  }
+  // leading bogie pair
+  for (const x of [6.35, 7.55]) for (const sz of [-1.05, 1.05]) K.box('metal', x, 0.52, sz, 1.05, 1.04, 0.16, WHEEL, 0, 0, Math.PI / 4);
+  // frames and running boards
+  for (const sz of [-1.2, 1.2]) {
+    K.box('solid', 1.6, 1.28, sz, 11.6, 0.3, 0.24, TCOL.iron);
+    K.box('solid', 1.6, 1.9, sz * 1.16, 11.9, 0.16, 0.86, TCOL.black);
+    K.box('metal', 1.6, 1.98, sz * 1.58, 11.9, 0.07, 0.07, TCOL.steel);
+  }
+  K.box('solid', 1.6, 1.5, 0, 11.2, 0.5, 2.1, TCOL.iron);
+  // tapered boiler: smokebox forward, firebox under the cab
+  const white = GEN.C(0x1a1c1f);
+  K.box('solid', 3.55, 2.62, 0, 1.5, 1.72, 1.72, white);
+  K.box('metal', 4.24, 2.62, 0, 0.22, 1.86, 1.86, TCOL.steel);
+  K.box('solid', 2.45, 2.66, 0, 1.0, 1.8, 1.86, TCOL.black);
+  K.box('solid', 1.2, 2.7, 0, 1.6, 1.78, 1.9, TCOL.black);
+  K.box('solid', -0.35, 2.72, 0, 1.7, 1.8, 1.94, TCOL.black);
+  K.box('solid', -1.5, 2.78, 0, 0.9, 1.92, 2.0, TCOL.black);
+  // boiler bands
+  if (K.detail > 0.4) for (const x of [0.25, 1.7, 3.0]) K.box('metal', x, 2.68, 0, 0.1, 1.9, 1.96, GEN.C(0x6b6250));
+  // chimney with a flared copper cap
+  K.box('solid', 3.5, 3.72, 0, 0.52, 1.0, 0.52, TCOL.black);
+  K.box('metal', 3.5, 4.28, 0, 0.78, 0.16, 0.78, GEN.C(0xa9713c));
+  K.box('solid', 3.5, 4.4, 0, 0.6, 0.1, 0.6, TCOL.iron);
+  // steam dome, sand box and whistle
+  K.box('solid', 2.3, 3.66, 0, 0.72, 0.6, 0.72, TCOL.black);
+  K.box('solid', 1.15, 3.62, 0, 0.62, 0.52, 0.62, TCOL.black);
+  K.box('metal', 0.7, 3.95, 0.22, 0.1, 0.34, 0.1, TCOL.brass);
+  // outside cylinders driving the middle axle
+  for (const sz of [-1.28, 1.28]) {
+    K.box('metal', 4.15, 1.42, sz, 1.5, 0.92, 0.62, TCOL.steel);
+    K.box('metal', 4.9, 1.42, sz, 0.34, 0.8, 0.66, TCOL.iron);
+    K.box('metal', 3.1, 1.42, sz * 0.86, 0.22, 0.2, 0.22, TCOL.brass);
+  }
+  // cab with a raised roof, side cut-outs and a glowing firebox door
+  K.box('solid', -2.6, 2.5, 0, 2.9, 2.5, 2.55, TCOL.maroon);
+  K.box('solid', -2.6, 3.86, 0, 3.4, 0.26, 2.95, TCOL.roof);
+  K.box('solid', -2.6, 3.72, 0, 3.1, 0.12, 2.7, TCOL.iron);
+  for (const sz of [-1.29, 1.29]) {
+    K.box('glow', -2.05, 2.95, sz, 1.15, 0.78, 0.05, TCOL.win);
+    K.box('glow', -3.5, 2.95, sz, 0.5, 0.72, 0.05, TCOL.win);
+  }
+  K.box('glow', -4.03, 2.3, 0, 0.06, 0.62, 0.62, GEN.C(0xffb066));
+  K.box('solid', -2.6, 1.9, 0, 2.9, 0.35, 2.55, TCOL.iron);
+  // front buffer beam, cowcatcher and headlamp
+  K.box('solid', 8.05, 1.35, 0, 0.45, 1.5, 2.5, TCOL.red);
+  K.box('metal', 8.28, 1.35, 0, 0.1, 0.42, 0.42, TCOL.steel);
+  for (const sz of [-0.82, 0.82]) K.box('metal', 7.75, 0.55, sz, 1.0, 0.85, 0.34, TCOL.steel, 0.5, 0, 0);
+  K.box('solid', 7.9, 2.9, 0, 0.5, 0.7, 0.7, TCOL.black);
+  K.box('glow', 8.14, 2.9, 0, 0.08, 0.46, 0.46, GEN.C(0xfff2c8));
+  // backhead coupling to the tender
+  K.box('metal', -4.35, 1.4, 0, 0.7, 0.3, 0.3, TCOL.steel);
 }
 function buildTender(K) {
-  for (const sx of [-1.6, 1.6]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.5, sz, 0.9, 0.9, 0.14, TCOL.red);
-  K.box('solid', 0, 1.2, 0, 5.4, 0.3, 2.4, TCOL.iron);
-  K.box('solid', 0, 2.1, 0, 5.2, 1.6, 2.4, TCOL.black);
-  K.box('solid', 0, 3.0, 0, 4.6, 0.3, 2.0, GEN.C(0x141414));
+  const WHEEL = GEN.C(0x2a2d31);
+  for (const x of [-1.5, 1.5]) for (const sz of [-1.13, 1.13]) K.box('metal', x, 0.7, sz, 1.4, 1.38, 0.17, WHEEL, 0, 0, Math.PI / 4);
+  K.box('solid', 0, 1.3, 0, 6.0, 0.4, 2.2, TCOL.iron);
+  for (const sz of [-1.2, 1.2]) K.box('solid', 0, 1.95, sz * 1.14, 6.1, 0.16, 0.8, TCOL.black);
+  // coal bunker with visible load
+  K.box('solid', 0, 2.35, 0, 5.8, 1.75, 2.35, TCOL.maroon);
+  K.box('metal', 0, 2.9, 0, 4.9, 0.42, 1.75, GEN.C(0x15171a));
+  K.box('solid', 0, 3.34, 0, 5.9, 0.2, 2.45, TCOL.roof);
+  K.box('solid', 0, 3.5, 0, 4.9, 0.16, 1.7, GEN.C(0x1b1d21));
+  for (const sz of [-1.19, 1.19]) K.box('solid', 0, 2.35, sz, 5.4, 0.1, 0.06, TCOL.gold);
+  K.box('metal', -3.1, 1.35, 0, 0.6, 0.3, 0.3, TCOL.steel);
 }
 function buildCoach(K) {
-  for (const sx of [-4.8, -3.8, 3.8, 4.8]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.5, sz, 0.9, 0.9, 0.14, TCOL.iron);
-  K.box('solid', 0, 1.15, 0, 12.6, 0.3, 2.5, TCOL.iron);
-  K.box('solid', 0, 2.35, 0, 12.4, 2.2, 2.6, TCOL.maroon);
-  K.box('solid', 0, 1.45, 0, 12.45, 0.12, 2.64, TCOL.gold);
-  for (let i = 0; i < 8; i++) for (const sz of [-1.31, 1.31]) K.box('glow', -5.1 + i * 1.46, 2.6, sz, 0.9, 0.85, 0.04, TCOL.win);
-  K.box('solid', 0, 3.6, 0, 12.6, 0.3, 2.7, TCOL.roof);
-  K.box('solid', 0, 3.85, 0, 11.8, 0.22, 1.8, TCOL.roof);
+  const WHEEL = GEN.C(0x2a2d31);
+  // two four-wheel bogies
+  for (const bx of [-4.3, 4.3]) {
+    K.box('solid', bx, 0.72, 0, 3.4, 0.5, 2.3, TCOL.iron);
+    for (const dx of [-1.05, 1.05]) for (const sz of [-1.1, 1.1]) K.box('metal', bx + dx, 0.6, sz, 0.95, 0.94, 0.16, WHEEL, 0, 0, Math.PI / 4);
+  }
+  // underframe and truss
+  K.box('solid', 0, 1.1, 0, 13.0, 0.28, 2.3, TCOL.iron);
+  for (const sz of [-1.18, 1.18]) K.box('metal', 0, 1.28, sz, 13.0, 0.12, 0.1, TCOL.steel);
+  // body with a gold waist line and a clerestory roof
+  K.box('solid', 0, 2.45, 0, 12.9, 2.35, 2.55, TCOL.maroon);
+  for (const sz of [-1.29, 1.29]) {
+    K.box('solid', 0, 1.45, sz, 12.9, 0.18, 0.06, TCOL.gold);
+    K.box('solid', 0, 3.52, sz, 12.9, 0.16, 0.06, TCOL.gold);
+  }
+  // window band: paired lights with a warm interior
+  for (let i = 0; i < 9; i++) {
+    const x = -5.4 + i * 1.35;
+    for (const sz of [-1.3, 1.3]) {
+      K.box('solid', x, 2.62, sz, 1.06, 1.06, 0.05, GEN.C(0x3b2f2a));
+      K.box('glow', x, 2.62, sz * 1.02, 0.88, 0.9, 0.04, TCOL.win);
+    }
+    // ventilators along the roof
+    if (i % 2 === 0) K.box('solid', x, 3.98, 0, 0.5, 0.16, 0.5, TCOL.iron);
+  }
+  // end doors with steps
+  for (const dx of [-6.42, 6.42]) {
+    K.box('solid', dx, 2.42, 0, 0.16, 2.3, 2.4, GEN.C(0x4a2520));
+    K.box('metal', dx * 1.02, 1.7, 0, 0.1, 0.5, 0.5, TCOL.steel);
+  }
+  // roof: a wide curved cap over a narrower clerestory
+  K.box('solid', 0, 3.72, 0, 13.0, 0.22, 2.75, TCOL.roof);
+  K.box('solid', 0, 3.88, 0, 12.5, 0.16, 2.15, TCOL.roof);
+  K.box('solid', 0, 4.02, 0, 11.6, 0.16, 1.5, TCOL.roof);
 }
 const TRAIN = { cars: [], speed: 13.5, period: 3400, line: null, len: 0, phase: 0, smokeT: 0 };
 {
-  const specs = [['loco', buildLoco, 11], ['tender', buildTender, 6], ['coach', buildCoach, 13.2], ['coach', buildCoach, 13.2], ['coach', buildCoach, 13.2]];
+  const specs = [['loco', buildLoco, 12.6], ['tender', buildTender, 6.6], ['coach', buildCoach, 13.4], ['coach', buildCoach, 13.4], ['coach', buildCoach, 13.4]];
   let off = 0;
   for (const [kind, fn, len] of specs) {
     const g = kitToGroup(fn);
     g.visible = false;
     scene.add(g);
-    TRAIN.cars.push({ g, off: off + len / 2, kind });
-    off += len + 0.6;
+    TRAIN.cars.push({ g, off: off + len / 2, half: len / 2, kind });
+    off += len + 0.75;
   }
   TRAIN.len = off;
   TRAIN.headLamp = new THREE.PointLight(0xffe2b0, 0, 40, 2);
   scene.add(TRAIN.headLamp);
 }
 const _ty = new THREE.Vector3();
+// Cars are aligned to the chord of the track they actually stand on. Without
+// this each carriage stayed level while the rail climbed, so a consist broke
+// apart into separate boxes floating at different heights.
+const _cAx = new THREE.Vector3(), _cAy = new THREE.Vector3(), _cAz = new THREE.Vector3(), _cUp = new THREE.Vector3(0, 1, 0), _cM = new THREE.Matrix4(), _cQ = new THREE.Quaternion();
+// Real stock has a maximum gradient. `railH` clamps its profile up to clear
+// water, which leaves hard knots in the grade; without a cap a carriage
+// straddling one of those knots pitches onto its nose against its neighbour.
+const TRAIN_MAX_GRADE = 0.075;
+function orientCar(g, n, x, half) {
+  // Sample the profile over a baseline wider than the body so a single hard
+  // knot is averaged away instead of being charged to one carriage.
+  const span = half * 1.55;
+  const xf = x + span, xb = x - span;
+  const zf = GEN.railZ(n, xf), zb = GEN.railZ(n, xb);
+  const yf = GEN.railH(n, xf), yb = GEN.railH(n, xb);
+  // Build the heading from a unit horizontal direction plus a grade, so the
+  // clamp is applied to the actual gradient rather than to a raw component.
+  const hx = xf - xb, hz = zf - zb, hl = Math.hypot(hx, hz) || 1e-4;
+  let grade = (yf - yb) / hl;
+  if (grade > TRAIN_MAX_GRADE) grade = TRAIN_MAX_GRADE;
+  else if (grade < -TRAIN_MAX_GRADE) grade = -TRAIN_MAX_GRADE;
+  _cAx.set(hx / hl, grade, hz / hl).normalize();
+  _cAy.copy(_cUp).addScaledVector(_cAx, -_cUp.dot(_cAx)).normalize();
+  _cAz.crossVectors(_cAx, _cAy);
+  _cM.makeBasis(_cAx, _cAy, _cAz);
+  _cQ.setFromRotationMatrix(_cM);
+  // Seat the body on the rail at its own centre. A rigid car riding two bogies
+  // crests a summit and sags into a dip; taking the chord average instead
+  // would float it above every crest and bury it in every dip.
+  g.position.set(x, GEN.railH(n, x) + 0.32, GEN.railZ(n, x));
+  g.quaternion.copy(_cQ);
+  g.updateMatrixWorld(true);
+}
 function updateTrain(dt, t) {
   const cx = camera.position.x, cz = camera.position.z;
-  const n = FOLLOW.target && FOLLOW.target.kind === 'train' ? FOLLOW.target.line : GEN.railLine(cz);
+  const riding = !!(FOLLOW.target && FOLLOW.target.kind === 'train');
+  const n = riding ? FOLLOW.target.line : GEN.railLine(cz);
   const near = Math.abs(GEN.railZ(n, cx) - cz) < 900;
-  if (!near) { for (const c of TRAIN.cars) c.g.visible = false; TRAIN.line = null; TRAIN.headLamp.intensity = 0; return; }
+  // While riding, the consist is the subject: never cull it on camera
+  // distance, or the train vanishes from under the viewer.
+  if (!near && !riding) { for (const c of TRAIN.cars) c.g.visible = false; TRAIN.line = null; TRAIN.headLamp.intensity = 0; return; }
   TRAIN.line = n;
   const P = TRAIN.period;
   const X = t * TRAIN.speed * (REDUCED ? 0.5 : 1) + GEN.h2(n, 5, 7) * P;
-  const k = FOLLOW.target && FOLLOW.target.kind === 'train' ? FOLLOW.target.periodK : Math.round((cx - X) / P);
+  const k = riding ? FOLLOW.target.periodK : Math.round((cx - X) / P);
   TRAIN.periodK = k;
   const head = X + k * P;
   TRAIN.headX = head; window.__headX = head;
+  const side = riding && FOLLOW.viewMode === 'side';
   for (const c of TRAIN.cars) {
     const x = head - c.off;
-    const z = GEN.railZ(n, x), y = GEN.railH(n, x) + 0.32;
-    const dz = GEN.railDZ(n, x);
-    c.g.position.set(x, y, z);
-    c.g.rotation.set(0, Math.atan2(-dz, 1), 0);
-    c.g.updateMatrixWorld(true);
-    c.g.visible = Math.abs(x - cx) < 1100;
+    orientCar(c.g, n, x, c.half);
+    // Riding hides only the carriage the eye is inside, and only in
+    // first-person; every other carriage stays in the shot.
+    c.g.visible = riding ? (side || c.g !== FOLLOW.target.g) : Math.abs(x - cx) < 1100;
   }
-  const lx = head + 6, lz = GEN.railZ(n, lx);
-  TRAIN.headLamp.position.set(lx, GEN.railH(n, lx) + 2.5, lz);
+  const lx = head + 8.4, lz = GEN.railZ(n, lx);
+  TRAIN.headLamp.position.set(lx, GEN.railH(n, lx) + 2.9, lz);
   TRAIN.headLamp.intensity = 60 * ATM.lamps;
   // chimney steam
   TRAIN.smokeT -= dt;
   if (TRAIN.smokeT <= 0 && Math.abs(head - cx) < 700) {
     TRAIN.smokeT = 0.09;
     const loco = TRAIN.cars[0].g;
-    _ty.set(3.6, 4.6, 0).applyMatrix4(loco.matrixWorld);
+    _ty.set(3.5, 4.5, 0).applyMatrix4(loco.matrixWorld);
     emitSmoke(_ty.x, _ty.y, _ty.z, 1.0, 1.6, true);
   }
 }

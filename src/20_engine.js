@@ -163,14 +163,51 @@ const SKY_FS = /* glsl */`
   float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
     return mix(mix(h21(i), h21(i+vec2(1,0)), u.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), u.x), u.y); }
   float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ s += a * n2(p); p = p * 2.03 + 11.7; a *= 0.5; } return s; }
-  // Valley's sky uses a smooth, plain celestial disc. Keep that restrained
-  // appearance here, with a physical terminator rather than noisy craters.
+  // Analytic lunar shading. The real Moon backscatters strongly, so the lit
+  // face stays almost flat and only softens near the limb; a narrow terminator
+  // keeps the unlit face dark. Monotonically non-decreasing on [-1,1].
   float lunarRadiance(float incidence) {
-    return (0.006 + smoothstep(-0.012, 0.012, incidence) * (0.86 + 0.14 * sqrt(max(incidence, 0.0)))) * 0.60;
+    float lit = smoothstep(-0.012, 0.012, incidence);
+    return (0.006 + lit * (0.94 + 0.06 * sqrt(max(incidence, 0.0)))) * 0.62;
   }
+  // Two-lobe halo: a tight inner glow plus a broader, fainter outer veil.
+  // Both lobes vanish with amount, so lunarHalo(r,r,0) === 0 exactly, and the
+  // pair decays inside the bounds the sky test asserts at 2 and 3 radii.
   float lunarHalo(float distance, float radius, float amount) {
-    float span = max(radius * radius * (1.0 + amount * 0.7), 0.000001);
-    return exp(-distance * distance / span) * amount * 0.025;
+    float r2 = radius * radius;
+    float span1 = max(r2 * (1.0 + amount * 0.7), 0.000001);
+    float span2 = max(r2 * (1.0 + amount * 2.5), 0.000001);
+    float lobe1 = exp(-distance * distance / span1) * amount * 0.018;
+    float lobe2 = exp(-distance * distance / span2) * amount * 0.004;
+    return lobe1 + lobe2;
+  }
+  // Soft, slightly lobed analytic disc used for maria basins and highlands.
+  // h21 supplies only the lobing phase; the falloff is a smooth radial
+  // smoothstep, so features read as geology instead of per-pixel hash speckle.
+  // Edges are always passed low-to-high: the GLSL spec leaves smoothstep
+  // undefined when edge0 >= edge1, so the disc is inverted explicitly.
+  float lunarBlob(vec2 uv, vec2 center, float radius, float seed, float strength) {
+    vec2 rel = uv - center;
+    float wobble = 1.0 + 0.16 * sin(atan(rel.y, rel.x) * 3.0 + seed);
+    return (1.0 - smoothstep(radius * 0.22, radius, length(rel) * wobble)) * strength;
+  }
+  // Bounded analytic lunar albedo. Three broad maria read as the familiar
+  // "man in the moon" at a glance; everything else is a whisper of shading so
+  // the disc stays a clean, luminous orb rather than a noisy grey blotch.
+  // Fixed straight-line smoothstep/sin work: no fbm/n2 recursion, no texture
+  // fetch, no loop, no per-frame randomness.
+  float lunarPattern(vec2 uv) {
+    float albedo = 1.0;
+    // Three large, soft maria — deliberately few and low-contrast.
+    albedo -= lunarBlob(uv, vec2(-0.22, 0.26), 0.42, 1.7, 0.13);
+    albedo -= lunarBlob(uv, vec2(0.24, -0.06), 0.34, 3.1, 0.11);
+    albedo -= lunarBlob(uv, vec2(-0.06, -0.40), 0.26, 4.6, 0.09);
+    // One bright highland smudge opposite the maria.
+    albedo += lunarBlob(uv, vec2(0.30, 0.36), 0.30, 2.4, 0.05);
+    // Very low-frequency mottling only — enough to break flatness, never
+    // enough to read as dirt.
+    albedo *= 1.0 + 0.018 * sin(uv.x * 5.0 + uv.y * 3.5) * sin(uv.y * 6.5 - uv.x * 2.5);
+    return clamp(albedo, 0.82, 1.06);
   }
   vec3 giantPlanet(vec3 d, vec3 background) {
     if (uPlanetType < 0.5) return background;
@@ -271,8 +308,22 @@ const SKY_FS = /* glsl */`
         vec3 normal = vec3(moonUv, sqrt(max(1.0 - dot(moonUv, moonUv), 0.0)));
         vec3 lunarSun = vec3(sin(phaseAngle), 0.0, -phaseCos);
         float incidence = dot(normal, lunarSun);
-        vec3 moonCol = vec3(0.82, 0.86, 0.91) * lunarRadiance(incidence);
-        col = mix(col, moonCol * uMoon * uMoonBrightness, disc);
+        // Analytic maria/highland albedo. The disc keeps the reference colour
+        // as its base and gains soft geology, while the unlit face stays dark.
+        float surface = lunarPattern(moonUv);
+        // Limb softening: normal.z is 1 at the disc centre and 0 at the limb.
+        float limb = 0.84 + 0.16 * normal.z;
+        vec3 moonCol = vec3(0.82, 0.86, 0.91);
+        // Warm-to-cool tint: the terminator edge picks up warm ochre while the
+        // fully lit face stays cool, the way grazing sunlight reddens regolith.
+        float tintBlend = smoothstep(-0.06, 0.42, incidence);
+        vec3 moonTint = mix(vec3(1.05, 0.97, 0.87), vec3(0.82, 0.86, 0.91), tintBlend);
+        vec3 litMoon = moonCol * lunarRadiance(incidence) * surface * limb * moonTint;
+        // Earthshine: the dark face catches a faint blue earth-glow that fades
+        // out as the terminator takes over.
+        float earthshine = smoothstep(0.02, -0.30, incidence) * 0.030 * normal.z;
+        litMoon += vec3(0.40, 0.54, 0.80) * earthshine;
+        col = mix(col, litMoon * uMoon * uMoonBrightness, disc);
       }
       float halo = lunarHalo(md, uMoonRadius, uMoonHalo) * uMoonBrightness * uMoon * 0.5 * (1.0 - phaseCos) * (1.0 - disc);
       col += vec3(0.72, 0.80, 0.94) * halo;
@@ -363,9 +414,9 @@ for (let li = 0; li < NL; li++) {
     solid: new THREE.MeshStandardMaterial({ roughness: 0.84, metalness: 0, envMapIntensity: 0.35 }),
     lacquer: new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0, envMapIntensity: 0.7 }),
     metal: new THREE.MeshStandardMaterial({ roughness: 0.32, metalness: 0.85, envMapIntensity: 1.2 }),
-    leaf: new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0, envMapIntensity: 0.3 }),
+    leaf: new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0, envMapIntensity: 0.12 }),
     glow: new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, envMapIntensity: 0.2 }),
-    blossom: new THREE.MeshStandardMaterial({ roughness: 0.66, metalness: 0, envMapIntensity: 0.45 }),
+    blossom: new THREE.MeshStandardMaterial({ roughness: 0.66, metalness: 0, envMapIntensity: 0.18 }),
   };
   patchEmissive(km.glow, GLOW_U, new THREE.Color(1.0, 0.55, 0.24).multiplyScalar(2.4));
   patchEmissive(km.blossom, BLOOMSELF_U, new THREE.Color(1.0, 0.82, 0.88));

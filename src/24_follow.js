@@ -68,7 +68,12 @@ function nearbyUnits() {
   const units = FAUNA.filter(f => f.active && (f.g.visible || FOLLOW.target?.g === f.g)).map(f => ({ id: f.id, kind: f.kind, g: f.g, source: f }));
   if (typeof SETTLEMENTS !== 'undefined') for (const u of SETTLEMENTS.units) if (u.active && (u.g.visible || FOLLOW.target?.g === u.g)) units.push({ id: u.id, kind: u.kind, g: u.g, obj: u.g, source: u, eye: u.eye, label: u.label });
   FX.birds.forEach((g, i) => { if (g.visible || FOLLOW.target?.g === g) units.push({ id: 'bird-' + i, kind: 'bird', g }); });
-  TRAIN.cars.forEach((c, i) => { if (c.g.visible || FOLLOW.target?.g === c.g) units.push({ id: 'train-' + i, kind: 'train', g: c.g, line: TRAIN.line, periodK: TRAIN.periodK }); });
+  // The train is one always-present convoy. It is offered whatever the camera
+  // is doing — boarding it is how you go and find it — so carriage meshes are
+  // never filtered by their current culling state.
+  if (TRAIN.line !== null || FOLLOW.target?.kind === 'train') {
+    TRAIN.cars.forEach((c, i) => units.push({ id: 'train-' + i, kind: 'train', g: c.g, line: TRAIN.line, periodK: TRAIN.periodK }));
+  }
   return units.filter(u => u.g.position.distanceTo(camera.position) < 1100).sort((a, b) => a.g.position.distanceToSquared(camera.position) - b.g.position.distanceToSquared(camera.position));
 }
 function startFollow(unit) {

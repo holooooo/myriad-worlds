@@ -138,7 +138,16 @@ assert.match(api.SKY_FS, /i < 4/); assert.doesNotMatch(api.SKY_FS, /for\s*\([^)]
 assert.match(api.SKY_FS, /uStarCount \* uStarDensity \/ 25600\.0/);
 assert.match(api.SKY_FS, /vec3 lunarSun = vec3\(sin\(phaseAngle\), 0\.0, -phaseCos\)/);
 const moonShader = api.SKY_FS.slice(api.SKY_FS.indexOf('float moonCover'), api.SKY_FS.indexOf('// One bounded angular'));
-assert.doesNotMatch(moonShader, /lunarSurface|craterSurface|\bn2\(|\bfbm\(|texture/, 'The reference-style moon disc must have a clean, noise-free surface');
+// INTENT CHANGE: this assertion used to demand a completely featureless disc,
+// which is precisely what made the moon look like a flat white sticker. It now
+// permits *bounded analytic* surface detail (maria/highland blobs built from the
+// existing h21/h31 hashes, see lunarPattern) while still forbidding the things
+// that actually cost or blur: recursive noise (fbm/n2), texture fetches, and the
+// retired lunarSurface/craterSurface helpers. Cost stays a fixed straight-line
+// sequence with no loops or extra passes.
+assert.doesNotMatch(moonShader, /lunarSurface|craterSurface|\bn2\(|\bfbm\(|texture/, 'The moon disc must be analytic surface detail, never recursive noise or textures');
+assert.match(moonShader, /lunarPattern\(moonUv\)/, 'The moon must actually sample the analytic maria/highland pattern');
+assert.match(moonShader, /smoothstep\(0\.02, -0\.30, incidence\)/, 'The dark face must carry earthshine');
 assert.match(moonShader, /lunarRadiance\(incidence\)/);
 assert.match(moonShader, /lunarHalo\(md, uMoonRadius, uMoonHalo\) \* uMoonBrightness/);
 assert.match(moonShader, /\(1\.0 - phaseCos\) \* \(1\.0 - disc\)/, 'Halo must fade with phase and remain outside the disc');

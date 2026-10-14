@@ -12,8 +12,30 @@ const PAL = {
   canCedar: C(0x2b4231), canSakura: C(0xd8a2b5), canBamboo: C(0x5f8240), canTown: C(0x555b64), canSato: C(0x50703c),
   meadowA: C(0x8fae52), meadowB: C(0x7aa045), marshA: C(0x4f6a38), marshB: C(0x3e5730), marshWater: C(0x3d5136),
   pineFloor: C(0x5d6f3d), canPine: C(0x37552e), lavender: C(0x8a7ab8), cotton: C(0xe8e2d2),
+  // Rice paddy seasonal stages (non-neon, believable agricultural values)
+  riceYoung:  C(0x6aaa5e), // newly-transplanted bright green
+  riceGreen:  C(0x4d8a3a), // lush mid-season canopy
+  riceGold:   C(0xc8a83a), // yellowing heads
+  riceRipe:   C(0xb8861e), // golden-ripe grain, drained field
+  riceStraw:  C(0x8a6e32), // harvested stubble
+  paddyWet:   C(0x3b5a50), // flooded young paddy water sheen (dark teal-grey)
 };
 const tc = new Col(), tc2 = new Col();
+
+// ---------------------------------------------------------------------
+//  Rice paddy ripeness field — large-scale fbm so patches span several
+//  terraces; SALT[83..85] are free slots not used elsewhere.
+//  Returns a value in [0,1]: 0=young/flooded, 1=ripe/drained.
+//  A small stubble fraction uses values > 0.92.
+// ---------------------------------------------------------------------
+function paddyRipeness(x, z) {
+  // Two fbm octaves at coarse + medium scales give natural patch bands.
+  const a = fbm(x * 0.0095, z * 0.0095, 3, 22);  // large terrace-band patches
+  const b = fbm(x * 0.031,  z * 0.031,  2, 23);   // finer within-field variation
+  const jitter = h2(Math.floor(x * 0.25) | 0, Math.floor(z * 0.25) | 0, SALT[83] & 0x7fffffff);
+  return clamp(a * 0.55 + b * 0.3 + jitter * 0.15, 0, 1);
+}
+
 function cellColor(x, z, s, slope, lod, out) {
   if (WORLD_PROFILE.id === 'shanshui') return shanshuiCellColor(x, z, s, slope, lod, out);
   const j = h2(Math.floor(x * 3), Math.floor(z * 3), 77), j2 = h2(Math.floor(x * 3) + 91, Math.floor(z * 3) - 37, 78);
@@ -40,7 +62,35 @@ function cellColor(x, z, s, slope, lod, out) {
       if (h > 1.6) out.lerp(PAL.grassB, smoothstep(1.6, 2.6, h));
       return out;
     }
-    case B.PADDY: return out.copy(PAL.mud).multiplyScalar(0.9 + j * 0.15);
+    case B.PADDY: {
+      // Per-cell ripeness drives a 5-stage colour ramp.
+      // Stage 0-0.22: young green transplants (flooded, water sheen visible)
+      // Stage 0.22-0.48: lush mid-season canopy
+      // Stage 0.48-0.72: yellowing heads
+      // Stage 0.72-0.92: golden ripe (drained, no sheen)
+      // Stage 0.92-1.0 : harvested stubble
+      const rip = paddyRipeness(x, z);
+      if (rip < 0.22) {
+        // Young: saturated green + water-sheen teal for flooded cells
+        const f = rip / 0.22;
+        out.copy(PAL.paddyWet).lerp(PAL.riceYoung, f * 0.7 + 0.2);
+        // water-sheen overlay fades as canopy thickens
+        out.lerp(PAL.paddyWet, smoothstep(0.22, 0.0, rip) * 0.45);
+      } else if (rip < 0.48) {
+        const f = (rip - 0.22) / 0.26;
+        out.copy(PAL.riceYoung).lerp(PAL.riceGreen, f);
+      } else if (rip < 0.72) {
+        const f = (rip - 0.48) / 0.24;
+        out.copy(PAL.riceGreen).lerp(PAL.riceGold, f);
+      } else if (rip < 0.92) {
+        const f = (rip - 0.72) / 0.20;
+        out.copy(PAL.riceGold).lerp(PAL.riceRipe, f);
+      } else {
+        // Stubble — a fraction of harvested cells
+        out.copy(PAL.riceStraw).lerp(PAL.mud, 0.4);
+      }
+      return out.multiplyScalar(0.88 + j * 0.15);
+    }
     case B.TOWN: {
       if (lod > 0) return out.copy(PAL.canTown).lerp(PAL.lot, clamp(n, 0, 1) * 0.4);
       out.copy(PAL.lot).lerp(PAL.moss, j2 > 0.7 ? 0.5 : 0.1).multiplyScalar(0.92 + j * 0.1);
@@ -87,9 +137,12 @@ function cellColor(x, z, s, slope, lod, out) {
     return out;
   }
   if (s.biome === B.SAKURA) {
+    // A heavier bloom carpet under the groves: dense petal scatter plus a
+    // continuous pink wash so the ground matches the canopy above it.
     const p = clamp(s.sak * 2.2 - 0.3, 0, 0.6);
-    if (j2 < p * 0.45) out.lerp(PAL.petal, 0.55 + j * 0.2); else out.lerp(PAL.petal, p * 0.12);
+    if (j2 < p * 0.62) out.lerp(PAL.petal, 0.62 + j * 0.2); else out.lerp(PAL.petal, p * 0.26 + 0.05);
   } else if (fbm(x * 0.02, z * 0.02, 2, 17) > 0.32 && j2 > 0.55) out.lerp(PAL.nanohana, 0.75);
+  else if (fbm(x * 0.028, z * 0.028, 2, 18) > 0.42 && j2 > 0.72) out.lerp(PAL.petal, 0.3);
   if (slope > 0.8) out.lerp(PAL.soil, (slope - 0.8) * 0.6);
   return out;
 }
@@ -295,40 +348,103 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
       else cherryTree(x, z, 'yama', seed, 0.8, 0.45);
     } else if (!levee[k] && r > 0.985) scarecrow(x, z, h2(gx, gz, SALT[41]) * 6);
   }
-  // rice seedlings on flooded plates
+  // rice seedlings on flooded / ripening plates — ripeness drives variety
   const gR = 1.1;
   for (let gz = Math.floor(z0 / gR); gz * gR < z0 + size; gz++) for (let gx = Math.floor(x0 / gR); gx * gR < x0 + size; gx++) {
     const x = gx * gR + h2(gx, gz, SALT[63]) * gR, z = gz * gR + h2(gx, gz, SALT[64]) * gR;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k];
     if (!s.paddy || levee[k]) continue;
-    if (h2(gx, gz, SALT[65]) < 0.75) {
-      const rr = h2(gx, gz, SALT[66]);
-      const c = C([0x7aa24a, 0x6d9440, 0x86ab52][Math.floor(rr * 3)]);
-      const H = 0.35 + rr * 0.25;
-      kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.65, H, 0.65, c, 0, rr * 6, 0);
+    const rip = paddyRipeness(x, z);
+    const rr = h2(gx, gz, SALT[66]);
+    // Harvested stubble cells: no standing plant, just keep floor colour.
+    if (rip > 0.92) continue;
+    // Density: young fields are sparse (plants just transplanted), mid is dense, ripe thins slightly.
+    // Young (0-0.22): ~40% density; mid (0.22-0.72): ~80%; ripe (0.72-0.92): ~65%.
+    let density;
+    if      (rip < 0.22) density = 0.40;
+    else if (rip < 0.72) density = 0.80;
+    else                 density = 0.65;
+    if (h2(gx, gz, SALT[65]) > density) continue;
+    // Height: young = short stubby blades, mid = tall blades, ripe = tallest with drooping head.
+    let H, col;
+    if (rip < 0.22) {
+      // Young — short bright-green sprigs
+      H = 0.18 + rr * 0.12;
+      col = C([0x7ab84a, 0x6aaa42, 0x88c055][Math.floor(rr * 3)]);
+    } else if (rip < 0.48) {
+      // Lush mid-season — tall dense green blades
+      H = 0.42 + rr * 0.22;
+      col = C([0x4f9040, 0x59a044, 0x428038][Math.floor(rr * 3)]);
+    } else if (rip < 0.72) {
+      // Yellowing — blades turning, visible grain tips
+      H = 0.48 + rr * 0.22;
+      col = C([0xa0943a, 0x96862e, 0xb0a040][Math.floor(rr * 3)]);
+    } else {
+      // Ripe — golden drooping heads; use 'straw' kind for the golden grain appearance
+      H = 0.52 + rr * 0.20;
+      col = C([0xc8921a, 0xb88018, 0xd8a030][Math.floor(rr * 3)]);
+      // Emit the stalk as a rice box plus a golden grain-head tip slightly above
+      kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.55, H, 0.55, col, rr * 0.3, rr * 6, 0);
+      // Grain head: small golden block at the apex, bent slightly
+      const headY = kit.G(x, z) + 0.14 + H + 0.05;
+      kit.box('rice', x + (rr - 0.5) * 0.12, headY, z + (h2(gx + 1, gz, SALT[66]) - 0.5) * 0.12,
+              0.25, 0.18, 0.25, C(0xd4a020), 0, rr * 6, 0);
+      continue;
     }
+    kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.65, H, 0.65, col, 0, rr * 6, 0);
   }
-  // reed beds (芦苇): dense stands in shallow water & wet shores
-  const gRe = 1.9;
+
+  // reed beds (芦苇) — Sekiro/Ghost of Tsushima atmosphere:
+  // tall billowy drifts following shorelines, dense at waterline, thinning inland.
+  // Two passes: a primary drift grid (tight spacing) and a secondary scatter for depth.
+  const gRe = 1.1;  // tighter primary grid for density
   for (let gz = Math.floor(z0 / gRe); gz * gRe < z0 + size; gz++) for (let gx = Math.floor(x0 / gRe); gx * gRe < x0 + size; gx++) {
     const x = gx * gRe + h2(gx, gz, SALT[67]) * gRe, z = gz * gRe + h2(gx, gz, SALT[68]) * gRe;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k];
     const shoreH = shoreHeight(s);
-    const wetShore = (shoreH > -1.1 && shoreH < 0.55 && (s.valley > 0.12 || s.lake > 0.03 || s.biome === B.LAKE || s.biome === B.RIVER));
-    if (!wetShore || s.street || s.rail > 0.1 || s.pad > 0.1) continue;
-    if (h2(gx, gz, SALT[69]) > 0.62) continue;
-    const n = 2 + Math.floor(h2(gx, gz, SALT[70]) * 3);
-    for (let j = 0; j < n; j++) {
-      const rx = x + (h2(gx, j, SALT[71]) - 0.5) * 1.6, rz = z + (h2(gz, j, SALT[72]) - 0.5) * 1.6;
+    // Wet-shore condition: near waterline (shoreH -0.8..0.7) with water body nearby
+    const wetShore = (shoreH > -0.8 && shoreH < 0.7 &&
+                      (s.valley > 0.10 || s.lake > 0.02 || s.biome === B.LAKE || s.biome === B.RIVER || s.biome === B.MARSH));
+    if (!wetShore || s.street || s.rail > 0.1 || s.pad > 0.1 || s.paddy) continue;
+    // Density gradient: highest near the waterline (shoreH near 0), tapering inland.
+    // shoreH < 0 means submerged — still grow reeds in very shallow water.
+    const shoreProximity = 1 - clamp(Math.abs(shoreH) / 0.7, 0, 1);
+    // Bias: 0.25 base + up to 0.65 near shore → very dense at waterline
+    const spawnChance = 0.25 + shoreProximity * 0.65;
+    if (h2(gx, gz, SALT[69]) > spawnChance) continue;
+    // Cluster size: 2-5 reeds per cell, more at waterline
+    const nReeds = 2 + Math.floor(shoreProximity * 3 + h2(gx, gz, SALT[70]) * 1.5);
+    // Hard per-cell budget: max 5 to avoid instance explosion
+    const budget = Math.min(nReeds, 5);
+    for (let j = 0; j < budget; j++) {
+      // Overlapping drifts: spread reeds in a disc following shore direction
+      const offR = (0.4 + h2(gx, j + 1, SALT[71]) * 0.85) * gRe;
+      const offA = h2(gx + j, gz, SALT[72]) * 6.28;
+      const rx = x + Math.cos(offA) * offR, rz = z + Math.sin(offA) * offR;
       const rk = cellK(rx, rz); if (rk < 0) continue;
       const rs = info[rk];
       const reedShoreH = shoreHeight(rs);
-      if (reedShoreH > 0.8 || reedShoreH < -1.4 || rs.street || rs.rail > 0.1 || rs.pad > 0.1) continue;
+      if (reedShoreH > 1.2 || reedShoreH < -1.6 || rs.street || rs.rail > 0.1 || rs.pad > 0.1 || rs.paddy) continue;
       const y = kit.G(rx, rz);
-      const hh = 1.5 + h2(gx, gz + j, SALT[73]) * 1.1;
-      reedPlant(rx, rz, y, hh, (h2(gx + j, gz, SALT[73]) * 1e9) | 0);
+      const seedR = (h2(gx + j, gz + 1, SALT[73]) * 1e9) | 0;
+      const noiseH = h2(gx, gz + j, SALT[84] & 0x7fffffff);
+      // Billowy height variation: short inner, tall outer, with fbm-driven wave across the stand.
+      // Sekiro reeds: 2.0–3.8m tall with clear height variation for billowy silhouette.
+      const baseH = 2.0 + shoreProximity * 1.0;
+      const hh = baseH + noiseH * 1.8 + fbm(rx * 0.18, rz * 0.18, 2, 24) * 0.5;
+      // Mix of reeds (most) and taller plume-bearing ones (kind='reed') + occasional cattail
+      const kindRoll = h2(gx + j, gz - j, SALT[85] & 0x7fffffff);
+      if (kindRoll < 0.07) {
+        // ~7% cattails for silhouette variety — use existing cattail() signature
+        cattail(rx, rz, seedR);
+      } else if (kindRoll < 0.22) {
+        // ~15% tall plume-bearing reeds (extra height, kind='reed' default)
+        reedPlant(rx, rz, y, hh + 0.6, seedR, 'reed');
+      } else {
+        reedPlant(rx, rz, y, hh, seedR, 'reed');
+      }
     }
   }
   // rocks along water, stone lanterns on lanes

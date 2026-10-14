@@ -2,13 +2,25 @@
 //  Atmosphere: moods, volumetric light & fog, colour grading
 // =====================================================================
 const MOODS = {
+  sunrise: {
+    label: ['日出', 'Sunrise'], icon: 'sunrise',
+    // Sun just cresting the horizon: deep pink-violet zenith, vivid orange band, heavy warm mist
+    skyTop: 0x1a2a6c, skyMid: 0x6b3fa0, skyHor: 0xf97c3c, glow: 0xff6030, glowPow: 18, sunDir: [0.62, 0.04, -0.78], sunCol: 0xffa060, sunSize: 0.000032,
+    stars: 0, moon: 0, cloud: 0.28, cloudCol: 0xffc4a0, cloudShade: 0x8a6070,
+    fog: 0xd09888, fogD: 0.006, fogFall: 0.055, haze: 0.00026, fogMax: 0.87, fogGlow: 0xb85030, fogGlowPow: 18,
+    key: 0xff9060, keyI: 2.8, keyDir: [0.58, 0.20, -0.79], hemiSky: 0xd0a0c8, hemiGround: 0x5a3828, hemiI: 1.05,
+    exposure: 1.02, bloom: 0.38, lamps: 0, glowWin: 0.08, blossomSelf: 0.11, fireflies: 0, rain: 0, wet: 0,
+    vDens: 0.014, vFall: 0.17, vBase: 0, vSun: 0xff9068, vSunI: 0.95, vAmb: 0xb890b0, vAmbI: 0.55, vAniso: 0.68, vNoise: 0.8,
+    shallow: 0x6a7e80, deep: 0x1a3040, wSun: 0xffa878,
+    gLift: [0.018, 0.004, 0.028], gGain: [1.06, 0.97, 0.90], gSat: 1.08, gContrast: 1.06, vig: 0.55,
+  },
   morning: {
-    label: ['朝霧', 'Morning mist'], icon: 'sunrise',
-    skyTop: 0x3b73bd, skyMid: 0x7eaad8, skyHor: 0xdcd6d0, glow: 0xffc690, glowPow: 36, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.000018,
-    stars: 0, moon: 0, cloud: 0.3, cloudCol: 0xfff3e8, cloudShade: 0xaab7cc,
-    fog: 0xb9c6d4, fogD: 0.005, fogFall: 0.05, haze: 0.00014, fogMax: 0.82, fogGlow: 0x7a5a38, fogGlowPow: 22,
-    key: 0xffdcb8, keyI: 3.3, keyDir: [0.74, 0.36, -0.56], hemiSky: 0xb3c9ea, hemiGround: 0x5e5240, hemiI: 1.15,
-    exposure: 0.95, bloom: 0.22, lamps: 0, glowWin: 0.05, blossomSelf: 0.03, fireflies: 0, rain: 0, wet: 0,
+    label: ['晨雾', 'Morning mist'], icon: 'sunrise',
+    skyTop: 0x3d78c4, skyMid: 0x84aede, skyHor: 0xe8d3c6, glow: 0xffc08a, glowPow: 34, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.000018,
+    stars: 0, moon: 0, cloud: 0.32, cloudCol: 0xfff1e2, cloudShade: 0xa6b4cc,
+    fog: 0xbec9d6, fogD: 0.005, fogFall: 0.05, haze: 0.00019, fogMax: 0.82, fogGlow: 0x8a6440, fogGlowPow: 21,
+    key: 0xffd9b4, keyI: 3.3, keyDir: [0.74, 0.36, -0.56], hemiSky: 0xb3c9ea, hemiGround: 0x5e5240, hemiI: 1.15,
+    exposure: 0.95, bloom: 0.3, lamps: 0, glowWin: 0.05, blossomSelf: 0.09, fireflies: 0, rain: 0, wet: 0,
     vDens: 0.011, vFall: 0.16, vBase: 0, vSun: 0xffd9b0, vSunI: 0.85, vAmb: 0x9fb0c6, vAmbI: 0.5, vAniso: 0.62, vNoise: 0.75,
     shallow: 0x4d7d78, deep: 0x153743, wSun: 0xfff0d0,
     gLift: [0.0, 0.004, 0.02], gGain: [1.04, 1.0, 0.95], gSat: 1.04, gContrast: 1.04, vig: 0.5,
@@ -19,8 +31,9 @@ const MOODS = {
     stars: 0, moon: 0, cloud: 0.42, cloudCol: 0xffc6a0, cloudShade: 0x6f6d8f,
     fog: 0xc59a86, fogD: 0.0042, fogFall: 0.045, haze: 0.00028, fogMax: 0.88, fogGlow: 0xa8603a, fogGlowPow: 24,
     key: 0xffb27a, keyI: 3.6, keyDir: [-0.8, 0.22, -0.55], hemiSky: 0x9fb0d8, hemiGround: 0x5a4034, hemiI: 1.05,
-    exposure: 0.92, bloom: 0.3, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.06, fireflies: 0, rain: 0, wet: 0,
-    vDens: 0.0035, vFall: 0.05, vBase: 0, vSun: 0xffa868, vSunI: 0.62, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.64, vNoise: 0.5,
+    exposure: 0.92, bloom: 0.34, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.1, fireflies: 0, rain: 0, wet: 0,
+    // vDens raised to 0.009 so light shafts through foliage/buildings are visible
+    vDens: 0.009, vFall: 0.06, vBase: 0, vSun: 0xffa868, vSunI: 0.80, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.68, vNoise: 0.5,
     shallow: 0x55706a, deep: 0x1a2c38, wSun: 0xffc080,
     gLift: [0.012, 0.0, 0.03], gGain: [1.06, 0.99, 0.92], gSat: 1.06, gContrast: 1.06, vig: 0.6,
   },
@@ -134,13 +147,52 @@ const VOL_FS = `
   }
   float cloudSea(vec3 p) {
     if (uCloudSea.x < 0.001) return 0.0;
-    // Noise lies in [0,1], so no density exists outside these bounds.
-    if (p.y <= uCloudSea.y - 28.0 || p.y >= uCloudSea.y + uCloudSea.z + 9.0) return 0.0;
-    float billow = n3(vec3(p.xz * 0.004 - vec2(uTime * 0.002, 0.0), 0.4));
-    float top = uCloudSea.y + billow * uCloudSea.z;
-    float layer = smoothstep(top - 28.0, top - 13.0, p.y) * (1.0 - smoothstep(top - 3.0, top + 9.0, p.y));
-    float holes = smoothstep(0.22, 0.55, n3(p * vec3(0.008, 0.025, 0.008) - vec3(uTime * 0.005,0.0,uTime * 0.002)));
-    return layer * holes * uCloudSea.x;
+    // uCloudSea: x=strength, y=base altitude, z=thickness, w=unused
+    float base = uCloudSea.y;
+    float thick = uCloudSea.z;
+
+    // --- coarse billowing surface via 3-octave fBm ---
+    vec2 drift = vec2(uTime * 0.0018, uTime * 0.0009);
+    float c0 = n3(vec3(p.xz * 0.0055 + drift, 0.0));
+    float c1 = n3(vec3(p.xz * 0.013  + drift * 1.8 + 4.3, 1.7)) * 0.5;
+    float c2 = n3(vec3(p.xz * 0.031  + drift * 3.4 + 9.1, 3.5)) * 0.25;
+    float billow = (c0 + c1 + c2) / 1.75;    // normalised ~[0,1]
+
+    // Undulating cloud-top surface: rises and falls with the billow noise.
+    // Extra vertical stretch at peaks makes cauliflower-like towers.
+    float topWarp = billow * thick * 1.35;
+    float cloudTop = base + topWarp;
+
+    // Broad altitude window — early exit outside generous bounds
+    if (p.y <= base - 6.0 || p.y >= cloudTop + 12.0) return 0.0;
+
+    // Vertical profile: hard flat base → gradual falloff above lumpy top.
+    // Asymmetry (fast onset, slow top fade) matches real cumulus underbelly.
+    float belowBase = smoothstep(base - 4.0, base + 1.5, p.y);
+    float aboveTop  = 1.0 - smoothstep(cloudTop + 1.0, cloudTop + 10.0, p.y);
+    float layer = belowBase * aboveTop;
+
+    // High-frequency holes punch through the deck so it reads as a sea
+    // of individual cloud masses, not a solid slab.
+    float holeNoise = n3(vec3(p.xz * 0.009 - drift * 0.7 + 2.2, 0.55));
+    float holes = smoothstep(0.28, 0.62, holeNoise);
+
+    // Vertical density gradient: denser near the flat base, wispy at top.
+    // Clamp p.y within [base, cloudTop] before mapping to avoid NaN when
+    // cloudTop == base (degenerate billow = 0 case).
+    float invThick = 1.0 / max(topWarp, 0.5);
+    float vt = clamp((p.y - base) * invThick, 0.0, 1.0);
+    float vertGrad = 1.0 - vt * vt;   // dense at bottom, taper upward
+
+    // Camera-altitude gate: cloud sea fades out as camera descends below
+    // the base so low-altitude views see only sky, not smoggy haze.
+    // uCloudSea.w carries camY passed from JS (see updateMist).
+    float camY = uCloudSea.w;
+    // Full presence when camera is well above base; vanish when it drops
+    // more than 18 units below the base.
+    float camGate = smoothstep(base - 18.0, base + 8.0, camY);
+
+    return layer * holes * vertGrad * uCloudSea.x * camGate;
   }
   void main(){
     float d = texture2D(tDepth, vUv).x;
@@ -346,4 +398,81 @@ function updateMood(dt) {
   applyAtmosphere();
   envTimer -= dt;
   if (envTimer <= 0 || moodT >= 1) { refreshEnv(); envTimer = 0.3; updateShadow(0, true); }
+}
+
+// --- Free time mode -------------------------------------------------------
+// Drives a continuous 24-h sky by interpolating between mood anchors.
+// The sun follows a tilted arc (azimuth ~135° east of north); the moon
+// rises opposite. All sky uniforms update every frame while active.
+const FREE_TIME = { on: false, minutes: 0 }; // 0-1440
+const FT_ANCHORS = [
+  { t:   0, mood: 'night'  },
+  { t: 330, mood: 'dusk'   },  // 5:30 pre-dawn
+  { t: 360, mood: 'sunrise'},  // 6:00 sunrise
+  { t: 480, mood: 'morning'},  // 8:00 morning mist
+  { t: 720, mood: 'golden' },  // 12:00 → use golden as midday proxy
+  { t:1080, mood: 'golden' },  // 18:00 golden hour
+  { t:1170, mood: 'dusk'   },  // 19:30 dusk
+  { t:1260, mood: 'night'  },  // 21:00 night
+  { t:1440, mood: 'night'  },
+];
+function _ftBlendedMood(minutes) {
+  let lo = FT_ANCHORS[0], hi = FT_ANCHORS[FT_ANCHORS.length - 1];
+  for (let i = 0; i < FT_ANCHORS.length - 1; i++) {
+    if (minutes >= FT_ANCHORS[i].t && minutes <= FT_ANCHORS[i + 1].t) { lo = FT_ANCHORS[i]; hi = FT_ANCHORS[i + 1]; break; }
+  }
+  const span = hi.t - lo.t || 1, t = (minutes - lo.t) / span;
+  const ease = t * t * (3 - 2 * t);
+  const A = MOODC[lo.mood], B = MOODC[hi.mood];
+  for (const k of Object.keys(A)) {
+    const a = A[k], b = B[k];
+    if (typeof b === 'number') ATM[k] = lerp(a, b, ease);
+    else if (b.isVector3 && k !== 'gLift' && k !== 'gGain') ATM[k].copy(a).lerp(b, ease).normalize();
+    else ATM[k].copy(a).lerp(b, ease);
+  }
+  // Override sun direction with a proper arc: azimuth 135° east of north, max elevation ~55°
+  const noon = 720, sunAngle = ((minutes - noon) / 720) * Math.PI; // -π..π over the day
+  const elevation = Math.sin(sunAngle) * 0.88;     // max ~0.88 at noon
+  const azimuth   = Math.cos(sunAngle);
+  const sunDir = new THREE.Vector3(azimuth * 0.72, elevation, azimuth * 0.55).normalize();
+  ATM.sunDir.copy(sunDir);
+  ATM.keyDir.copy(sunDir);
+  // Moon rises 12 hours later opposite the sun
+  const moonAngle = sunAngle + Math.PI;
+  const moonElev  = Math.sin(moonAngle) * 0.75;
+  const moonAz    = Math.cos(moonAngle);
+  SKY_U.uMoonDir.value.set(moonAz * 0.72, moonElev, moonAz * 0.55).normalize();
+  // Stars fade with sun elevation
+  ATM.stars = Math.max(0, -elevation) * 1.5;
+  ATM.moon  = Math.max(0, -elevation) * 1.2;
+}
+function applyFreeTime(minutes) {
+  FREE_TIME.minutes = minutes;
+  _ftBlendedMood(minutes);
+  applyAtmosphere();
+  refreshEnv();
+  updateShadow(0, true);
+  // Update clock display
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  const el = $('timeClock'); if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  // Phase label
+  const phaseEl = $('timePhase');
+  if (phaseEl) {
+    const phase = minutes < 300 || minutes >= 1200 ? 'night' : minutes < 420 ? 'dawn' : minutes < 1080 ? 'day' : 'dusk';
+    phaseEl.textContent = I18N.t('time.phase.' + phase);
+  }
+}
+function toggleFreeTime(force) {
+  FREE_TIME.on = force !== undefined ? force : !FREE_TIME.on;
+  const dock = $('timeDock'); if (dock) dock.hidden = !FREE_TIME.on;
+  if (FREE_TIME.on) {
+    // Initialise slider position from current mood
+    const minuteMap = { sunrise:360, morning:480, golden:1080, dusk:1170, night:0, rain:720 };
+    FREE_TIME.minutes = minuteMap[moodName] ?? 720;
+    const sl = $('timeSlider'); if (sl) { sl.value = FREE_TIME.minutes; sl.dispatchEvent(new Event('input')); }
+    applyFreeTime(FREE_TIME.minutes);
+  } else {
+    setMood(moodName, true);
+  }
+  return FREE_TIME.on;
 }

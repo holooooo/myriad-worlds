@@ -2,82 +2,407 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23111e20'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Georgia,serif' font-size='43' fill='%23d5b77b'%3EM%3C/text%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1424">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141c33'/%3E%3Crect x='10' y='10' width='12' height='12' fill='%23d5b77b'/%3E%3C/svg%3E">
 <title>万境 · Myriad Worlds — Living Procedural Landscapes</title>
 <meta name="description" content="万境 Myriad Worlds: explore living procedural landscapes, from Chinese mountain lakes and palace cities to Japanese blossom forests and castle towns.">
 <style>
-:root{color-scheme:dark;--ink:#111e20;--panel:rgba(15,27,29,.94);--paper:#f2efdf;--muted:#b5beb6;--line:rgba(229,229,204,.17);--accent:#d5b77b;--serif:"Songti SC","Noto Serif SC",Georgia,serif}
-*{margin:0;padding:0;box-sizing:border-box}[hidden]{display:none!important}body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;overflow:hidden;background:var(--ink);color:var(--paper);-webkit-font-smoothing:antialiased}
-button,input,select{font:inherit}button{cursor:pointer;border:none;background:none;color:inherit;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button:disabled{cursor:default;opacity:.55}
-#scene{display:block;width:100vw;height:100dvh;touch-action:none}
-#loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#111e20;z-index:999;pointer-events:none;transition:opacity .9s}#loader.done{opacity:0}
-#ldLogo{font-family:var(--serif);font-size:clamp(3rem,8vw,5rem);letter-spacing:.18em;line-height:1.4;text-align:center;margin-bottom:2rem}#ldLogo small{display:block;font:500 .7rem system-ui;letter-spacing:.35em;color:var(--accent);margin-top:.5rem}
-#ldBar{width:min(20rem,76vw);height:2px;background:var(--line);margin-bottom:1rem}#ldFill{height:100%;background:var(--accent);transform-origin:left;transition:transform .35s}#ldStatus{font-size:.8rem;color:var(--muted);text-align:center;max-width:90vw}
-#hud{position:fixed;inset:0;pointer-events:none;z-index:10;font-size:.85rem;transition:opacity .35s}#topBar{display:flex;align-items:flex-start;justify-content:space-between;padding:24px 28px;gap:1rem}#title{pointer-events:auto;text-shadow:0 2px 12px #0008}#title h1{font-family:var(--serif);font-weight:500;font-size:1.8rem;letter-spacing:.15em;line-height:1.2}#title h1 small{display:inline-block;font:500 .62rem system-ui;letter-spacing:.17em;margin-left:12px;color:var(--paper)}#worldBadge{display:inline-block;margin-top:12px;padding:5px 9px;border:1px solid #eee4;background:#152422b3;font-size:.67rem;letter-spacing:.08em}#moodLine{font-size:.75rem;color:#e7e8d6;margin-top:8px}
-#topTools{display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:auto}#languageControl{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;width:44px;height:36px;background:var(--panel);border:1px solid var(--line);cursor:pointer}#languageControl:after{content:'⌄';font-size:.65rem;color:var(--muted)}#languageControl:focus-within{outline:2px solid var(--accent);outline-offset:4px}#languageFlag{font-size:1.15rem;line-height:1}#languageSelect{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font:inherit;background:var(--panel);color:var(--paper)}#languageSelect option{font-size:.8rem}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}#stats{display:flex;gap:22px;background:var(--panel);border:1px solid var(--line);padding:12px 18px;pointer-events:auto}.stat{display:flex;flex-direction:column;gap:5px}.statVal{font-size:.9rem;font-variant-numeric:tabular-nums}.statLbl{font-size:.55rem;letter-spacing:.13em;color:var(--muted)}
-#controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;max-width:calc(100vw - 48px);background:var(--panel);border:1px solid var(--line);padding:7px;box-shadow:0 10px 30px #0003;pointer-events:auto}#moods,#actions{display:flex;gap:3px;align-items:center}#moods{border-right:1px solid var(--line);padding-right:12px}#controls button{min-height:42px;padding:7px 11px;color:var(--muted);white-space:nowrap;transition:background .2s,color .2s}#controls button:hover{background:#eff0d412;color:var(--paper)}#controls button[aria-pressed="true"]{background:#d5b77b20;color:var(--accent)}#moods button{display:flex;flex-direction:column;gap:3px;align-items:center;font-size:.65rem;min-width:47px;padding:6px}#moods .ico{display:block;width:19px;height:19px}#controls svg{width:19px;height:19px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}#actions button{display:flex;gap:7px;align-items:center;font-size:.76rem}#actions .iconOnly{padding:9px}
-#menu{display:none;position:fixed;inset:0;background:#081113a8;backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center;padding:24px;pointer-events:auto}#menu.show{display:flex}#menuBox{background:#142326;border:1px solid var(--line);padding:30px;max-width:760px;width:100%;max-height:86dvh;overflow-y:auto;box-shadow:0 22px 80px #0005}#menuBox h2{font-family:var(--serif);font-weight:500;font-size:1.7rem;letter-spacing:.06em;margin-bottom:12px}#menuBox h3{font-size:.75rem;letter-spacing:.08em;color:var(--accent);margin:24px 0 10px}#menuBox p,#menuBox li{font-size:.82rem;color:var(--muted);line-height:1.75}#menuBox p{margin-bottom:12px}#menuBox ul{list-style:none;display:grid;gap:8px}#menuBox b{font-weight:550;color:var(--paper)}#menuBox label{display:flex;gap:10px;align-items:center;margin:12px 0;color:var(--muted)}#menuBox input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}.btnRow{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}.btnPri,.btnSec{padding:11px 18px;border:1px solid var(--line);font-size:.82rem}.btnPri{background:var(--accent);color:#152326;border-color:var(--accent)}.btnPri:hover{background:#e8c98d}.btnSec{background:#f0ecd007;color:var(--paper)}.btnSec:hover{border-color:var(--accent);background:#d5b77b10}.worldGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}.worldCard{display:flex;flex-direction:column;text-align:left;gap:12px;padding:22px;border:1px solid var(--line);background:#f0ecd007}.worldCard:hover{border-color:var(--accent)}.worldCard[aria-current="true"]{border-color:var(--accent);background:#d5b77b12}.worldCard .index{color:var(--accent);font-size:.65rem;letter-spacing:.15em}.worldCard strong{font-family:var(--serif);font-size:1.4rem;font-weight:500}.worldCard span:last-child{font-size:.75rem;color:var(--muted);line-height:1.6}.futureWorld{padding:14px 0;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted)}
-#seedBox{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}#seedBox input{flex:1;min-width:140px;background:#0002;border:1px solid var(--line);padding:10px 12px;color:var(--paper)}#teleList{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}#teleList button{text-align:left;min-height:72px;padding:14px}#teleList span{display:block;margin-top:5px;font-size:.7rem;color:var(--muted)}#unitList{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-#fatal{position:fixed;inset:0;background:var(--ink);z-index:999;display:grid;place-items:center;padding:2rem}#fatal>div{max-width:40rem}#fatalTitle{font-family:var(--serif);font-size:1.8rem;color:var(--accent);margin-bottom:1rem}#fatalMsg{color:var(--muted);line-height:1.6;margin-bottom:1rem}#fatalCode{background:#0002;border:1px solid var(--line);padding:1rem;font-size:.8rem;color:var(--muted);overflow:auto;max-height:12rem}
-#loadSnap{position:fixed;bottom:96px;right:28px;padding:6px 10px;background:var(--panel);color:var(--muted);font-size:.65rem;z-index:20;pointer-events:none}#toast{position:fixed;top:110px;left:50%;transform:translateX(-50%);padding:10px 18px;background:var(--panel);border:1px solid var(--line);font-size:.8rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30;max-width:86vw;text-align:center}#toast.on{opacity:1}body.hidden-ui #hud{opacity:0;pointer-events:none}
-body.touring #hud>:not(#topBar),body.touring #topTools,body.touring #menu,body.touring #toast,body.touring #loadSnap{display:none!important}body.touring #title{pointer-events:none}
-@media(max-width:1100px){#controls{gap:8px}#controls button{padding:7px 8px}#actions button{font-size:.7rem}#moods{padding-right:8px}}
-@media(max-width:900px){#controls{flex-direction:column;gap:3px;width:max-content}#moods{border-right:0;border-bottom:1px solid var(--line);padding:0 0 5px;width:100%;justify-content:center}#moods button{flex:1;flex-direction:row;justify-content:center;min-height:34px}#actions{justify-content:center}#loadSnap{bottom:136px}}
-@media(max-width:600px){#topBar{padding:18px 16px}#title h1{font-size:1.5rem}#title h1 small{display:block;margin:7px 0 0;font-size:.5rem}#worldBadge{font-size:.58rem;margin-top:10px}#stats{gap:12px;padding:9px 10px}.statVal{font-size:.7rem}.statLbl{font-size:.45rem}.stat:first-child{display:none}#controls{bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100vw - 24px);padding:5px}#actions{gap:0}#actions button{font-size:.62rem;padding:6px 7px;min-height:38px}#actions svg{width:17px;height:17px}#moods button{font-size:.6rem;padding:5px}#menu{padding:12px}#menuBox{padding:22px 18px;max-height:90dvh}.worldGrid{gap:8px}.worldCard{padding:14px}.worldCard strong{font-size:1.2rem}#toast{top:132px}#loadSnap{right:16px}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+:root{
+  --ink:rgba(244,240,235,.95);--ink-dim:rgba(228,224,218,.62);
+  --glass:rgba(12,17,30,.52);--glass-hi:rgba(20,27,46,.68);
+  --line:rgba(255,255,255,.09);
+  --accent:#d5b77b;--accent-bg:rgba(213,183,123,.15);--accent-press:rgba(213,183,123,.24);
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","PingFang SC","Noto Sans SC",system-ui,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Songti SC","Noto Serif SC",Georgia,serif;
+  --pad:clamp(14px,2.2vw,28px);
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0b1120;color:var(--ink);font-family:var(--sans);overflow:hidden;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{cursor:default;opacity:.45}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;cursor:grab}
+#scene.dragging{cursor:grabbing}
+
+/* top bar — left brand + right cluster, no position:absolute overlap */
+#topBar{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:calc(var(--pad) + var(--safe-t)) calc(var(--pad) + var(--safe-r)) 0 calc(var(--pad) + var(--safe-l));
+  pointer-events:none}
+#topRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:auto}
+/* brand — top left */
+.brand{display:flex;align-items:center;gap:16px;pointer-events:none;user-select:none;
+  text-shadow:0 1px 14px rgba(4,8,20,.7)}
+.brand .kanji{font-family:var(--serif);font-size:32px;letter-spacing:.06em;line-height:1;
+  padding-right:16px;border-right:1px solid rgba(255,255,255,.18);color:#e8d5b0}
+.brand-text h1{font-family:var(--serif);font-weight:500;font-size:20px;letter-spacing:.05em;color:var(--ink)}
+.brand-text p{margin-top:4px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+#worldBadge{display:inline-block;margin-top:4px;font-size:10px;letter-spacing:.12em;color:var(--accent);opacity:.85}
+/* language control inside tools */
+#languageControl{position:relative;display:flex;align-items:center;justify-content:center;gap:3px;
+  width:44px;height:38px;cursor:pointer;border-radius:50%}
+#languageControl .caret{font-size:.6rem;color:var(--ink-dim)}
+#languageSelect{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+/* glass utility */
+.glass{background:var(--glass);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);
+  box-shadow:0 8px 32px rgba(3,6,16,.32)}
+
+#loader{position:fixed;inset:0;z-index:20;display:grid;place-items:center;
+  background:radial-gradient(120% 90% at 50% 100%,#2a3050 0%,#111828 55%,#080d18 100%);
+  transition:opacity .9s ease}
+#loader.done{opacity:0;pointer-events:none}
+#ldInner{text-align:center;width:min(280px,76vw)}
+#ldLogo{font-family:var(--serif);font-size:clamp(2.8rem,8vw,4.6rem);letter-spacing:.18em;line-height:1.3;color:#e8d5b0;
+  animation:breathe 2.8s ease-in-out infinite}
+#ldLogo small{display:block;font:500 .62rem var(--sans);letter-spacing:.35em;color:var(--ink-dim);margin-top:.5rem}
+#ldBar{margin:20px auto 10px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+#ldFill{display:block;height:100%;background:linear-gradient(90deg,#c4a260,#e8d5a0);transform-origin:left;transform:scaleX(0);transition:transform .35s ease}
+#ldStatus{font-size:.72rem;letter-spacing:.08em;color:var(--ink-dim);min-height:1.4em}
+@keyframes breathe{0%,100%{opacity:.55;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+
+/* hud root */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;transition:opacity .4s ease}
+body.hidden-ui #hud{opacity:0;pointer-events:none}
+#hud>*{pointer-events:auto}
+
+/* top-right tool strip (in-flow inside #topRight) */
+.tools{display:flex;gap:3px;padding:5px;border-radius:999px}
+.ib{width:38px;height:38px;border-radius:50%;border:0;background:transparent;
+  display:grid;place-items:center;cursor:pointer;color:var(--ink);
+  transition:background .2s,color .2s;position:relative;flex:none}
+.ib:hover{background:rgba(255,255,255,.1)}
+.ib[aria-pressed="true"]{background:var(--accent-bg);color:var(--accent)}
+.ib svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ib .q{font-size:10px;font-weight:650;letter-spacing:.06em}
+.ib[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:46px;right:0;white-space:nowrap;
+  font-size:11.5px;padding:6px 10px;border-radius:10px;
+  background:rgba(8,12,26,.92);color:var(--ink);pointer-events:none;
+  border:1px solid var(--line);box-shadow:0 8px 24px rgba(3,6,14,.45);z-index:20}
+
+/* stats cluster — compact, lives beside the world buttons on the left */
+#stats{display:flex;align-items:stretch;gap:0;border-radius:999px;overflow:hidden;
+  border:1px solid var(--line);background:var(--glass);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3)}
+.stat{display:flex;flex-direction:column;justify-content:center;gap:1px;padding:5px 11px;min-width:52px}
+.stat+.stat{border-left:1px solid var(--line)}
+.statVal{font-size:.72rem;font-variant-numeric:tabular-nums;line-height:1.1;color:var(--ink)}
+.statLbl{font-size:.46rem;letter-spacing:.1em;color:var(--ink-dim);white-space:nowrap}
+
+/* bottom dock */
+.dock{position:absolute;bottom:calc(var(--pad) + var(--safe-b));display:flex;flex-direction:column;gap:8px}
+.dock-left{left:calc(var(--pad) + var(--safe-l))}
+.dock-right{right:calc(var(--pad) + var(--safe-r));align-items:flex-end}
+#leftRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* segmented pill rows */
+.seg{display:flex;gap:3px;padding:5px;border-radius:999px}
+.seg button{border:0;background:transparent;cursor:pointer;height:36px;padding:0 15px;border-radius:999px;
+  font-size:13px;letter-spacing:.01em;color:var(--ink-dim);
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  transition:background .22s,color .22s}
+.seg button:hover{color:var(--ink);background:rgba(255,255,255,.07)}
+.seg button[aria-pressed="true"]{background:var(--accent-bg);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(213,183,123,.28)}
+.seg button .ico{display:block;width:16px;height:16px;flex:none}
+.seg button .ico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.seg button .n{font-size:10px;font-variant-numeric:tabular-nums;opacity:.52;letter-spacing:.06em}
+
+/* hint & toast — toast sits high, clear of the train-view bar at the bottom */
+#hint{position:absolute;left:50%;bottom:calc(var(--pad) + var(--safe-b) + 68px);transform:translateX(-50%);
+  font-size:12px;color:var(--ink-dim);letter-spacing:.05em;padding:9px 16px;border-radius:999px;white-space:nowrap;
+  transition:opacity 1.2s ease;pointer-events:none}
+#hint.gone{opacity:0}
+#toast{position:absolute;left:50%;top:calc(var(--pad) + var(--safe-t) + 8px);transform:translate(-50%,-8px);
+  font-size:12.5px;padding:8px 14px;border-radius:999px;opacity:0;z-index:60;
+  transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* help panel */
+#help{position:absolute;top:calc(var(--pad) + var(--safe-t) + 56px);right:calc(var(--pad) + var(--safe-r));
+  width:min(320px,calc(100vw - 2*var(--pad)));border-radius:18px;padding:18px 20px 16px;
+  font-size:12.5px;line-height:1.6;background:var(--glass-hi);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3)}
+#help h2{margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:16px;letter-spacing:.03em}
+#help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px}
+#help dt{color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+#help dd{margin:0;color:var(--ink-dim)}
+#help .foot{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);color:var(--ink-dim);font-size:11.5px;line-height:1.55}
+
+/* show-ui restore button */
+#showUi{position:fixed;top:calc(12px + var(--safe-t));right:calc(12px + var(--safe-r));z-index:15;
+  width:34px;height:34px;border-radius:50%;opacity:0;pointer-events:none;transition:opacity .4s}
+body.hidden-ui #showUi{opacity:.55;pointer-events:auto}
+body.hidden-ui #showUi:hover{opacity:1}
+
+/* modal overlay */
+#menu{display:none;position:fixed;inset:0;background:rgba(6,9,18,.82);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  z-index:100;align-items:center;justify-content:center;padding:24px;pointer-events:auto}
+#menu.show{display:flex}
+#menuBox{background:#121c2e;border:1px solid var(--line);padding:32px;
+  max-width:780px;width:100%;max-height:88dvh;overflow-y:auto;
+  border-radius:4px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+#menuBox h2{font-family:var(--serif);font-weight:500;font-size:1.75rem;letter-spacing:.05em;margin-bottom:12px}
+#menuBox h3{font-size:.72rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin:26px 0 10px}
+#menuBox p,#menuBox li{font-size:.82rem;color:var(--ink-dim);line-height:1.75}
+#menuBox p{margin-bottom:12px}
+#menuBox ul{list-style:none;display:grid;gap:8px}
+#menuBox b{font-weight:550;color:var(--ink)}
+#menuBox label{display:flex;gap:10px;align-items:center;margin:12px 0;color:var(--ink-dim)}
+#menuBox input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}
+.btnRow{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
+.btnPri,.btnSec{padding:10px 20px;border:1px solid var(--line);font-size:.82rem;border-radius:999px;cursor:pointer}
+.btnPri{background:var(--accent);color:#101810;border-color:var(--accent)}
+.btnPri:hover{background:#e8c98d}
+.btnSec{background:rgba(255,255,255,.05);color:var(--ink)}
+.btnSec:hover{border-color:var(--accent);background:var(--accent-bg)}
+.worldGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+.worldCard{display:flex;flex-direction:column;text-align:left;gap:10px;padding:22px;
+  border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:2px;cursor:pointer}
+.worldCard:hover{border-color:rgba(213,183,123,.4)}
+.worldCard[aria-current="true"]{border-color:var(--accent);background:var(--accent-bg)}
+.worldCard .index{color:var(--accent);font-size:.64rem;letter-spacing:.16em}
+.worldCard strong{font-family:var(--serif);font-size:1.35rem;font-weight:500}
+.worldCard span:last-child{font-size:.74rem;color:var(--ink-dim);line-height:1.6}
+.futureWorld{padding:14px 0;border-top:1px solid var(--line);font-size:.74rem;color:var(--ink-dim)}
+#seedBox{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+#seedBox input{flex:1;min-width:140px;background:rgba(0,0,0,.18);border:1px solid var(--line);
+  padding:10px 12px;border-radius:2px;color:var(--ink)}
+#teleList{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+#teleList button{text-align:left;min-height:72px;padding:14px;border:1px solid var(--line);
+  background:rgba(255,255,255,.02);border-radius:2px}
+#teleList button:hover{border-color:rgba(213,183,123,.4);background:var(--accent-bg)}
+#teleList span{display:block;margin-top:4px;font-size:.7rem;color:var(--ink-dim)}
+#unitList{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+
+/* fatal */
+#fatal{position:fixed;inset:0;background:#080d18;z-index:999;display:grid;place-items:center;padding:2rem}
+#fatal>div{max-width:42rem;text-align:center}
+#fatalTitle{font-family:var(--serif);font-size:1.8rem;color:var(--accent);margin-bottom:1rem}
+#fatalMsg{color:var(--ink-dim);line-height:1.6;margin-bottom:1rem;font-size:.88rem}
+#fatalCode{background:rgba(0,0,0,.2);border:1px solid var(--line);padding:1rem;
+  font-size:.78rem;color:var(--ink-dim);overflow:auto;max-height:12rem;border-radius:2px;text-align:left}
+.pill{border:1px solid var(--line);background:rgba(255,255,255,.06);padding:9px 20px;
+  border-radius:999px;cursor:pointer;font-size:13px;color:var(--ink)}
+.pill:hover{background:rgba(255,255,255,.12)}
+
+/* free-time dock: clock, scrub, phase label */
+#timeDock{display:flex;align-items:center;gap:12px;padding:5px 16px;border-radius:999px}
+#timeDock[hidden]{display:none}
+#timeClock{font-family:var(--serif);font-size:15px;font-variant-numeric:tabular-nums;
+  color:var(--accent);letter-spacing:.06em;min-width:3.6em}
+#timePhase{font-size:11px;letter-spacing:.14em;color:var(--ink-dim);min-width:2.6em;text-align:right}
+#timeSlider{-webkit-appearance:none;appearance:none;width:clamp(120px,22vw,260px);height:3px;
+  border-radius:2px;background:linear-gradient(90deg,#1a2a5c,#8a6aa0,#f0a060,#8a6aa0,#1a2a5c);
+  outline:none;cursor:pointer}
+#timeSlider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--accent);border:2px solid rgba(10,14,26,.85);cursor:grab;
+  box-shadow:0 0 10px rgba(213,183,123,.6)}
+#timeSlider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);
+  border:2px solid rgba(10,14,26,.85);cursor:grab;box-shadow:0 0 10px rgba(213,183,123,.6)}
+#timeSlider:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+
+/* misc */
+#loadSnap{position:fixed;bottom:calc(88px + var(--safe-b));right:calc(var(--pad) + var(--safe-r));
+  padding:6px 10px;background:var(--glass);border:1px solid var(--line);color:var(--ink-dim);
+  font-size:.64rem;z-index:20;pointer-events:none;border-radius:4px}
+body.touring #hud>:not(#topBar),body.touring #topBar .tools,
+body.touring #menu,body.touring #toast,body.touring #loadSnap{display:none!important}
+body.touring .brand{pointer-events:none}
+
+/* responsive */
+@media(max-width:860px){
+  .seg button .lbl-long{display:none}
+}
+@media(min-width:861px){
+  .seg button .lbl-short{display:none}
+}
+@media(max-width:720px){
+  .brand .kanji{font-size:25px;padding-right:11px}
+  .brand-text h1{font-size:16.5px}
+  .brand-text p{font-size:10px;letter-spacing:.14em}
+  .tools{flex-direction:column;border-radius:22px;gap:0;padding:3px}
+  .ib[data-tip]:hover::after{display:none}
+  .dock{left:calc(10px + var(--safe-l));right:calc(10px + var(--safe-r));align-items:stretch}
+  .dock-left{bottom:calc(10px + var(--safe-b))}
+  .dock-right{bottom:calc(68px + var(--safe-b));align-items:stretch}
+  #leftRow{flex-direction:column;align-items:stretch;gap:6px}
+  .seg button{flex:1 1 0;min-width:0;justify-content:center;padding:0 6px;height:40px;font-size:12.5px;gap:6px}
+  .seg button .n{display:none}
+  #timeDock{justify-content:center;padding:6px 12px}
+  #timeSlider{width:auto;flex:1}
+  #hint{bottom:calc(190px + var(--safe-b));font-size:11.5px}
+  #help{top:auto;bottom:calc(196px + var(--safe-b));right:calc(10px + var(--safe-r))}
+  #stats{justify-content:center}
+}
+@media(max-width:600px){
+  #menu{padding:12px}
+  #menuBox{padding:22px 18px;max-height:92dvh;border-radius:2px}
+  .worldGrid{gap:8px}
+  .worldCard{padding:14px}
+  .worldCard strong{font-size:1.2rem}
+}
+@media(max-width:380px){
+  .seg button .ico{display:none}
+}
+@media(max-height:520px) and (min-width:721px){
+  .dock .cap{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation:none!important}}
 </style>
 </head>
 <body>
-<canvas id="scene"></canvas>
-<div id="loader">
-  <div id="ldLogo"><span data-i18n="product.name">万境</span><small data-i18n="product.subtitle">MYRIAD WORLDS</small></div>
-  <div id="ldBar"><div id="ldFill" style="transform:scaleX(0)"></div></div>
-  <div id="ldStatus" data-i18n="loading.initialize">正在初始化…</div>
+<canvas id="scene" tabindex="0" aria-label="Interactive 3D landscape. Drag to look around, scroll to move."></canvas>
+
+<div id="loader" role="status" aria-live="polite">
+  <div id="ldInner">
+    <div id="ldLogo"><span data-i18n="product.name">万境</span><small data-i18n="product.subtitle">MYRIAD WORLDS</small></div>
+    <div id="ldBar"><i id="ldFill"></i></div>
+    <div id="ldStatus" data-i18n="loading.initialize">正在初始化…</div>
+  </div>
 </div>
+
+<div id="fatal" hidden role="alert">
+  <div>
+    <div id="fatalTitle"></div>
+    <div id="fatalMsg"></div>
+    <pre id="fatalCode"></pre>
+    <div class="btnRow" style="justify-content:center;margin-top:20px">
+      <button class="pill" onclick="location.reload()" data-i18n="fatal.reload">重新加载</button>
+    </div>
+  </div>
+</div>
+
 <div id="hud" hidden>
   <div id="topBar">
-    <div id="title">
-      <h1><span data-i18n="product.name">万境</span><small data-i18n="product.subtitle">MYRIAD WORLDS</small></h1>
-      <div id="worldBadge">山水 · SHANSHUI</div>
-      <div id="moodLine">暮光 · Golden hour</div>
-    </div>
-    <div id="topTools">
-      <label id="languageControl" data-i18n-title="language" title="语言"><span class="srOnly" data-i18n="language">语言</span><span id="languageFlag" aria-hidden="true">🇨🇳</span><select id="languageSelect" data-i18n-aria="language" aria-label="语言"><option value="zh" lang="zh-CN">🇨🇳 中文</option><option value="ja" lang="ja">🇯🇵 日本語</option><option value="en" lang="en">🇬🇧 English</option></select></label>
-    <div id="stats">
-      <div class="stat"><div class="statVal" id="altVal">—</div><div class="statLbl" data-i18n="stat.altitude">海拔</div></div>
-      <div class="stat"><div class="statVal" id="bioVal">—</div><div class="statLbl" data-i18n="stat.biome">群落</div></div>
-      <div class="stat"><div class="statVal" id="fpsVal">—</div><div class="statLbl" data-i18n="stat.fps">帧率</div></div>
-    </div>
+    <!-- brand: biome glyph takes the kanji slot, crop name beside it -->
+    <header class="brand">
+      <div class="kanji" id="bioGlyph" aria-hidden="true">山</div>
+      <div class="brand-text">
+        <h1 data-i18n="product.name">万境</h1>
+        <p id="moodLine" data-i18n="mood.golden">暮光 · Golden hour</p>
+        <div id="worldBadge">山水 · SHANSHUI</div>
+      </div>
+    </header>
+
+    <!-- top-right cluster: tools row, then the readout row -->
+    <div id="topRight">
+
+      <nav class="tools glass" aria-label="Scene tools">
+        <label id="languageControl" title="语言">
+          <span id="languageFlag" aria-hidden="true">🇨🇳</span>
+          <span class="caret" aria-hidden="true">⌄</span>
+          <select id="languageSelect" data-i18n-aria="language" aria-label="语言">
+            <option value="zh" lang="zh-CN">🇨🇳 中文</option>
+            <option value="ja" lang="ja">🇯🇵 日本語</option>
+            <option value="en" lang="en">🇬🇧 English</option>
+          </select>
+        </label>
+        <button class="ib" id="btnTour" aria-pressed="false" data-tip="环游 · Tour (T)" data-i18n-title="action.tour.title" aria-label="环游">
+          <svg viewBox="0 0 24 24"><path d="M3 17c4-1 6-9 10-9 3 0 4 3 8 2"/><circle cx="20.5" cy="10" r="1.2"/></svg>
+        </button>
+        <button class="ib" id="btnFollow" aria-pressed="false" data-tip="跟随 · Follow" data-i18n-title="action.follow.title" aria-label="跟随">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/></svg>
+        </button>
+        <button class="ib" id="btnSound" aria-pressed="false" data-tip="环境音 · Sound (M)" data-i18n-title="action.sound" aria-label="环境音">
+          <svg viewBox="0 0 24 24" class="snd-off"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+          <svg viewBox="0 0 24 24" class="snd-on" style="display:none"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        </button>
+        <button class="ib" id="btnShot" data-tip="截图 · Screenshot (P)" data-i18n-title="action.shot.title" aria-label="截图">
+          <svg viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="3.4"/></svg>
+        </button>
+        <button class="ib" id="btnHelp" aria-pressed="false" data-tip="操作指南 · Controls" aria-label="操作指南" aria-controls="help">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.3 2.4c-.6.3-.9.8-.9 1.4v.6"/><path d="M12 17h.01"/></svg>
+        </button>
+      </nav>
+
     </div>
   </div>
-  <div id="controls">
-    <div id="moods" role="group" data-i18n-aria="mood.group" aria-label="天气与时段">
-      <button data-mood="morning" data-i18n-title="mood.morning" aria-pressed="false" title="晨雾 · Morning"><span class="ico"><svg viewBox="0 0 24 24"><path d="M3 16h18M5 20h14M8 12a4 4 0 0 1 8 0M12 2v3M3 7l2 2m16-2-2 2"/></svg></span><span data-i18n="mood.morning">晨雾</span></button>
-      <button data-mood="golden" data-i18n-title="mood.golden" aria-pressed="true" title="暮光 · Golden hour"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg></span><span data-i18n="mood.golden">暮光</span></button>
-      <button data-mood="dusk" data-i18n-title="mood.dusk" aria-pressed="false" title="薄暮 · Dusk"><span class="ico"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 21h14M8 13a4 4 0 0 1 8 0M12 3v4m-3-3 3 3 3-3"/></svg></span><span data-i18n="mood.dusk">薄暮</span></button>
-      <button data-mood="night" data-i18n-title="mood.night" aria-pressed="false" title="月夜 · Night"><span class="ico"><svg viewBox="0 0 24 24"><path d="M19 16A8 8 0 0 1 8 5a8 8 0 1 0 11 11Z"/><path d="m18 3 .7 2.3L21 6l-2.3.7L18 9l-.7-2.3L15 6l2.3-.7Z"/></svg></span><span data-i18n="mood.night">月夜</span></button>
-      <button data-mood="rain" data-i18n-title="mood.rain" aria-pressed="false" title="细雨 · Rain"><span class="ico"><svg viewBox="0 0 24 24"><path d="M6 14a4 4 0 1 1 1-8 5 5 0 0 1 9 1 3.5 3.5 0 1 1 2 7H6ZM7 18l-1 3m6-3-1 3m6-3-1 3"/></svg></span><span data-i18n="mood.rain">细雨</span></button>
-    </div>
-    <div id="actions">
-      <button id="btnWorld" data-i18n="action.world" data-i18n-title="action.world.title" title="选择世界 · Worlds">世界</button>
-      <button id="btnTele" data-i18n="action.places" data-i18n-title="action.places.title" title="景点与种子 · Places & seed">寻境</button>
-      <button id="btnFollow" data-i18n="action.follow" data-i18n-title="action.follow.title" aria-pressed="false" title="第一视角跟随 · Follow a moving unit">跟随</button>
-      <button id="btnTour" data-i18n="action.tour" data-i18n-title="action.tour.title" aria-pressed="false" title="环游 · Orbit (T)">环游</button>
-      <button id="btnSound" data-i18n-title="action.sound" data-i18n-aria="action.sound" class="iconOnly" aria-label="环境音 · Ambient sound" aria-pressed="false" title="环境音 · Ambient sound"><span class="snd-off"><svg viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4ZM16 9l5 6m0-6-5 6"/></svg></span><span class="snd-on" style="display:none"><svg viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4ZM15 8a6 6 0 0 1 0 8m3-12a11 11 0 0 1 0 16"/></svg></span></button>
-      <button id="btnShot" data-i18n-title="action.shot.title" data-i18n-aria="action.shot" class="iconOnly" aria-label="保存截图 · Screenshot" title="留影 · Screenshot (P)"><svg viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3Z"/><circle cx="12" cy="13" r="4"/></svg></button>
-      <button id="btnHelp" data-i18n="action.guide" data-i18n-title="action.guide.title" title="操作指南 · Guide">指南</button>
+
+  <!-- help panel -->
+  <section id="help" class="glass" hidden aria-label="操作指南">
+    <h2 data-i18n="help.title">漫游指南</h2>
+    <dl>
+      <dt data-i18n="help.drag.key">拖拽</dt><dd data-i18n="help.drag.val">环顾四周</dd>
+      <dt data-i18n="help.scroll.key">滚轮 / 双指</dt><dd data-i18n="help.scroll.val">前进 &amp; 后退</dd>
+      <dt>W A S D</dt><dd data-i18n="help.wasd.val">自由漫步 · Q / E 升降</dd>
+      <dt>T · M</dt><dd data-i18n="help.tm.val">环游 · 环境音</dd>
+      <dt>H · P</dt><dd data-i18n="help.hp.val">隐藏界面 · 截图</dd>
+    </dl>
+    <div class="foot" data-i18n="help.footer">所有景色均由体素实时生成 — 无图片或模型加载</div>
+  </section>
+
+  <!-- bottom-left: worlds, places and the compact readout, one dock -->
+  <div class="dock dock-left">
+    <div id="leftRow">
+      <div class="seg glass" role="group" aria-label="世界选择">
+        <button id="btnWorld" data-i18n="action.world" title="选择世界"><span class="lbl-long" data-i18n="action.world">选择世界</span><span class="lbl-short">世界</span></button>
+        <button id="btnTele" data-i18n="action.places" title="景点与种子"><span class="lbl-long" data-i18n="action.places">寻境</span><span class="lbl-short">寻境</span></button>
+      </div>
+      <div id="stats" class="glass">
+        <div class="stat"><div class="statVal" id="altVal">—</div><div class="statLbl" data-i18n="stat.altitude">海拔</div></div>
+        <div class="stat"><div class="statVal" id="fpsVal">—</div><div class="statLbl" data-i18n="stat.fps">帧率</div></div>
+      </div>
     </div>
   </div>
+
+  <!-- bottom-right: free-time scrub sits ABOVE the weather row -->
+  <div class="dock dock-right">
+    <div id="timeDock" class="glass" hidden>
+      <span id="timeClock" aria-hidden="true">06:00</span>
+      <input id="timeSlider" type="range" min="0" max="1440" step="1" value="360"
+             aria-label="时间" data-i18n-aria="time.slider">
+      <span id="timePhase" data-i18n="time.phase.day">白昼</span>
+    </div>
+    <div id="moods" class="seg glass" role="group" aria-label="天气与时段">
+      <button data-mood="sunrise" aria-pressed="false" title="日出 · Sunrise">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M12 2v3M4.2 10H2m20 0h-2.2M6.3 5.7 4.9 4.3m12.8 1.4 1.4-1.4M3 16h18M5 20h14M8 12a4 4 0 0 1 8 0"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.sunrise">日出</span><span class="lbl-short">出</span>
+      </button>
+      <button data-mood="morning" aria-pressed="false" title="晨雾 · Morning">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M3 16h18M5 20h14M8 12a4 4 0 0 1 8 0M12 2v3M3 7l2 2m16-2-2 2"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.morning">晨雾</span><span class="lbl-short">晨</span>
+      </button>
+      <button data-mood="golden" aria-pressed="true" title="暮光 · Golden hour">
+        <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.golden">暮光</span><span class="lbl-short">暮</span>
+      </button>
+      <button data-mood="dusk" aria-pressed="false" title="薄暮 · Dusk">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.dusk">薄暮</span><span class="lbl-short">夜</span>
+      </button>
+      <button data-mood="night" aria-pressed="false" title="月夜 · Night">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M19 16A8 8 0 0 1 8 5a8 8 0 1 0 11 11Z"/><path d="m18 3 .7 2.3L21 6l-2.3.7L18 9l-.7-2.3L15 6l2.3-.7Z"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.night">月夜</span><span class="lbl-short">月</span>
+      </button>
+      <button data-mood="rain" aria-pressed="false" title="细雨 · Rain">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M6 14a4 4 0 1 1 1-8 5 5 0 0 1 9 1 3.5 3.5 0 1 1 2 7H6ZM7 18l-1 3m6-3-1 3m6-3-1 3"/></svg></span>
+        <span class="lbl-long" data-i18n="mood.rain">细雨</span><span class="lbl-short">雨</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="hint" class="glass">拖拽环顾 · 滚轮前进 · WASD 漫步</div>
+  <div id="toast" class="glass" role="status" aria-live="polite"></div>
 </div>
-<div id="menu">
-  <div id="menuBox" role="dialog" aria-labelledby="menuTitle"></div>
+
+<button id="showUi" class="ib glass" aria-label="显示界面">
+  <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+</button>
+
+<div id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+  <div id="menuBox"></div>
 </div>
-<div id="fatal" hidden>
-  <div><div id="fatalTitle"></div><div id="fatalMsg"></div><pre id="fatalCode"></pre></div>
-</div>
-<div id="toast" class="glass"></div>
+
 <div id="loadSnap" hidden></div>
+
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.171.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.171.0/examples/jsm/"}}</script>
 <script id="gen-src" type="text/plain">// =====================================================================
 //  GEN — deterministic, dependency-free world generator.
@@ -746,30 +1071,146 @@ function shanshuiAnchor(a, n, r, roll, rd) {
   if (a.type === 'changan' || a.type === 'palace' || a.type === 'monastery' || a.type === 'paifang') a.yaw = Math.round(a.yaw / (Math.PI / 2)) * (Math.PI / 2);
 }
 
-// Terrain materials belong to the world rules, alongside their ecology.
+// Terrain materials for the shanshui world.
+// Palette principle: ink-and-mineral pigments.  Every colour is desaturated
+// enough to read as natural rock, earth, water and vegetation rather than
+// painted swatches.  The town's ground treatment gives each surface type a
+// distinct but harmonious tonal identity.
 const SHANSHUI_TERRAIN = {
-  grass: C(0x81936a), grassDark: C(0x5c7555), granite: C(0xb3b2a5), graniteDark: C(0x818a85), moss: C(0x65745a),
-  pine: C(0x5b715c), bamboo: C(0x728564), earth: C(0x6c604d), mud: C(0x585345), stone: C(0xaaa99e),
-  paleSand: C(0xb8c4ab), lakeBed: C(0x56796f), deepBed: C(0x294c4a), snow: C(0xe8ecea),
+  // Vegetation
+  grass: C(0x7f9066), grassDark: C(0x5a7151), meadow: C(0x8a9e6c),
+  pine: C(0x586e56), bamboo: C(0x6e8460), moss: C(0x5e6e52),
+  // Rock and cliff
+  granite: C(0xb0ada2), graniteDark: C(0x7e8580), graniteLight: C(0xc0bdb4),
+  // Earth, paths, paving
+  earth: C(0x6a5c4a), earthLight: C(0x857566),
+  mud: C(0x56503e), mudDark: C(0x3e3a2e),
+  // Town surfaces: three distinct registers
+  streetPave: C(0x9e9890),   // dressed stone slabs — the main ward avenue
+  streetMortar: C(0x7a7670), // joint / worn mortar tone
+  courtEarth: C(0x8a7e6e),   // packed earth inside a courtyard
+  lot: C(0x857666),          // undeveloped lot or alley
+  // Water margins
+  bank: C(0x727068),         // stone embankment at the water's edge
+  bankWet: C(0x525550),      // wet stone a half-step below the waterline
+  lakeBed: C(0x4e6b65), deepBed: C(0x27474a),
+  paleSand: C(0xb2bfaa),     // shallow shore / sandy lacustrine bed
+  // Snow / beach
+  snow: C(0xe6ebe8), beach: C(0xcdc3a5),
 };
 function shanshuiCellColor(x, z, s, slope, lod, out) {
-  const p = SHANSHUI_TERRAIN, r = h2(Math.floor(x * 2), Math.floor(z * 2), 77);
-  const n = fbm(x * 0.035, z * 0.035, 2, 16);
-  if (s.waterLevel !== null && !s.paddy) return out.copy(p.paleSand).lerp(p.deepBed, smoothstep(0.1, 5.0, s.waterLevel - s.h)).multiplyScalar(0.94 + n * 0.06);
-  if (s.rail > 0.3 && !s.tunnel) return out.copy(p.graniteDark).multiplyScalar(0.8 + r * 0.12);
-  if (s.street) return out.copy(p.stone).multiplyScalar(0.9 + r * 0.1);
-  if (s.snow) return out.copy(p.snow).lerp(p.graniteDark, clamp((slope - 2.5) * 0.15, 0, 0.35));
-  if (s.biome === B.CEDAR || slope > 1.5) return out.copy(p.granite).lerp(p.graniteDark, clamp(0.35 + n * 0.5, 0, 1)).lerp(p.moss, slope < 2.3 ? 0.16 : 0);
-  if (s.path > 0.35) return out.copy(p.stone).lerp(p.earth, 0.35 + n * 0.1);
-  switch (s.biome) {
-    case B.PADDY: return out.copy(p.mud).multiplyScalar(0.92 + r * 0.12);
-    case B.TOWN: return out.copy(p.earth).lerp(p.stone, 0.3).multiplyScalar(0.92 + r * 0.12);
-    case B.BAMBOO: return out.copy(p.bamboo).lerp(p.earth, 0.16).multiplyScalar(0.95 + n * 0.08);
-    case B.PINE: return out.copy(p.pine).lerp(p.granite, clamp(n + 0.2, 0, 0.35));
-    case B.BEACH: return out.copy(p.paleSand).lerp(p.grass, smoothstep(1.5, 2.8, s.h));
-    case B.MARSH: return out.copy(p.grassDark).lerp(p.mud, s.h < 0.7 ? 0.35 : 0.12);
+  const p = SHANSHUI_TERRAIN;
+  // Per-cell hash jitter: two independent values for tonal variety.
+  const r  = h2(Math.floor(x * 2),     Math.floor(z * 2),     77);
+  const r2 = h2(Math.floor(x * 2) + 1, Math.floor(z * 2) + 1, 78);
+  const n  = fbm(x * 0.035, z * 0.035, 2, 16);
+  const n2 = fbm(x * 0.07,  z * 0.07,  2, 17);
+
+  // --- Water bed ---
+  if (s.waterLevel !== null && !s.paddy) {
+    const depth = s.waterLevel - s.h;
+    out.copy(p.paleSand).lerp(p.deepBed, smoothstep(0.1, 5.0, depth));
+    // A thin strip of stone-bank colour right at the shoreline.
+    if (depth < 0.6) out.lerp(p.bankWet, smoothstep(0.6, 0.1, depth) * 0.6);
+    return out.multiplyScalar(0.93 + n * 0.06);
   }
-  return out.copy(p.grass).lerp(p.grassDark, clamp(0.4 + n * 0.65, 0, 1)).multiplyScalar(0.94 + r * 0.08);
+
+  // --- Rail ballast ---
+  if (s.rail > 0.3 && !s.tunnel) return out.copy(p.graniteDark).multiplyScalar(0.8 + r * 0.12);
+
+  // --- Town streets: ward avenue (along Z) vs cross-streets (along X) ---
+  if (s.street) {
+    // The ward grid is 34 × 26.  The main avenue runs on the Z axis (gx < 3.6),
+    // the cross-streets on X (gz < 3.2).  Give each a distinct stone tone.
+    const gx = ((x % 34) + 34) % 34, gz = ((z % 26) + 26) % 26;
+    const mainAve = gx < 3.6;
+    const slabKey = h2(Math.floor(x / 2.1), Math.floor(z / 1.8), 80);
+    if (mainAve) {
+      // Main avenue: laid stone slabs, pale and formal.
+      out.copy(p.streetPave).lerp(p.graniteLight, slabKey * 0.35);
+    } else {
+      // Cross-streets: worn packed earth with a few stone patches.
+      out.copy(p.streetMortar).lerp(p.courtEarth, slabKey * 0.45);
+    }
+    return out.multiplyScalar(0.91 + r * 0.1);
+  }
+
+  // --- Snow ---
+  if (s.snow) return out.copy(p.snow).lerp(p.graniteDark, clamp((slope - 2.5) * 0.15, 0, 0.35));
+
+  // --- Cliff / steep rock face ---
+  if (s.biome === B.CEDAR || slope > 1.55) {
+    out.copy(p.granite).lerp(p.graniteDark, clamp(0.3 + n * 0.55, 0, 1));
+    if (slope < 2.4) out.lerp(p.moss, 0.18);
+    return out;
+  }
+
+  // --- Paths ---
+  if (s.path > 0.35) {
+    // Mountain paths: reddish-brown earth packed between stones.
+    out.copy(p.earth).lerp(p.granite, 0.22 + n2 * 0.18);
+    return out.multiplyScalar(0.91 + r * 0.1);
+  }
+
+  // --- Biome ground colours ---
+  switch (s.biome) {
+    case B.PADDY: {
+      // Young fields: slightly blue-green mud (flooded); ripe: warmer mud.
+      out.copy(p.mud).lerp(p.mudDark, smoothstep(0.3, 0.8, n2));
+      return out.multiplyScalar(0.90 + r * 0.12);
+    }
+    case B.TOWN: {
+      // Inside the built fabric: packed courtyard earth, not a generic brown.
+      // Structural pads (palace etc.) slightly lighter and smoother.
+      if (lod > 0) return out.copy(p.courtEarth).lerp(p.lot, clamp(n, 0, 1) * 0.4);
+      const slab = h2(Math.floor(x / 2.4), Math.floor(z / 2.0), 81);
+      out.copy(p.courtEarth).lerp(p.lot, slab * 0.5).lerp(p.moss, r2 > 0.85 ? 0.18 : 0);
+      // Water-facing lots: a thin stone-bank strip at the edge.
+      if (s.valley > 0.06 || s.lake > 0.04) out.lerp(p.bank, 0.22);
+      return out.multiplyScalar(0.91 + r * 0.1);
+    }
+    case B.BAMBOO: {
+      out.copy(p.bamboo).lerp(p.earth, 0.18).multiplyScalar(0.95 + n * 0.08);
+      return out;
+    }
+    case B.PINE: {
+      out.copy(p.pine).lerp(p.granite, clamp(n + 0.18, 0, 0.35));
+      return out;
+    }
+    case B.BEACH: {
+      out.copy(p.beach).lerp(p.grass, smoothstep(1.5, 2.8, s.h));
+      return out.multiplyScalar(0.95 + n * 0.06);
+    }
+    case B.MARSH: {
+      // Wetland at the water edge: dark reedy mud; higher margins: dark grass.
+      out.copy(p.grassDark).lerp(p.mud, s.h < 0.7 ? 0.4 : 0.15);
+      if (s.h < 0.4) out.lerp(p.bankWet, smoothstep(0.4, 0.0, s.h) * 0.45);
+      return out;
+    }
+    case B.MEADOW: {
+      out.copy(p.meadow).lerp(p.grassDark, clamp(0.4 + n * 0.55, 0, 1));
+      return out.multiplyScalar(0.95 + n * 0.06);
+    }
+  }
+
+  // --- Default grass / sato ---
+  const g = clamp(0.42 + n * 0.72, 0, 1);
+  out.copy(p.grassDark).lerp(p.grass, g);
+  if (lod > 0) {
+    if (s.biome === B.SAKURA) out.lerp(C(0xd4a8a8), 0.5 + r * 0.18);
+    else out.lerp(p.grassDark, 0.35);
+    return out;
+  }
+  if (s.biome === B.SAKURA) {
+    // Peach-blossom carpet: warm pink wash on the ground beneath the groves.
+    // s.sak is already copied flat from the natural result in sample().
+    const sakField = s.sak !== undefined ? s.sak : 0;
+    const pk = clamp(sakField * 2.0 - 0.2, 0, 0.55);
+    if (r2 < pk * 0.6) out.lerp(C(0xe8b8ae), 0.65 + r * 0.18); else out.lerp(C(0xe8b8ae), pk * 0.25 + 0.04);
+  } else if (slope > 0.85) {
+    out.lerp(p.earth, (slope - 0.85) * 0.5);
+  }
+  return out.multiplyScalar(0.94 + r * 0.08);
 }
 
 // Profile registry is data-only except for the three deterministic rule hooks.
@@ -820,7 +1261,7 @@ const WORLD_PROFILES = Object.freeze({
       [B.BAMBOO]: ['deer', 'sparrow'], [B.MEADOW]: ['deer', 'sparrow', 'butterfly'], [B.MARSH]: ['crane', 'buffalo', 'butterfly', 'fish'],
       [B.LAKE]: ['fish', 'crane', 'hawk'], [B.RIVER]: ['fish', 'crane', 'butterfly'], [B.BEACH]: ['sparrow', 'hawk'], [B.SNOW]: ['hawk'],
     },
-    mist: { cloudSea: true, base: 44, thickness: 15, density: 0.017, mountainThreshold: 0.35 },
+    mist: { cloudSea: true, base: 44, thickness: 28, density: 0.017, mountainThreshold: 0.35 },
     water: { shallow: 0x75c7b5, deep: 0x125366, lake: 0x42bbae, river: 0x559c91, ocean: 0x386b7a },
     spawnOrder: ['changan', 'monastery', 'mountainPavilion', 'terraceFarm', 'waterPavilion'],
   }),
@@ -1452,7 +1893,9 @@ function cherryTree(x, z, kind, seed, S = 1, detail = 0.55) {
   }
   for (const t of tips) {
     cluster(t.p, K.cl * S * t.s * RR(0.85, 1.2), t.d);
-    if (K.strands && rng() < K.strands) strand(t.p, RR(3.5, 6.5) * S);
+    // Weeping cherries hang a second, longer curtain of blossom from the
+    // outer tips, which is what reads as "shidare" at a distance.
+    if (K.strands && rng() < K.strands * 1.45) strand(t.p, RR(3.8, 8.2) * S);
   }
 }
 function conifer(x, z, s, seed, snowy = false, y) {
@@ -1507,27 +1950,149 @@ function pine(x, z, s, seed) {
   for (let k = 0; k < 3; k++) kit.box('leaf', p.x + (rng() - 0.5) * 1.2 * s, p.y + 0.3 * s, p.z + (rng() - 0.5) * 1.2 * s, 1.6 * s, 0.5 * s, 1.6 * s, COL.pine, 0, rng() * 3, 0);
 }
 function bamboo(x, z, seed) {
+  // High-fidelity bamboo: segmented culm with node rings, tapered diameter,
+  // lateral branch pairs at each node, and cascading leaf fans.
   const rng = mulberry32(seed);
-  const y = G(x, z), H = 8 + rng() * 7, lean = (rng() - 0.5) * 0.09, lean2 = (rng() - 0.5) * 0.09;
-  const c = C(rng() > 0.5 ? 0x7d9c50 : 0x6d8c46).multiplyScalar(0.85 + rng() * 0.25);
-  kit.box('solid', x + lean * H * 0.5, y + H / 2, z + lean2 * H * 0.5, 0.13, H, 0.13, c, lean2, 0, -lean);
-  for (let n = 1; n < 5; n++) kit.box('solid', x + lean * H * n / 5, y + H * n / 5, z + lean2 * H * n / 5, 0.16, 0.045, 0.16, c.clone().multiplyScalar(0.8));
-  for (let k = 0; k < 3; k++) kit.box('leaf', x + lean * H + (rng() - 0.5) * 1.4, y + H - rng() * 2.4, z + lean2 * H + (rng() - 0.5) * 1.4, 0.75 + rng() * 0.5, 0.16, 0.75 + rng() * 0.5, C(0x7a9c4c).multiplyScalar(0.8 + rng() * 0.3), (rng() - 0.5) * 0.5, rng() * 3, (rng() - 0.5) * 0.5);
+  const y = G(x, z);
+  const H = 9 + rng() * 8;           // culm height 9–17
+  const S = 0.9 + rng() * 0.3;       // size scalar
+  // Lean: gentle arc in a random direction
+  const leanDir = rng() * Math.PI * 2;
+  const leanAmt = 0.04 + rng() * 0.06;
+  const lx = Math.cos(leanDir) * leanAmt;
+  const lz = Math.sin(leanDir) * leanAmt;
+  // Culm colours: moso (yellow-green) or madake (cooler green)
+  const culmHex = rng() > 0.45 ? 0x8aaa52 : 0x6e9448;
+  const culmC = C(culmHex);
+  const nodeC = C(culmHex).multiplyScalar(0.72);
+  const segments = 7 + Math.floor(rng() * 4);   // 7–10 internodes
+  const segH = H / segments;
+  // Draw each internode as a tapered box
+  for (let i = 0; i < segments; i++) {
+    const t = i / segments;
+    const baseY = y + i * segH;
+    const midY = baseY + segH * 0.5;
+    const cx = x + lx * (i + 0.5) * segH;
+    const cz = z + lz * (i + 0.5) * segH;
+    const diam = (0.16 - t * 0.09) * S;         // tapers from base to tip
+    const shade = 0.78 + t * 0.22;              // darker at base, brighter tip
+    kit.box('solid', cx, midY, cz, diam, segH * 0.98, diam,
+      culmC.clone().multiplyScalar(shade), lz, 0, -lx);
+    // Node ring (slightly wider, darker band)
+    if (i > 0) {
+      const nx = x + lx * i * segH, nz = z + lz * i * segH;
+      kit.box('solid', nx, baseY, nz, diam * 1.28, 0.055 * S, diam * 1.28, nodeC);
+    }
+    // Lateral branches from mid-culm upward
+    if (i >= Math.floor(segments * 0.35)) {
+      const branchCount = i >= Math.floor(segments * 0.6) ? 2 : 1;
+      for (let b = 0; b < branchCount; b++) {
+        const angle = leanDir + Math.PI * b + rng() * 0.6 - 0.3;
+        const bLen = (0.9 + rng() * 1.1) * S * (0.5 + t * 0.7);
+        const bx = x + lx * i * segH, bz = z + lz * i * segH;
+        const tipX = bx + Math.cos(angle) * bLen;
+        const tipZ = bz + Math.sin(angle) * bLen;
+        const tipY = baseY + segH * (0.35 + rng() * 0.3) + bLen * 0.18;
+        // Branch stem
+        const bmx = (bx + tipX) * 0.5, bmy = (baseY + segH * 0.4 + tipY) * 0.5, bmz = (bz + tipZ) * 0.5;
+        kit.box('solid', bmx, bmy, bmz, 0.05 * S, bLen * 1.05, 0.05 * S,
+          nodeC, (tipY - baseY - segH * 0.4) / bLen * 0.8, angle, 0);
+        // Leaf fan at branch tip: 3–5 narrow leaf blades
+        const leafCount = 3 + Math.floor(rng() * 3);
+        const leafC = C(rng() > 0.5 ? 0x8eb858 : 0x7aab50).multiplyScalar(0.82 + rng() * 0.22);
+        for (let k = 0; k < leafCount; k++) {
+          const la = angle + (k - leafCount * 0.5) * 0.32 + rng() * 0.15;
+          const lLen = (0.55 + rng() * 0.55) * S;
+          const lx2 = tipX + Math.cos(la) * lLen * 0.5;
+          const lz2 = tipZ + Math.sin(la) * lLen * 0.5;
+          const ly2 = tipY - lLen * 0.12;
+          kit.box('leaf', lx2, ly2, lz2,
+            lLen * 0.22, 0.06 * S, lLen,
+            leafC.clone().multiplyScalar(0.88 + rng() * 0.24),
+            -0.18 - rng() * 0.22, la, (rng() - 0.5) * 0.25);
+        }
+      }
+    }
+  }
+  // Crown tuft at apex
+  const topX = x + lx * H, topZ = z + lz * H, topY = y + H;
+  const crownC = C(0x90c05a).multiplyScalar(0.85 + rng() * 0.18);
+  for (let k = 0; k < 5; k++) {
+    const a = leanDir + k * 1.257 + rng() * 0.4;
+    const r = (0.5 + rng() * 0.6) * S;
+    kit.box('leaf', topX + Math.cos(a) * r * 0.6, topY - rng() * 0.8, topZ + Math.sin(a) * r * 0.6,
+      r * 0.2, 0.07 * S, r,
+      crownC.clone().multiplyScalar(0.9 + rng() * 0.2),
+      -0.25 - rng() * 0.2, a, (rng() - 0.5) * 0.3);
+  }
 }
 function willow(x, z, seed, gy) {
-  const rng = mulberry32(seed), y = gy === undefined ? G(x, z) : gy, scale = 0.85 + rng() * 0.65;
-  const yaw = rng() * Math.PI * 2, leanX = (rng() - 0.5) * 0.6 * scale, leanZ = (rng() - 0.5) * 0.6 * scale;
-  const top = [x + leanX, y + 3.7 * scale, z + leanZ];
-  kit.beam('solid', x, y - 0.15, z, ...top, 0.36 * scale, 0.32 * scale, C(0x514738));
-  for (let i = 0; i < 5; i++) {
-    const a = yaw + i * 2.399, r = (1.7 + rng() * 1.2) * scale;
-    const bx = top[0] + Math.cos(a) * r, bz = top[2] + Math.sin(a) * r, by = top[1] + (0.3 + rng() * 0.8) * scale;
-    kit.beam('solid', ...top, bx, by, bz, 0.13 * scale, 0.11 * scale, C(0x61543f));
-    kit.box('foliage', bx, by + 0.05, bz, 1.5 * scale, 0.7 * scale, 1.35 * scale, C(0x708950).multiplyScalar(0.87 + rng() * 0.17), 0, a, 0);
-    for (let j = 0; j < 4; j++) {
-      const t = 0.42 + j * 0.18, px = lerp(top[0], bx, t) + (rng() - 0.5) * 0.6 * scale, pz = lerp(top[2], bz, t) + (rng() - 0.5) * 0.6 * scale;
-      const py = lerp(top[1], by, t), length = (1.5 + rng() * 1.7) * scale;
-      kit.box('willow', px, py, pz, 1.0 * scale, length, scale, C([0x92a86a, 0x819c59, 0x65854c][j % 3]).multiplyScalar(0.88 + rng() * 0.2), 0, a + rng(), 0);
+  // High-fidelity weeping willow: gnarled tapered trunk, radiating primary
+  // boughs, dense weeping curtains of cascading strands, layered crown foliage.
+  const rng = mulberry32(seed);
+  const y = gy === undefined ? G(x, z) : gy;
+  const scale = 1.1 + rng() * 0.75;            // larger, more imposing
+  const yaw = rng() * Math.PI * 2;
+  // Slight lean
+  const leanDir = yaw + rng() * 0.5;
+  const leanAmt = 0.08 + rng() * 0.1;
+  const lx = Math.cos(leanDir) * leanAmt * scale;
+  const lz = Math.sin(leanDir) * leanAmt * scale;
+  // Trunk: two segments for a slightly bent silhouette
+  const trunkH = (3.2 + rng() * 1.4) * scale;
+  const midTrunk = [x + lx * 0.4, y + trunkH * 0.45, z + lz * 0.4];
+  const crown = [x + lx, y + trunkH, z + lz];
+  const barkC = C(0x4a3d2e);
+  const barkMid = C(0x584637);
+  kit.beam('solid', x, y - 0.2, z, midTrunk[0], midTrunk[1], midTrunk[2],
+    0.44 * scale, 0.38 * scale, barkC);
+  kit.beam('solid', midTrunk[0], midTrunk[1], midTrunk[2], crown[0], crown[1], crown[2],
+    0.38 * scale, 0.28 * scale, barkMid);
+  // Crown canopy foliage blob (gives the tree its silhouette mass)
+  const canopyC = C(0x6a8e44).multiplyScalar(0.8 + rng() * 0.22);
+  const cw = (2.6 + rng() * 1.0) * scale, ch = (2.0 + rng() * 0.8) * scale;
+  kit.box('foliage', crown[0], crown[1] + ch * 0.3, crown[2], cw, ch, cw * 0.92, canopyC);
+  // Primary boughs: 5–7 radiating arms from crown
+  const boughCount = 5 + Math.floor(rng() * 3);
+  for (let i = 0; i < boughCount; i++) {
+    const a = yaw + i * (Math.PI * 2 / boughCount) + rng() * 0.4;
+    const boughR = (1.5 + rng() * 1.4) * scale;
+    const bx = crown[0] + Math.cos(a) * boughR;
+    const bz = crown[2] + Math.sin(a) * boughR;
+    const by = crown[1] + (rng() * 0.9 - 0.1) * scale;   // slight droop
+    kit.beam('solid', crown[0], crown[1], crown[2], bx, by, bz,
+      0.14 * scale, 0.09 * scale, barkMid);
+    // Secondary foliage pad at bough tip
+    const leafC = C([0x7da84e, 0x86b052, 0x6e9a44][i % 3]).multiplyScalar(0.84 + rng() * 0.2);
+    kit.box('foliage', bx, by + 0.15 * scale, bz,
+      (1.2 + rng() * 0.6) * scale, 0.55 * scale, (1.1 + rng() * 0.6) * scale,
+      leafC, 0, a, 0);
+    // Weeping curtain from each bough: 4–6 cascading strand pairs
+    const strandCount = 4 + Math.floor(rng() * 3);
+    for (let j = 0; j < strandCount; j++) {
+      // Spread strands along the bough arm
+      const t = 0.3 + j / strandCount * 0.65;
+      const sx = lerp(crown[0], bx, t) + (rng() - 0.5) * 0.8 * scale;
+      const sz = lerp(crown[2], bz, t) + (rng() - 0.5) * 0.8 * scale;
+      const sy = lerp(crown[1], by, t) + rng() * 0.3 * scale;
+      const strandLen = (1.8 + rng() * 2.2) * scale;
+      // The weeping strand — a narrow tall box hanging down
+      const strandC = C([0x8ab858, 0x7dac4e, 0x6b9840, 0x92c060][j % 4])
+        .multiplyScalar(0.82 + rng() * 0.24);
+      const strandW = (0.32 + rng() * 0.28) * scale;
+      kit.box('willow', sx, sy - strandLen * 0.5, sz,
+        strandW, strandLen, strandW * 0.6,
+        strandC, -0.06 - rng() * 0.12, a + (rng() - 0.5) * 0.6, (rng() - 0.5) * 0.1);
+      // A second shorter inner strand offset inward for layering
+      if (rng() > 0.38) {
+        const ix = sx + Math.cos(a) * (-0.3 - rng() * 0.3) * scale;
+        const iz = sz + Math.sin(a) * (-0.3 - rng() * 0.3) * scale;
+        const iLen = strandLen * (0.5 + rng() * 0.4);
+        kit.box('willow', ix, sy - iLen * 0.5, iz,
+          strandW * 0.75, iLen, strandW * 0.5,
+          strandC.clone().multiplyScalar(0.9 + rng() * 0.15),
+          -0.04 - rng() * 0.08, a + (rng() - 0.5) * 0.8, 0);
+      }
     }
   }
 }
@@ -1637,21 +2202,36 @@ function impHouse(x, y, z, yaw, w, d, roofC) { kit.push(x, y, z, yaw); kit.box('
 
 // Chinese architectural asset library. Built from the shared instancing kit;
 // distant forms retain their footprint, eaves and roof colour.
+//
+// Visual language: ink-and-mineral painting. Restrained mineral pigments —
+// slate-grey tiles, ochre plaster, vermilion lacquer accents, jade eaves and
+// weathered stone — never a saturated toy palette. Every hall sits on a raised
+// masonry plinth so buildings settle into the ground instead of floating on it.
 const CN = {
-  red: C(0xa73d2d), redDark: C(0x6f2926), wall: C(0xe4ded0), ink: C(0x343d3f), tile: C(0x445258),
-  stone: C(0xaaa69a), stoneDark: C(0x777b76), wood: C(0x554338), jade: C(0x6e837d), gold: C(0xc8ac63),
+  red: C(0xa73d2d), redDark: C(0x6f2926), wall: C(0xe2dac8), wallShade: C(0xcec5b0),
+  ink: C(0x343d3f), tile: C(0x424e54), tileDeep: C(0x333c42),
+  stone: C(0xaaa69a), stoneDark: C(0x777b76), stoneLight: C(0xc4bfb2),
+  wood: C(0x554338), woodDark: C(0x3a2b22), jade: C(0x6e837d),
+  gold: C(0xc8ac63), goldDim: C(0xa98a47), ochre: C(0xc09b56),
+  plinth: C(0x8f8a80), plinthDark: C(0x6a675f), plinthTop: C(0xb3aea3),
+  court: C(0x9c968b), courtDark: C(0x817d76), courtWarm: C(0xa89a83),
+  bank: C(0x83807a), bankWet: C(0x5f625f),
 };
+
+// Roof: civilian buildings stay grey-slate; only ceremonial halls take gold.
 function chineseRoof(y, w, d, o = {}) {
   const close = kit.detail > 0.6;
   return roof(y, w, d, {
     type: o.pavilion ? 'pyramid' : 'hip', layers: close ? 9 : kit.detail > 0.3 ? 5 : 3, shift: o.shift || 0,
-    over: o.over || 1.0, rise: o.rise || d * 0.32, upturn: o.upturn === undefined ? (close ? 0.85 : 0.65) : o.upturn,
-    col: o.gold ? C(0xa98a47) : CN.tile, colB: o.gold ? C(0x92783f) : CN.ink,
+    over: o.over || 1.0, rise: o.rise || d * 0.32,
+    upturn: o.upturn === undefined ? (close ? 0.85 : 0.65) : o.upturn,
+    col: o.gold ? CN.goldDim : CN.tile, colB: o.gold ? C(0x92783f) : CN.tileDeep,
     edge: o.gold ? C(0xc5ac64) : CN.jade, ridgeCol: o.gold ? CN.gold : CN.ink,
     tileEnds: close, hips: close, rafters: close, rafterCol: CN.redDark,
     ridge: !o.pavilion, curve: 1.8,
   });
 }
+
 function chineseLantern(x, y, z, s = 1, light = 0.8) {
   kit.box('solid', x, y + s * 0.55, z, 0.025, s * 0.55, 0.025, CN.wood);
   kit.box('glow', x, y, z, s * 0.5, s * 0.68, s * 0.5, C(0xe59b61));
@@ -1660,21 +2240,31 @@ function chineseLantern(x, y, z, s = 1, light = 0.8) {
   if (kit.detail > 0.3) kit.box('solid', x, y - s * 0.56, z, s * 0.045, s * 0.34, s * 0.045, CN.red);
   if (light) kit.light(x, y, z, light);
 }
+
+// A raised masonry plinth shared by every hall. Two courses read as a stone
+// base at any distance and give the silhouette a stable foot.
+function chinesePlinthLocal(w, d, h = 2.0) {
+  kit.box('solid', 0, -h * 0.5 + 0.12, 0, w, h, d, CN.plinthDark);
+  kit.box('solid', 0, 0.16, 0, w - 0.5, 0.24, d - 0.5, CN.plinth);
+  if (kit.detail > 0.3) kit.box('solid', 0, 0.30, 0, w - 1.1, 0.1, d - 1.1, CN.plinthTop);
+}
+
+// Single-storey hall in local coordinates. `ornate` adds dou-gong brackets, red
+// columns and a golden roof; civilian halls keep grey tiles and timber columns.
 function chineseHallLocal(w, d, h = 3.4, ornate = false, open = false, roofStyle = {}) {
-  kit.box('solid', 0, -0.22, 0, w + 1.6, 0.9, d + 1.6, CN.stoneDark);
-  kit.box('solid', 0, 0.3, 0, w + 1.2, 0.22, d + 1.2, CN.stone);
+  chinesePlinthLocal(w + 1.8, d + 1.8, 1.0);
   if (!open) {
     kit.box('solid', 0, 0.5 + h / 2, -d * 0.18, w - 0.4, h, d * 0.62, ornate ? CN.redDark : CN.wall);
     for (const sx of [-1, 1]) kit.box('solid', sx * (w / 2 - 0.12), 0.5 + h / 2, 0, 0.22, h, d, CN.wall);
     kit.box('solid', 0, 0.5 + h / 2, d / 2 - 0.1, w - 0.2, h, 0.15, CN.wood);
-    // Dark door bays and warm lattice windows are framed by red timber posts.
+    // Bay rhythm: a dark doorway on the axis, warm lattice windows either side.
     const bays = Math.max(3, Math.round(w / 2.3));
     for (let i = 0; i < bays; i++) {
       const x = -w / 2 + w * (i + 0.5) / bays, bw = w / bays - 0.28;
       const door = i === Math.floor(bays / 2);
       kit.box(door ? 'solid' : 'glow', x, door ? 1.4 : 2.0, d / 2 + 0.025, bw * 0.8, door ? 2.1 : 1.55, 0.05, door ? C(0x272623) : C(0xdec59a));
       if (!door && kit.detail > 0.6) {
-        for (const direction of [-1, 1]) kit.beam('solid', x - bw * 0.34, direction > 0 ? 1.3 : 2.7, d / 2 + 0.06, x + bw * 0.34, direction > 0 ? 2.7 : 1.3, d / 2 + 0.06, 0.04, 0.045, CN.wood);
+        for (const dir of [-1, 1]) kit.beam('solid', x - bw * 0.34, dir > 0 ? 1.3 : 2.7, d / 2 + 0.06, x + bw * 0.34, dir > 0 ? 2.7 : 1.3, d / 2 + 0.06, 0.04, 0.045, CN.wood);
         kit.box('solid', x, 2.0, d / 2 + 0.09, bw * 0.8, 0.07, 0.04, CN.wood);
       }
     }
@@ -1684,23 +2274,44 @@ function chineseHallLocal(w, d, h = 3.4, ornate = false, open = false, roofStyle
     const x = -w / 2 + w * i / count, z = sz * (d / 2 + 0.28);
     kit.box('lacquer', x, 0.5 + h / 2, z, 0.26, h, 0.26, ornate ? CN.red : CN.wood);
     if (kit.detail > 0.6 && ornate) {
-      // Dou-gong brackets: three nested timber arms directly beneath the eaves.
+      // Dou-gong brackets: three nested timber arms beneath the eaves.
       for (let tier = 0; tier < 3; tier++) kit.box('solid', x, h + 0.15 + tier * 0.12, z, 0.5 + tier * 0.25, 0.12, 0.44 + tier * 0.22, tier % 2 ? CN.redDark : CN.red);
     }
   }
   kit.box('solid', 0, h + 0.5, 0, w + 0.7, 0.3, d + 0.9, ornate ? CN.redDark : CN.wood);
   return roofStyle.skip ? h + 0.62 : chineseRoof(h + 0.62, w, d, { gold: roofStyle.gold === undefined ? ornate : roofStyle.gold });
 }
+
+// Courtyard wall with tiled coping — used to enclose ward plots and compounds.
+function chineseCourtWallLocal(w, d, h = 2.4, o = {}) {
+  const gap = o.gap === undefined ? 3.4 : o.gap;
+  const t = 0.34;
+  const seg = (x, z, sx, sz, len, along) => {
+    kit.box('solid', x, h / 2, z, along ? len : t, h, along ? t : len, CN.wallShade);
+    kit.box('solid', x, h + 0.16, z, along ? len + 0.3 : t + 0.5, 0.22, along ? t + 0.5 : len + 0.3, CN.tileDeep);
+  };
+  // North and south walls run full width; the south wall is pierced by a gate.
+  seg(0, -d / 2, 1, 0, w, true);
+  seg(-(w / 2 + gap / 2) / 2 - 0, d / 2, 1, 0, Math.max(0.5, w / 2 - gap / 2), true);
+  seg((w / 2 + gap / 2) / 2, d / 2, 1, 0, Math.max(0.5, w / 2 - gap / 2), true);
+  for (const sx of [-1, 1]) seg(sx * w / 2, 0, 0, 1, d, false);
+  // The gate itself: two posts and a low tiled lintel.
+  for (const sx of [-1, 1]) kit.box('lacquer', sx * gap / 2, h * 0.62, d / 2, 0.3, h * 1.24, 0.34, CN.redDark);
+  kit.box('solid', 0, h * 1.24 + 0.2, d / 2, gap + 1.2, 0.32, 0.5, CN.tileDeep);
+  if (kit.detail > 0.3) chineseRoof(h * 1.24 + 0.36, gap + 1.6, 1.1, { gold: false, rise: 0.5, over: 0.45, upturn: 0.3 });
+}
+
+// Two-storey merchant house / shop fronting a ward street.
 function chineseHouse(x, y, z, yaw, type, w, d, seed, glow = true) {
   const shop = type === 'shop' || type === 'machiya', rng = mulberry32(seed);
   const twoStorey = shop && rng() < (type === 'shop' ? 0.36 : 0.62);
   kit.push(x, y, z, yaw);
   const h = type === 'kura' ? 3.4 : shop ? 2.95 : 2.7;
-  // Civilian grey-green tiles leave the golden roofs to monumental halls.
   chineseHallLocal(w, d, h, shop, false, { gold: false, skip: twoStorey });
   if (twoStorey) {
     const floor = h + 0.58;
     kit.push(0, floor, -0.3); chineseHallLocal(w - 0.2, d - 0.6, 2.35, false, false, { gold: false }); kit.pop();
+    // A narrow tiled awning separates the shopfront from the upper storey.
     chineseRoof(h + 0.35, w + 0.3, 1.1, { gold: false, shift: d / 2 + 0.35, over: 0.35, rise: 0.45, upturn: 0.22 });
   }
   if (shop && kit.detail > 0.3) {
@@ -1714,6 +2325,7 @@ function chineseHouse(x, y, z, yaw, type, w, d, seed, glow = true) {
   }
   kit.pop();
 }
+
 function chinesePaifangLocal(k = 1) {
   for (const sx of [-1, -0.35, 0.35, 1]) {
     kit.box('solid', sx * 4.7 * k, 0.18, 0, 0.8 * k, 0.36, 0.8 * k, CN.stoneDark);
@@ -1729,37 +2341,51 @@ function chinesePaifangLocal(k = 1) {
   kit.box('solid', 0, 4.15 * k, 0.28 * k, 2.1 * k, 0.58 * k, 0.12, CN.ink);
   if (kit.detail > 0.3) for (const sx of [-1, 1]) chineseLantern(sx * 2.8 * k, 3.35 * k, 0, 0.8 * k, sx < 0 ? 1 : 0);
 }
+
+// Open pavilion: a stone terrace under a pyramid roof, optionally on piles.
 function chinesePavilionLocal(k = 1, water = false) {
-  kit.box('solid', 0, 0.2, 0, 6.6 * k, 0.4, 6.6 * k, CN.stoneDark);
-  kit.box('solid', 0, 0.47, 0, 6.2 * k, 0.15, 6.2 * k, CN.stone);
+  kit.box('solid', 0, 0.2, 0, 6.6 * k, 0.4, 6.6 * k, CN.plinthDark);
+  kit.box('solid', 0, 0.47, 0, 6.2 * k, 0.15, 6.2 * k, CN.plinth);
   if (water) for (const sx of [-1, 1]) for (const sz of [-1, 1]) kit.box('solid', sx * 2.4 * k, -1.7, sz * 2.4 * k, 0.38, 4, 0.38, CN.wood);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) kit.box('lacquer', sx * 2.25 * k, 2.0 * k, sz * 2.25 * k, 0.26 * k, 3.2 * k, 0.26 * k, CN.red);
+  // Low balustrade so the pavilion reads as a place to sit and look out.
   if (kit.detail > 0.3) {
-    for (const sz of [-1, 1]) kit.box('solid', 0, 1.15 * k, sz * 2.7 * k, 5.5 * k, 0.12, 0.12, CN.wood);
+    for (const sz of [-1, 1]) {
+      kit.box('solid', 0, 1.15 * k, sz * 2.7 * k, 5.5 * k, 0.12, 0.12, CN.wood);
+      kit.box('solid', 0, 0.78 * k, sz * 2.7 * k, 5.5 * k, 0.08, 0.1, CN.wood);
+    }
     kit.box('solid', -2.7 * k, 1.15 * k, 0, 0.12, 0.12, 5.5 * k, CN.wood);
+    kit.box('solid', -2.7 * k, 0.78 * k, 0, 0.1, 0.08, 5.5 * k, CN.wood);
   }
   const top = chineseRoof(3.65 * k, 4.5 * k, 4.5 * k, { pavilion: true, rise: 2.1 * k, over: 1.15 * k });
   kit.box('metal', 0, top + 0.3, 0, 0.35, 0.6, 0.35, CN.gold);
   if (kit.detail > 0.3) chineseLantern(0, 2.9 * k, 0, 0.7, 1.2);
 }
-function chineseWallLocal(w, d, h = 3.8) {
+
+// Battlemented enclosure wall. `gate` opens the south face for compounds.
+function chineseWallLocal(w, d, h = 3.8, gate = false) {
   for (const sx of [-1, 1]) kit.box('solid', sx * w / 2, h / 2, 0, 1.4, h, d, CN.stoneDark);
   kit.box('solid', 0, h / 2, -d / 2, w, h, 1.4, CN.stoneDark);
-  for (const sx of [-1, 1]) kit.box('solid', sx * (w * 0.3), h / 2, d / 2, w * 0.4, h, 1.4, CN.stoneDark);
+  if (gate) {
+    const g = 5.6, seg = Math.max(0.6, (w - g) / 2);
+    for (const sx of [-1, 1]) kit.box('solid', sx * (g + seg) / 2, h / 2, d / 2, seg, h, 1.4, CN.stoneDark);
+  } else for (const sx of [-1, 1]) kit.box('solid', sx * (w * 0.3), h / 2, d / 2, w * 0.4, h, 1.4, CN.stoneDark);
   if (kit.detail > 0.3) {
     for (let x = -w / 2; x <= w / 2; x += 3) {
       kit.box('solid', x, h + 0.35, -d / 2, 1.2, 0.7, 1.45, CN.stone);
-      if (Math.abs(x) > w * 0.12) kit.box('solid', x, h + 0.35, d / 2, 1.2, 0.7, 1.45, CN.stone);
+      if (!(gate && Math.abs(x) < 3.2)) kit.box('solid', x, h + 0.35, d / 2, 1.2, 0.7, 1.45, CN.stone);
     }
   }
 }
+
 function shanshuiStation(x, y, z, yaw) {
   kit.push(x, y, z, yaw);
-  kit.box('solid', 0, 0.45, 3.4, 30, 0.9, 3.6, CN.stoneDark);
+  kit.box('solid', 0, 0.45, 3.4, 30, 0.9, 3.6, CN.plinthDark);
   kit.push(0, 0.9, 4.5, 0); chineseHallLocal(23, 3.0, 3.0, false, true); kit.pop();
   if (kit.detail > 0.3) for (const lx of [-8, 0, 8]) chineseLantern(lx, 3.0, 2.4, 0.8, lx === 0 ? 1.2 : 0);
   kit.pop();
 }
+
 function chinesePathLantern(x, z, yaw = 0, k = 1, y = G(x, z)) {
   kit.push(x, y, z, yaw);
   kit.box('solid', 0, 1.4 * k, 0, 0.15, 2.8 * k, 0.15, CN.wood);
@@ -1768,8 +2394,54 @@ function chinesePathLantern(x, z, yaw = 0, k = 1, y = G(x, z)) {
   kit.pop();
 }
 
+// Stone embankment along a waterside frontage: coursed blocks stepping down to
+// the water with a landing stair, so a town meets the river by design.
+function chineseEmbankmentLocal(len, side, drop, o = {}) {
+  const step = o.step || 3.2, depth = o.depth || 1.8;
+  const n = Math.max(1, Math.round(len / step));
+  for (let i = 0; i < n; i++) {
+    const x = -len / 2 + len * (i + 0.5) / n;
+    const jitter = (h2(Math.round(x * 4), side, SALT ? SALT[60] : 60) - 0.5) * 0.14;
+    // Two courses of ashlar facing the water.
+    kit.box('solid', x, -drop * 0.5 + jitter, side * depth * 0.5, len / n - 0.1, drop, depth, CN.bank);
+    if (kit.detail > 0.3) kit.box('solid', x, 0.12, side * (depth * 0.5 + 0.1), len / n - 0.1, 0.26, depth + 0.4, CN.plinth);
+    if (kit.detail > 0.6 && i % 2 === 0) kit.box('solid', x, -drop - 0.24 + jitter, side * (depth * 0.5 + 0.25), len / n - 0.2, 0.5, 0.6, CN.bankWet);
+  }
+  return { n, step: len / n };
+}
+
+// A flight of stone steps down to the water — the water-town threshold.
+function chineseWaterStepsLocal(side, drop, steps = 5) {
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    kit.box('solid', 0, -drop * t, side * (0.6 + t * 1.5), 2.6 - t * 0.4, Math.max(0.3, drop / steps + 0.08), 1.7, i % 2 ? CN.plinth : CN.stone);
+  }
+  if (kit.detail > 0.3) for (const sx of [-1, 1]) {
+    kit.box('solid', sx * 1.5, 0.34, side * 0.4, 0.3, 0.8, 0.9, CN.plinthTop);
+  }
+}
+
+// Trestle jetty reaching into the water, moored-boat edge at its end.
+function chineseJettyLocal(len, side, drop, o = {}) {
+  const width = o.width || 1.9;
+  kit.box('solid', 0, -drop * 0.4, side * len * 0.5, width, 0.22, len, CN.wood);
+  const piles = Math.max(2, Math.round(len / 2.2));
+  for (let i = 0; i <= piles; i++) {
+    const z = side * len * (i / piles);
+    for (const sx of [-1, 1]) kit.box('solid', sx * width * 0.42, -drop * 0.4 - 1.1, z, 0.22, 2.2, 0.22, CN.woodDark);
+  }
+  if (kit.detail > 0.3) for (const sx of [-1, 1]) {
+    kit.box('solid', sx * width * 0.5, -drop * 0.4 + 0.4, side * (len - 0.6), 0.14, 1.0, 0.14, CN.wood);
+    kit.box('solid', sx * width * 0.34, -drop * 0.4 + 0.9, side * len * 0.5, 0.1, 0.1, len - 0.5, CN.wood);
+  }
+}
+
 // Shanshui assets and ecosystem selection share the same candidate seed at
 // every distance. LOD changes detail inside an asset, never its species.
+//
+// Ecology follows the painting: plants cluster where the composition needs
+// weight (waterline willows, terrace-edge peach, cliff pines) and large tracts
+// are deliberately left bare — 留白, negative space, is a material here.
 function pickShanshuiPlant(s, r, r2, nearWater) {
   if (s.waterLevel != null) return null;
   if (s.paddy || s.snow) return s.snow && r < 0.16 ? 'rock' : null;
@@ -1779,12 +2451,17 @@ function pickShanshuiPlant(s, r, r2, nearWater) {
     case B.PINE: return r < 0.36 ? 'huangshanPine' : r < 0.44 ? 'rock' : null;
     case B.BAMBOO: return r < 0.66 ? 'bamboo' : r < 0.73 ? 'cypress' : null;
     case B.SATO:
-      if (nearWater && r < 0.14) return 'willow';
+      // Willows only hug the waterline; the meadow behind stays open.
+      if (nearWater && r < 0.22) return 'willow';
       return r < 0.06 ? 'peach' : r < 0.19 ? 'broadleaf' : r < 0.24 ? 'cypress' : null;
     case B.MARSH: return shoreHeight(s) < 0.8 && r < 0.17 ? 'lotus' : r < 0.38 ? 'reed' : r < 0.44 ? 'willow' : null;
     case B.MEADOW: return r < 0.03 ? 'peach' : r < 0.09 ? 'wildflowers' : null;
     case B.BEACH: return s.h > 1 && r < 0.18 ? 'huangshanPine' : r < 0.28 ? 'rock' : null;
-    case B.TOWN: return nearWater && r < 0.12 ? 'willow' : null;
+    case B.TOWN:
+      // Waterside towns keep a willow every few bays, and nothing else inside
+      // the built fabric — the streets are the composition.
+      if (nearWater && r < 0.2) return 'willow';
+      return null;
     default: return null;
   }
 }
@@ -1857,66 +2534,488 @@ function emitShanshuiPlant(c, lod) {
   }
   kit.detail = previous;
 }
+
+// ---------------------------------------------------------------------
+//  Composition helpers — layout primitives shared by the compounds
+// ---------------------------------------------------------------------
+
+// A paved spine: the stone-paved main axis of a settlement. Alternating slab
+// tones read as a laid pavement rather than a painted stripe.
+function cnAxisPaving(halfW, from, to, o = {}) {
+  const step = o.step || 2.4, y = o.y || 0.07, tone = o.tone || CN.court;
+  for (let z = from; z < to; z += step) {
+    const j = h2(Math.round(z * 8), o.seed || 5, SALT[60]);
+    kit.box('solid', (j - 0.5) * 0.16, y, z + step / 2, halfW * 2, 0.13, step + 0.06, tone.clone().multiplyScalar(0.9 + j * 0.16));
+  }
+  if (kit.detail > 0.3) for (const sx of [-1, 1]) kit.box('solid', sx * (halfW + 0.3), y + 0.02, (from + to) / 2, 0.55, 0.2, to - from, CN.plinth);
+}
+
+// A cross street used to divide ward plots.
+function cnCrossStreet(halfW, span, y = 0.07, seed = 5) {
+  const step = 2.4;
+  for (let x = -span; x < span; x += step) {
+    const j = h2(Math.round(x * 8), seed, SALT[61]);
+    kit.box('solid', x + step / 2, y, 0, step + 0.06, 0.13, halfW * 2, CN.courtDark.clone().multiplyScalar(0.92 + j * 0.14));
+  }
+}
+
+// A walled courtyard: earth court inside, four walls, one gate on +Z.
+// Returns the inner half-extents so callers can fill it with restraint.
+function cnCourtyard(w, d, o = {}) {
+  const wallH = o.wallH || 2.5, gap = o.gap || 3.2;
+  // Earth court, subtly warmer than the street outside.
+  kit.box('solid', 0, 0.05, 0, w, 0.1, d, CN.courtWarm);
+  // Paving strip in front of the gate, leading in from the street.
+  kit.box('solid', 0, 0.07, d / 2 + 1.6, gap + 1.0, 0.12, 3.2, CN.court);
+  // North wall (full), east/west walls (full), south wall (split by the gate).
+  kit.box('solid', 0, wallH / 2, -d / 2, w, wallH, 0.36, CN.wallShade);
+  for (const sx of [-1, 1]) kit.box('solid', sx * w / 2, wallH / 2, 0, 0.36, wallH, d, CN.wallShade);
+  const seg = Math.max(0.5, (w - gap) / 2);
+  for (const sx of [-1, 1]) kit.box('solid', sx * (gap + seg) / 2, wallH / 2, d / 2, seg, wallH, 0.36, CN.wallShade);
+  // Tiled coping: a thin dark band makes the wall line legible at distance.
+  kit.box('solid', 0, wallH + 0.14, -d / 2, w + 0.5, 0.22, 0.62, CN.tileDeep);
+  for (const sx of [-1, 1]) kit.box('solid', sx * w / 2, wallH + 0.14, 0, 0.62, 0.22, d + 0.5, CN.tileDeep);
+  for (const sx of [-1, 1]) kit.box('solid', sx * (gap + seg) / 2, wallH + 0.14, d / 2, seg + 0.5, 0.22, 0.62, CN.tileDeep);
+  // The gate: two red posts under a small tiled roof.
+  for (const sx of [-1, 1]) kit.box('lacquer', sx * gap / 2, wallH * 0.6, d / 2, 0.28, wallH * 1.2, 0.34, CN.redDark);
+  kit.push(0, wallH * 1.2, d / 2); chineseRoof(0, gap + 1.4, 1.0, { gold: false, rise: 0.42, over: 0.4, upturn: 0.28 }); kit.pop();
+  // Threshold stone at the gate mouth.
+  kit.box('solid', 0, 0.1, d / 2, gap + 0.8, 0.2, 0.9, CN.plinth);
+  return { w: w / 2 - 0.6, d: d / 2 - 0.6 };
+}
+
+// ---------------------------------------------------------------------
+//  The Chang'an ward — an ordered axial city block
+// ---------------------------------------------------------------------
+// Layout (local +Z is the front, toward the avenue):
+//   +Z   zhuque avenue frontage — shops and a paifang gate
+//    0   cross street, dividing the block into a front and rear ward
+//   -Z   rear courtyard ward with a hall and two side wings
+// A north-south paved axis threads the whole block through to the wall gate.
+// Footprint stays inside the anchor radius (36).
+function cnChanganLocal(a, lod) {
+  const seed = a.seed, rng = mulberry32(seed);
+
+  // --- Enclosure: low ward wall with a gate on the avenue frontage ---
+  const WW = 34, WD = 30, WH = 3.0;
+  chineseWallLocal(WW, WD, WH, true);
+
+  // --- North-south main axis, street to street ---
+  cnAxisPaving(3.4, -WD / 2 + 2, WD / 2 - 2, { seed, tone: CN.court });
+  // --- East-west cross street dividing the two wards ---
+  cnCrossStreet(2.6, WW / 2 - 2, 0.07, seed + 1);
+
+  // --- Front ward (+Z): two rows of shophouse terrace facing the avenue ---
+  // Row A sits right on the avenue; row B backs onto the cross street.
+  const shopW = 6.4, shopD = 5.2, bays = 4;
+  for (let i = 0; i < bays; i++) {
+    const x = -WW / 2 + 5.2 + i * 7.6;
+    if (x > WW / 2 - 4) break;
+    // Front row faces +Z (the avenue); rear row faces -Z (the cross street).
+    const frontH = 2.9 + (i % 3) * 0.55 + rng() * 0.3;
+    kit.push(x, 0, WD / 2 - 3.6);
+    chineseHallLocal(shopW, shopD, frontH, i === 1, false, { gold: false });
+    kit.pop();
+    chineseLantern(x + 2.6, 2.4, WD / 2 - 3.6 + shopD / 2 + 0.7, 0.75, i === 1 ? 1.0 : 0);
+    const rearH = 2.6 + (i % 2) * 0.4;
+    kit.push(x + 1.6, 0, 6.4, Math.PI);
+    chineseHallLocal(shopW, shopD - 0.6, rearH, false, i % 2 === 0, { gold: false });
+    kit.pop();
+  }
+
+  // --- Paifang on the axis at the avenue frontage: the ward's front door ---
+  kit.push(0, 0, WD / 2 + 1.4); chinesePaifangLocal(0.85); kit.pop();
+
+  // --- Rear ward (-Z): a walled courtyard with a modest hall ---
+  kit.push(0, 0, -13);
+  cnCourtyard(20, 13, { wallH: 2.4, gap: 3.0 });
+  const hallH = 3.2 + (rng() < 0.4 ? 0.6 : 0);
+  kit.push(0, 0, -2.0); chineseHallLocal(13, 7.4, hallH, false, false, { gold: false }); kit.pop();
+  // Two low side wings keep the courtyard's axial symmetry.
+  for (const sx of [-1, 1]) {
+    kit.push(sx * 7.2, 0, 2.0, Math.PI / 2);
+    chineseHallLocal(7.6, 4.6, 2.4, false, true, { gold: false });
+    kit.pop();
+  }
+  // A single well off-axis — the courtyard's small daily focal point.
+  kit.box('solid', -5.2, 0.5, 5.2, 1.5, 1.0, 1.5, CN.plinthDark);
+  kit.box('solid', -5.2, 1.06, 5.2, 1.1, 0.14, 1.1, C(0x3a4644));
+  if (lod < 2) { kit.push(4.6, 0, 5.4); chinesePeachLocal(0.8, seed + 7, lod); kit.pop(); }
+  kit.pop();
+
+  // --- Corner watch pavilions on the ward wall ---
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    if (lod > 1 && sz > 0) continue;
+    kit.push(sx * (WW / 2 - 1.4), WH, sz * (WD / 2 - 1.4));
+    chinesePavilionLocal(0.62);
+    kit.pop();
+  }
+
+  // --- Street lanterns: every other bay, never a uniform row ---
+  // These are emitted inside kit.push(a.x, a.h, a.z), so omitting the explicit
+  // y would default to G(x, z) — a *world-space* terrain sample taken at
+  // local coordinates. That floated the whole row into the sky. y = 0 pins
+  // them to the ward's own pad.
+  if (lod < 3) {
+    for (let i = 0; i < bays; i++) {
+      const x = -WW / 2 + 5.2 + i * 7.6;
+      if (x > WW / 2 - 4) break;
+      chinesePathLantern(x - 3.4, WD / 2 + 2.6, 0, 0.95, 0);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Palace: ordered axial plan inside the pad radius
+// ---------------------------------------------------------------------
+// south gate → outer court → inner gate → raised throne terrace →
+// throne hall (tallest) → rear residence. Galleries link the courts.
+function cnPalaceLocal(a, lod) {
+  const seed = a.seed, rng = mulberry32(seed);
+  const OW = 56, OD = 50, WH = 4.4;
+
+  // --- Enclosure wall with the south gate opening ---
+  chineseWallLocal(OW, OD, WH, true);
+
+  // --- Ground treatment: outer court, then the raised throne terrace ---
+  kit.box('solid', 0, 0.05,  8, 44, 0.1, 30, CN.courtDark);   // outer court earth
+  kit.box('solid', 0, 0.06, 20, 12, 0.12, 20, CN.court);       // imperial way
+  // Three-step stone terrace carrying the throne hall.
+  for (let i = 0; i < 3; i++) kit.box('solid', 0, 0.26 + i * 0.5, -8, 34 - i * 2.2, 0.5, 22 - i * 1.6, i % 2 ? CN.plinth : CN.plinthDark);
+  kit.box('solid', 0, 1.62, -8, 31, 0.2, 19.4, CN.plinthTop);
+  // Balustrades around the terrace edge.
+  if (kit.detail > 0.3) for (const sz of [-1, 1]) {
+    kit.box('solid', 0, 2.0, -8 + sz * 9.9, 32, 0.16, 0.16, CN.stone);
+    for (let x = -15; x <= 15; x += 3.2) kit.box('solid', x, 1.85, -8 + sz * 9.9, 0.22, 0.5, 0.22, CN.stone);
+  }
+  // Grand stair down to the court, on the axis.
+  const steps = kit.detail > 0.3 ? 8 : 4;
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    kit.box('solid', 0, 1.5 - t * 1.5, 3.0 + t * 5.0, 12 - t * 1.2, 1.5 / steps + 0.06, 5.0 / steps + 0.04, i % 2 ? CN.plinth : CN.plinthTop);
+  }
+
+  // --- South gatehouse: pierced wall + two-eave hall above ---
+  for (const sx of [-1, 1]) kit.box('solid', sx * 9.5, WH / 2, OD / 2, 6.4, WH, 1.8, CN.stoneDark);
+  kit.box('solid', 0, WH - 1.0, OD / 2, 6.2, 2.0, 1.9, C(0x1e1b18));   // gate arch
+  kit.push(0, WH, OD / 2 - 1.2); chineseHallLocal(19, 7, 4.0, true); kit.pop();
+
+  // --- Inner gatehouse at mid-court, lower than the throne hall ---
+  kit.push(0, 0, OD / 2 - 20); chineseHallLocal(16, 5.4, 3.6, true); kit.pop();
+
+  // --- Throne hall: the tallest, deepest massing in the compound ---
+  // Compound-local yaw; the raised terrace puts its ridge well above 13 m.
+  kit.push(0, 1.72, -8);
+  cnPalaceHallLocal(26, 14, 6.0, seed);
+  kit.pop();
+
+  // --- Rear residence, quieter and lower ---
+  kit.push(0, 0, -28); chineseHallLocal(19, 9, 4.0, false); kit.pop();
+
+  // --- Side galleries: open colonnades linking outer and inner courts ---
+  for (const sx of [-1, 1]) {
+    kit.push(sx * 22, 0, -2, Math.PI / 2);
+    chineseHallLocal(30, 5.2, 3.0, false, true, { gold: false });
+    kit.pop();
+    // Corner pavilions at the outer wall.
+    kit.push(sx * (OW / 2 - 1.6), WH, OD / 2 - 1.6); chinesePavilionLocal(0.85); kit.pop();
+  }
+
+  // --- Ceremonial vessels flanking the stair, leaving the axis clear ---
+  // Every decorated element stays inside the enclosure wall so the compound's
+  // silhouette footprint is identical at every LOD.
+  if (kit.detail > 0.3) {
+    for (const sx of [-1, 1]) {
+      kit.box('solid', sx * 10.5, 0.55, 10, 2.2, 0.9, 2.2, CN.plinthDark);
+      kit.box('metal', sx * 10.5, 1.6, 10, 1.2, 1.3, 1.2, C(0x637973));
+      kit.box('metal', sx * 10.5, 2.35, 10, 1.55, 0.18, 1.55, CN.gold);
+    }
+    for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) chineseLantern(sx * 7.6, 2.5, 6 + i * 4, 1.0, i === 1 ? 1.2 : 0);
+  }
+
+  // --- Garden court behind the residence: deliberately sparse, and inside the
+  // wall so it never alters the silhouette footprint between LODs. ---
+  kit.push(-11, 0, -20); chinesePineLocal(1.0, seed, 0); kit.pop();
+  kit.push(12, 0, -21); chinesePineLocal(0.8, seed + 3, 0); kit.pop();
+}
+
+// The throne hall: a deep double-eave hall with side galleries. Kept separate
+// so the palace's silhouette hierarchy reads clearly: this is the peak.
+function cnPalaceHallLocal(w, d, h, seed) {
+  chineseHallLocal(w, d, h, true);
+  // Secondary eaves down both long sides: the classic double-eave profile.
+  for (const side of [-1, 1]) {
+    kit.push(0, 0, side * (d / 2 + 0.3));
+    chineseRoof(h * 0.58, w + 0.6, 2.2, { gold: true, rise: 0.62, over: 0.65, upturn: 0.35 });
+    kit.pop();
+  }
+  if (kit.detail > 0.3) for (const side of [-1, 1]) chineseLantern(side * w * 0.28, 3.2, d / 2 + 1.45, 1.1, side < 0 ? 1.6 : 0);
+}
+
+// ---------------------------------------------------------------------
+//  Waterside teahouse — raised over the water, stacked and restrained
+// ---------------------------------------------------------------------
+function cnTeahouseLocal(a, lod) {
+  const seed = a.seed, rng = mulberry32(seed);
+  const w = 10.0, d = 6.6, h = 2.9;
+
+  // Stone base, partly standing in the water.
+  kit.box('solid', 0, -0.30, 0, w + 1.8, 1.1, d + 1.8, CN.plinthDark);
+  kit.box('solid', 0,  0.24, 0, w + 1.3, 0.2, d + 1.3, CN.plinth);
+  // Piles where the platform meets the water.
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) kit.box('solid', sx * (w / 2 - 0.4), -1.5, sz * (d / 2 - 0.4), 0.34, 3.0, 0.34, CN.wood);
+
+  // Ground storey.
+  kit.box('solid', 0, 0.44 + h / 2, -d * 0.15, w - 0.4, h, d * 0.66, CN.wall);
+  for (const sx of [-1, 1]) kit.box('solid', sx * (w / 2 - 0.12), 0.44 + h / 2, 0, 0.22, h, d, CN.wallShade);
+  kit.box('solid', 0, 0.44 + h / 2, d / 2 - 0.09, w - 0.2, h, 0.16, CN.wood);
+  // Lattice bays: warm interior light seen through timber screens.
+  const bays = Math.max(3, Math.round(w / 2.5));
+  for (let i = 0; i < bays; i++) {
+    const x = -w / 2 + w * (i + 0.5) / bays, bw = w / bays - 0.3;
+    const door = i === Math.floor(bays / 2);
+    kit.box(door ? 'solid' : 'glow', x, door ? 1.35 : 1.95, d / 2 + 0.03, bw * 0.78, door ? 2.0 : 1.45, 0.05, door ? C(0x272623) : C(0xdec59a));
+    if (!door && kit.detail > 0.6) kit.box('solid', x, 1.95, d / 2 + 0.07, 0.06, 1.45, 0.03, CN.wood);
+  }
+  // Timber columns, grey — a civilian building, not a hall.
+  const count = kit.detail > 0.3 ? Math.max(3, Math.round(w / 2.8)) : 2;
+  for (let i = 0; i <= count; i++) for (const sz of [-1, 1]) {
+    const x = -w / 2 + w * i / count;
+    kit.box('lacquer', x, 0.44 + h / 2, sz * (d / 2 + 0.28), 0.24, h, 0.24, CN.wood);
+  }
+  kit.box('solid', 0, h + 0.44, 0, w + 0.7, 0.28, d + 0.8, CN.wood);
+  const floor2 = chineseRoof(h + 0.56, w + 0.2, d + 0.3, { gold: false });
+
+  // Upper storey — a viewing room with a wraparound balcony. This second roof
+  // gives the teahouse its distinctive stacked waterside silhouette.
+  const uw = w - 1.4, ud = d - 1.8, uh = 2.3;
+  kit.push(0, floor2 - 0.1, -0.2);
+  chineseHallLocal(uw, ud, uh, false, false, { gold: false });
+  kit.pop();
+  // Balcony deck and railing around the upper floor.
+  kit.box('solid', 0, floor2 + 0.06, 0, w + 0.5, 0.16, d + 0.5, CN.wood);
+  if (kit.detail > 0.3) for (const sz of [-1, 1]) {
+    kit.box('solid', 0, floor2 + 0.72, sz * (d / 2 + 0.3), w + 0.5, 0.1, 0.12, CN.wood);
+    for (let x = -w / 2; x <= w / 2; x += 1.5) kit.box('solid', x, floor2 + 0.44, sz * (d / 2 + 0.3), 0.08, 0.56, 0.08, CN.wood);
+  }
+  // Warm upper windows so the teahouse glows across the water at night.
+  if (kit.detail > 0.3) for (let i = 0; i < bays; i++) {
+    const x = -uw / 2 + uw * (i + 0.5) / bays;
+    kit.box('glow', x, floor2 + uh * 0.6, -0.2 + ud / 2 + 0.02, uw / bays - 0.34, 1.25, 0.05, C(0xd8c48a));
+  }
+
+  // --- Front veranda reaching over the water ---
+  const vd = 2.4, front = d / 2 + vd / 2;
+  kit.box('solid', 0, 0.3, front, w + 0.6, 0.18, vd + 0.4, CN.wood);
+  if (kit.detail > 0.3) {
+    kit.box('solid', 0, 1.06, d / 2 + vd, w + 0.2, 0.1, 0.12, CN.wood);
+    kit.box('solid', 0, 0.52, d / 2 + vd, w + 0.2, 0.08, 0.1, CN.wood);
+    for (let x = -w / 2; x <= w / 2; x += 1.5) kit.box('solid', x, 0.79, d / 2 + vd, 0.08, 0.54, 0.08, CN.wood);
+    for (const px of [-w / 2 - 0.1, w / 2 + 0.1]) kit.box('solid', px, 0.75, d / 2 + vd - 0.3, 0.18, 1.5, 0.18, CN.wood);
+    // Low tiled awning over the veranda.
+    kit.push(0, h + 0.44, d / 2 + 1.1);
+    chineseRoof(0, w + 0.4, 2.6, { gold: false, rise: 0.5, over: 0.4, upturn: 0.28 });
+    kit.pop();
+    // Tea benches and lanterns — a social frontage.
+    for (const bx of [-2.4, 2.4]) {
+      kit.box('solid', bx, 0.6, front, 1.9, 0.12, 0.66, CN.wood);
+      kit.box('solid', bx, 0.7, front, 1.75, 0.06, 0.66, CN.plinth);
+      kit.box('solid', bx, 0.92, front, 0.3, 0.28, 0.3, C(0xddd2b0));
+    }
+    for (const lx of [-3.6, 0, 3.6]) chineseLantern(lx, 2.0, d / 2 + vd - 0.2, 0.86, lx === 0 ? 1.3 : 0);
+    // Hanging shop sign on the water side.
+    kit.box('solid', 0, 2.5, d / 2 + vd + 0.16, 2.4, 0.56, 0.12, CN.ink);
+    kit.box('metal', 0, 2.5, d / 2 + vd + 0.23, 2.2, 0.04, 0.03, CN.gold);
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Water-town edge: the town meets the river by design
+// ---------------------------------------------------------------------
+// Detects the water side from local samples and builds an embankment, a
+// landing stair, a jetty with a moored boat edge, and willows.
+function cnWaterfrontLocal(a, lod) {
+  // Probe the compass for the nearest open water within the teahouse frontage.
+  let best = null;
+  for (let k = 0; k < 16; k++) {
+    const ang = (k / 16) * Math.PI * 2;
+    const dx = Math.cos(ang), dz = Math.sin(ang);
+    for (let dd = 8; dd <= 30; dd += 2) {
+      const s = sample(a.x + dx * dd, a.z + dz * dd, {});
+      if (s.waterLevel !== null && !s.paddy && s.waterLevel > s.h - 2.5) {
+        if (!best || dd < best.d) best = { d: dd, ang, level: s.waterLevel, drop: Math.max(1.0, s.waterLevel - s.h) };
+        break;
+      }
+    }
+  }
+  if (!best || best.d > 28) return null;
+  // Build in a local frame whose +Z faces the water.  The anchor yaw rotates
+  // world +X toward the water, so back out the frame angle from the direction
+  // vector rather than passing a bare angle to atan2.
+  const yaw = a.yaw + Math.atan2(Math.sin(best.ang), Math.cos(best.ang)) - Math.PI / 2;
+  const drop = clamp(best.drop, 0.8, 4.0);
+  const side = 1;
+  kit.push(a.x, a.h, a.z, yaw);
+  // Embankment runs along the waterline, facing the water.
+  chineseEmbankmentLocal(24, side, drop, { depth: 1.9 });
+  // Landing steps and a jetty, offset from each other along the frontage.
+  kit.push(-6.5, 0, 0); chineseWaterStepsLocal(side, drop, 5); kit.pop();
+  kit.push(7.5, 0, 0); chineseJettyLocal(6.0, side, drop, { width: 2.0 }); kit.pop();
+  // Moored boat edge: a low punt alongside the jetty, plus a mooring post.
+  if (lod < 3) {
+    kit.push(9.4, -drop * 0.4 + 0.1, side * 5.4, 0.12);
+    kit.box('solid', 0, -0.32, 0, 1.5, 0.5, 4.6, CN.woodDark);
+    kit.box('solid', 0, -0.05, 0, 1.2, 0.14, 4.2, CN.wood);
+    kit.box('solid', 0, 0.22, -1.6, 1.3, 0.5, 0.24, CN.wood);
+    kit.box('solid', 0, 0.85, 1.4, 0.09, 1.6, 0.09, CN.wood);
+    kit.pop();
+  }
+  kit.pop();
+  // Willows along the waterline.  willow() places in world space, so compute
+  // each world position from the compound frame and call it outside the push.
+  if (lod < 2) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    for (const [lx, sc] of [[-10.5, 0.95], [-2.0, 0.8], [3.4, 1.05], [13.5, 0.85]]) {
+      const wx = a.x + cy * lx + sy * 0.5, wz = a.z - sy * lx + cy * 0.5;
+      willow(wx, wz, a.seed + Math.round(lx * 10) + Math.round(sc * 100), a.h + 0.1);
+    }
+  }
+  return { dist: best.d, drop, yaw };
+}
+
+// ---------------------------------------------------------------------
+//  Structure dispatch
+// ---------------------------------------------------------------------
 function buildShanshuiStructure(a, lod) {
   if (!['changan', 'palace', 'chineseTeahouse', 'monastery', 'paifang', 'waterPavilion', 'terraceFarm', 'mountainPavilion'].includes(a.type)) return false;
   const previous = kit.detail; kit.detail = lod === 0 ? 1 : lod === 1 ? 0.45 : 0.25;
-  kit.push(a.x, a.h, a.z, a.yaw);
   switch (a.type) {
-    case 'palace': chinesePalaceLocal(a.seed); break;
-    case 'chineseTeahouse': chineseTeahouseLocal(a.seed); break;
-    case 'changan': {
-      chineseWallLocal(62, 54, 4.2);
-      // Open stone gateway supports a red-pillared watch hall.
-      for (const sx of [-1, 1]) kit.box('solid', sx * 6.4, 2.4, 27, 8.2, 4.8, 5.4, CN.stoneDark);
-      kit.box('solid', 0, 5.0, 27, 21, 1.0, 5.4, CN.stone);
-      kit.push(0, 5.5, 27); chineseHallLocal(18.5, 6.5, 4, true); kit.pop();
-      kit.push(0, 0, -10); chineseHallLocal(23, 12, 5.2, true); kit.pop();
-      for (const sx of [-1, 1]) {
-        kit.push(sx * 21, 0, -5, Math.PI / 2); chineseHallLocal(15, 6.2, 3.3, true); kit.pop();
-        kit.push(sx * 25, 4.3, 25); chinesePavilionLocal(0.8); kit.pop();
-      }
-      kit.box('solid', 0, 0.1, 8, 8, 0.2, 35, CN.stone);
-      if (lod < 3) for (let i = 0; i < 5; i++) for (const sx of [-1, 1]) chineseLantern(sx * 5.8, 2.3, -5 + i * 6, 1.0, i === 2 ? 1.3 : 0);
+    case 'palace': kit.push(a.x, a.h, a.z, a.yaw); cnPalaceLocal(a, lod); kit.pop(); break;
+    case 'chineseTeahouse': {
+      kit.push(a.x, a.h, a.z, a.yaw); cnTeahouseLocal(a, lod); kit.pop();
+      // A teahouse always faces water: give it the full waterside frontage.
+      cnWaterfrontLocal(a, lod);
       break;
     }
-    case 'monastery':
-      chineseWallLocal(32, 32, 2.2);
-      kit.push(0, 0, -7); chineseHallLocal(17, 9, 4.2, true); kit.pop();
-      kit.push(0, 0, 16); chinesePaifangLocal(0.8); kit.pop();
-      for (const sx of [-1, 1]) { kit.push(sx * 12, 0, 2, Math.PI / 2); chineseHallLocal(12, 4.6, 2.8, false, true); kit.pop(); }
-      kit.box('solid', 0, 0.04, 4, 3.8, 0.15, 17, CN.stone);
-      if (lod < 2) { kit.push(-9, 0, 9); chinesePineLocal(0.8, a.seed, lod); kit.pop(); }
-      break;
-    case 'paifang':
-      chinesePaifangLocal(1.0);
-      kit.box('solid', 0, 0.06, 0, 3.5, 0.14, 16, CN.stone);
-      break;
-    case 'mountainPavilion':
-      chinesePavilionLocal(1.0);
-      if (lod < 3) { kit.push(-6, 0, -2); chinesePineLocal(0.9, a.seed, lod); kit.pop(); }
-      break;
-    case 'waterPavilion': {
-      const water = a.r === 0;
-      chinesePavilionLocal(1.0, water);
-      // A small pier uses the same footprint at every viewing distance.
-      if (water) {
-        kit.box('solid', 0, 0.4, 6.4, 2.1, 0.22, 7.5, CN.wood);
-        if (lod < 2) for (const sx of [-1, 1]) kit.box('solid', sx * 0.95, 1.0, 6.4, 0.09, 0.1, 7.5, CN.redDark);
-      }
-      break;
-    }
-    case 'terraceFarm':
-      kit.push(-3.5, 0, -2.2); chineseHallLocal(9.5, 6.8, 2.6, false); kit.pop();
-      kit.push(7, 0, -3.5, Math.PI / 2); chineseHallLocal(6.8, 4.6, 2.5, false); kit.pop();
-      // Courtyard boundary and an old well distinguish hamlets from town shops.
-      kit.box('solid', 0, 0.75, 7.5, 16, 1.5, 0.22, CN.wall);
-      kit.box('solid', 4, 0.6, 3, 1.4, 1.2, 1.4, CN.stoneDark);
-      kit.box('solid', 4, 1.15, 3, 1.0, 0.18, 1.0, C(0x3b4743));
-      if (lod < 2) { kit.push(-9, 0, 4); chinesePeachLocal(0.75, a.seed, lod); kit.pop(); chineseLantern(-1, 2.2, 1.7, 0.7, 0.8); }
-      break;
+    case 'changan': kit.push(a.x, a.h, a.z, a.yaw); cnChanganLocal(a, lod); kit.pop(); break;
+    case 'monastery': cnMonasteryLocal(a, lod); break;
+    case 'paifang': kit.push(a.x, a.h, a.z, a.yaw); cnPaifangStopLocal(a, lod); kit.pop(); break;
+    case 'mountainPavilion': cnMountainPavilionLocal(a, lod); break;
+    case 'waterPavilion': cnWaterPavilionLocal(a, lod); break;
+    case 'terraceFarm': cnTerraceFarmLocal(a, lod); break;
   }
-  kit.pop(); kit.detail = previous;
+  kit.detail = previous;
   return true;
+}
+
+// A hillside monastery: walled court, tall hall on the axis, gate paifang,
+// two low side halls, and a paved processional spine.
+function cnMonasteryLocal(a, lod) {
+  const seed = a.seed;
+  kit.push(a.x, a.h, a.z, a.yaw);
+  chineseWallLocal(34, 34, 2.4, true);
+  kit.box('solid', 0, 0.05, 0, 26, 0.1, 28, CN.courtWarm);       // courtyard earth
+  cnAxisPaving(2.6, -14, 14, { seed, tone: CN.court });           // paved spine
+  // Main hall on the axis, raised on a stone terrace.
+  kit.box('solid', 0, 0.34, -7, 21, 0.7, 13, CN.plinthDark);
+  kit.push(0, 0.62, -7); chineseHallLocal(17, 9, 4.2, true); kit.pop();
+  // Front gate paifang and its threshold.
+  kit.push(0, 0, 15.5); chinesePaifangLocal(0.8); kit.pop();
+  // Two low side halls, turned to face the courtyard's centre.
+  for (const sx of [-1, 1]) {
+    kit.push(sx * 12.5, 0, 2, Math.PI / 2);
+    chineseHallLocal(12, 4.6, 2.8, false, true, { gold: false });
+    kit.pop();
+    // Bell and drum pavilions, symmetric about the axis.
+    if (lod < 2) { kit.push(sx * 8.6, 0, 10); chinesePavilionLocal(0.5); kit.pop(); }
+  }
+  // Incense burner on the axis, between gate and hall.
+  kit.box('solid', 0, 0.55, 5, 1.9, 1.1, 1.9, CN.plinthDark);
+  kit.box('metal', 0, 1.35, 5, 1.2, 0.6, 1.2, C(0x637973));
+  if (kit.detail > 0.3 && lod < 3) chineseLantern(0, 1.9, 5, 0.7, 1.1);
+  // Cliff pines inside the court, deliberately placed, not scattered.
+  if (lod < 2) {
+    for (const [px, pz, sc] of [[-10, -12, 0.85], [10.5, -13, 1.0]]) {
+      kit.push(px, 0, pz); chinesePineLocal(sc, seed + px, lod); kit.pop();
+    }
+  }
+  kit.pop();
+}
+
+// A roadside paifang: the arch plus a short paved approach that makes it read
+// as a threshold on a road rather than an isolated prop.
+function cnPaifangStopLocal(a, lod) {
+  chinesePaifangLocal(1.0);
+  const len = 18, step = 2.4;
+  for (let z = -len / 2; z < len / 2; z += step) {
+    const j = h2(Math.round(z * 8), a.seed, SALT[60]);
+    kit.box('solid', (j - 0.5) * 0.14, 0.06, z + step / 2, 4.0, 0.12, step + 0.05, CN.court.clone().multiplyScalar(0.92 + j * 0.14));
+  }
+  if (kit.detail > 0.3) for (const sx of [-1, 1]) {
+    kit.box('solid', sx * 2.5, 0.7, len / 2 + 0.6, 1.4, 0.3, 1.0, CN.plinthDark);
+    kit.box('solid', sx * 2.5, 1.15, len / 2 + 0.6, 0.24, 1.0, 0.24, CN.wood);
+  }
+}
+
+// Mountain pavilion: a lookout terrace with a pine and a stone-paved approach.
+function cnMountainPavilionLocal(a, lod) {
+  kit.push(a.x, a.h, a.z, a.yaw);
+  chinesePavilionLocal(1.0);
+  if (kit.detail > 0.3) {
+    // Stone lip of the terrace, anchoring the pavilion to the ridge.
+    for (const sz of [-1, 1]) kit.box('solid', 0, -0.05, sz * 3.5, 7.4, 0.5, 1.0, CN.plinthDark);
+    for (const sx of [-1, 1]) kit.box('solid', sx * 3.5, -0.05, 0, 1.0, 0.5, 6.4, CN.plinthDark);
+    // A few roughly-set approach steps.
+    for (let i = 0; i < 5; i++) kit.box('solid', (h2(i, a.seed, 44) - 0.5) * 0.3, -0.1 - i * 0.16, 5.2 + i * 0.8, 2.0 - i * 0.1, 0.26, 0.9, i % 2 ? CN.plinth : CN.stone);
+  }
+  if (lod < 3) { kit.push(-6.2, 0, -2); chinesePineLocal(0.9, a.seed, lod); kit.pop(); }
+  kit.pop();
+}
+
+// Water pavilion: an open kiosk over the lake, on piles, with a jetty and a
+// stone bridge stub reaching the shore.
+function cnWaterPavilionLocal(a, lod) {
+  const water = a.r === 0;
+  kit.push(a.x, a.h, a.z, a.yaw);
+  chinesePavilionLocal(1.0, water);
+  if (water && lod < 2) {
+    // A short jetty and a stepping-stone line toward the nearest shore.
+    kit.box('solid', 0, 0.4, 6.4, 2.1, 0.22, 7.5, CN.wood);
+    for (const sx of [-1, 1]) kit.box('solid', sx * 0.95, 1.0, 6.4, 0.09, 0.1, 7.5, CN.woodDark);
+    for (let i = 1; i <= 4; i++) {
+      const s = sample(a.x, a.z + 10 + i * 2.0, {});
+      if (s.waterLevel === null) break;
+      kit.box('solid', (h2(i, a.seed, 71) - 0.5) * 0.6, s.waterLevel + 0.1, 10 + i * 2.0, 1.1, 0.3, 1.0, CN.plinth);
+    }
+  }
+  kit.pop();
+}
+
+// Terrace farmstead: a courtyard of farm buildings set on the terrace, with a
+// threshing floor, a well and a peach tree at the wall.
+function cnTerraceFarmLocal(a, lod) {
+  const seed = a.seed;
+  kit.push(a.x, a.h, a.z, a.yaw);
+  // Packed-earth threshing floor — the courtyard's working surface.
+  kit.box('solid', 0, 0.04, 0, 22, 0.09, 18, CN.courtWarm);
+  // Low boundary wall with a gate, keeping the farmstead legible as a place.
+  cnCourtyard(19, 15, { wallH: 2.0, gap: 3.0 });
+  // Main dwelling, set back on the axis.
+  kit.push(-1.5, 0, -3.0); chineseHallLocal(10.5, 6.4, 2.8, false, false, { gold: false }); kit.pop();
+  // Barn, turned across the courtyard, roofed in thatch tones.
+  kit.push(6.5, 0, 2.5, Math.PI / 2);
+  chineseHallLocal(7.4, 5.0, 2.5, false, true, { gold: false });
+  kit.pop();
+  // Well and a small millstone.
+  kit.box('solid', -5.0, 0.5, 4.0, 1.5, 1.0, 1.5, CN.plinthDark);
+  kit.box('solid', -5.0, 1.06, 4.0, 1.1, 0.14, 1.1, C(0x3a4644));
+  kit.box('solid', 3.2, 0.2, 5.6, 1.5, 0.34, 1.5, CN.stone);
+  // Peach at the wall and a path lantern by the gate.
+  if (lod < 2) {
+    kit.push(-7.0, 0, -4.5); chinesePeachLocal(0.8, seed, lod); kit.pop();
+    chineseLantern(1.2, 2.0, 7.0, 0.7, 0.8);
+  }
+  kit.pop();
 }
 
 // Landmark layouts are shared by near and far meshes. Distance only removes
@@ -2401,8 +3500,30 @@ const PAL = {
   canCedar: C(0x2b4231), canSakura: C(0xd8a2b5), canBamboo: C(0x5f8240), canTown: C(0x555b64), canSato: C(0x50703c),
   meadowA: C(0x8fae52), meadowB: C(0x7aa045), marshA: C(0x4f6a38), marshB: C(0x3e5730), marshWater: C(0x3d5136),
   pineFloor: C(0x5d6f3d), canPine: C(0x37552e), lavender: C(0x8a7ab8), cotton: C(0xe8e2d2),
+  // Rice paddy seasonal stages (non-neon, believable agricultural values)
+  riceYoung:  C(0x6aaa5e), // newly-transplanted bright green
+  riceGreen:  C(0x4d8a3a), // lush mid-season canopy
+  riceGold:   C(0xc8a83a), // yellowing heads
+  riceRipe:   C(0xb8861e), // golden-ripe grain, drained field
+  riceStraw:  C(0x8a6e32), // harvested stubble
+  paddyWet:   C(0x3b5a50), // flooded young paddy water sheen (dark teal-grey)
 };
 const tc = new Col(), tc2 = new Col();
+
+// ---------------------------------------------------------------------
+//  Rice paddy ripeness field — large-scale fbm so patches span several
+//  terraces; SALT[83..85] are free slots not used elsewhere.
+//  Returns a value in [0,1]: 0=young/flooded, 1=ripe/drained.
+//  A small stubble fraction uses values > 0.92.
+// ---------------------------------------------------------------------
+function paddyRipeness(x, z) {
+  // Two fbm octaves at coarse + medium scales give natural patch bands.
+  const a = fbm(x * 0.0095, z * 0.0095, 3, 22);  // large terrace-band patches
+  const b = fbm(x * 0.031,  z * 0.031,  2, 23);   // finer within-field variation
+  const jitter = h2(Math.floor(x * 0.25) | 0, Math.floor(z * 0.25) | 0, SALT[83] & 0x7fffffff);
+  return clamp(a * 0.55 + b * 0.3 + jitter * 0.15, 0, 1);
+}
+
 function cellColor(x, z, s, slope, lod, out) {
   if (WORLD_PROFILE.id === 'shanshui') return shanshuiCellColor(x, z, s, slope, lod, out);
   const j = h2(Math.floor(x * 3), Math.floor(z * 3), 77), j2 = h2(Math.floor(x * 3) + 91, Math.floor(z * 3) - 37, 78);
@@ -2429,7 +3550,35 @@ function cellColor(x, z, s, slope, lod, out) {
       if (h > 1.6) out.lerp(PAL.grassB, smoothstep(1.6, 2.6, h));
       return out;
     }
-    case B.PADDY: return out.copy(PAL.mud).multiplyScalar(0.9 + j * 0.15);
+    case B.PADDY: {
+      // Per-cell ripeness drives a 5-stage colour ramp.
+      // Stage 0-0.22: young green transplants (flooded, water sheen visible)
+      // Stage 0.22-0.48: lush mid-season canopy
+      // Stage 0.48-0.72: yellowing heads
+      // Stage 0.72-0.92: golden ripe (drained, no sheen)
+      // Stage 0.92-1.0 : harvested stubble
+      const rip = paddyRipeness(x, z);
+      if (rip < 0.22) {
+        // Young: saturated green + water-sheen teal for flooded cells
+        const f = rip / 0.22;
+        out.copy(PAL.paddyWet).lerp(PAL.riceYoung, f * 0.7 + 0.2);
+        // water-sheen overlay fades as canopy thickens
+        out.lerp(PAL.paddyWet, smoothstep(0.22, 0.0, rip) * 0.45);
+      } else if (rip < 0.48) {
+        const f = (rip - 0.22) / 0.26;
+        out.copy(PAL.riceYoung).lerp(PAL.riceGreen, f);
+      } else if (rip < 0.72) {
+        const f = (rip - 0.48) / 0.24;
+        out.copy(PAL.riceGreen).lerp(PAL.riceGold, f);
+      } else if (rip < 0.92) {
+        const f = (rip - 0.72) / 0.20;
+        out.copy(PAL.riceGold).lerp(PAL.riceRipe, f);
+      } else {
+        // Stubble — a fraction of harvested cells
+        out.copy(PAL.riceStraw).lerp(PAL.mud, 0.4);
+      }
+      return out.multiplyScalar(0.88 + j * 0.15);
+    }
     case B.TOWN: {
       if (lod > 0) return out.copy(PAL.canTown).lerp(PAL.lot, clamp(n, 0, 1) * 0.4);
       out.copy(PAL.lot).lerp(PAL.moss, j2 > 0.7 ? 0.5 : 0.1).multiplyScalar(0.92 + j * 0.1);
@@ -2476,9 +3625,12 @@ function cellColor(x, z, s, slope, lod, out) {
     return out;
   }
   if (s.biome === B.SAKURA) {
+    // A heavier bloom carpet under the groves: dense petal scatter plus a
+    // continuous pink wash so the ground matches the canopy above it.
     const p = clamp(s.sak * 2.2 - 0.3, 0, 0.6);
-    if (j2 < p * 0.45) out.lerp(PAL.petal, 0.55 + j * 0.2); else out.lerp(PAL.petal, p * 0.12);
+    if (j2 < p * 0.62) out.lerp(PAL.petal, 0.62 + j * 0.2); else out.lerp(PAL.petal, p * 0.26 + 0.05);
   } else if (fbm(x * 0.02, z * 0.02, 2, 17) > 0.32 && j2 > 0.55) out.lerp(PAL.nanohana, 0.75);
+  else if (fbm(x * 0.028, z * 0.028, 2, 18) > 0.42 && j2 > 0.72) out.lerp(PAL.petal, 0.3);
   if (slope > 0.8) out.lerp(PAL.soil, (slope - 0.8) * 0.6);
   return out;
 }
@@ -2684,40 +3836,103 @@ function decorate(x0, z0, size, info, hq, raw, W, cellK, inChunk, tufts, tuftC, 
       else cherryTree(x, z, 'yama', seed, 0.8, 0.45);
     } else if (!levee[k] && r > 0.985) scarecrow(x, z, h2(gx, gz, SALT[41]) * 6);
   }
-  // rice seedlings on flooded plates
+  // rice seedlings on flooded / ripening plates — ripeness drives variety
   const gR = 1.1;
   for (let gz = Math.floor(z0 / gR); gz * gR < z0 + size; gz++) for (let gx = Math.floor(x0 / gR); gx * gR < x0 + size; gx++) {
     const x = gx * gR + h2(gx, gz, SALT[63]) * gR, z = gz * gR + h2(gx, gz, SALT[64]) * gR;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k];
     if (!s.paddy || levee[k]) continue;
-    if (h2(gx, gz, SALT[65]) < 0.75) {
-      const rr = h2(gx, gz, SALT[66]);
-      const c = C([0x7aa24a, 0x6d9440, 0x86ab52][Math.floor(rr * 3)]);
-      const H = 0.35 + rr * 0.25;
-      kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.65, H, 0.65, c, 0, rr * 6, 0);
+    const rip = paddyRipeness(x, z);
+    const rr = h2(gx, gz, SALT[66]);
+    // Harvested stubble cells: no standing plant, just keep floor colour.
+    if (rip > 0.92) continue;
+    // Density: young fields are sparse (plants just transplanted), mid is dense, ripe thins slightly.
+    // Young (0-0.22): ~40% density; mid (0.22-0.72): ~80%; ripe (0.72-0.92): ~65%.
+    let density;
+    if      (rip < 0.22) density = 0.40;
+    else if (rip < 0.72) density = 0.80;
+    else                 density = 0.65;
+    if (h2(gx, gz, SALT[65]) > density) continue;
+    // Height: young = short stubby blades, mid = tall blades, ripe = tallest with drooping head.
+    let H, col;
+    if (rip < 0.22) {
+      // Young — short bright-green sprigs
+      H = 0.18 + rr * 0.12;
+      col = C([0x7ab84a, 0x6aaa42, 0x88c055][Math.floor(rr * 3)]);
+    } else if (rip < 0.48) {
+      // Lush mid-season — tall dense green blades
+      H = 0.42 + rr * 0.22;
+      col = C([0x4f9040, 0x59a044, 0x428038][Math.floor(rr * 3)]);
+    } else if (rip < 0.72) {
+      // Yellowing — blades turning, visible grain tips
+      H = 0.48 + rr * 0.22;
+      col = C([0xa0943a, 0x96862e, 0xb0a040][Math.floor(rr * 3)]);
+    } else {
+      // Ripe — golden drooping heads; use 'straw' kind for the golden grain appearance
+      H = 0.52 + rr * 0.20;
+      col = C([0xc8921a, 0xb88018, 0xd8a030][Math.floor(rr * 3)]);
+      // Emit the stalk as a rice box plus a golden grain-head tip slightly above
+      kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.55, H, 0.55, col, rr * 0.3, rr * 6, 0);
+      // Grain head: small golden block at the apex, bent slightly
+      const headY = kit.G(x, z) + 0.14 + H + 0.05;
+      kit.box('rice', x + (rr - 0.5) * 0.12, headY, z + (h2(gx + 1, gz, SALT[66]) - 0.5) * 0.12,
+              0.25, 0.18, 0.25, C(0xd4a020), 0, rr * 6, 0);
+      continue;
     }
+    kit.box('rice', x, kit.G(x, z) + 0.14, z, 0.65, H, 0.65, col, 0, rr * 6, 0);
   }
-  // reed beds (芦苇): dense stands in shallow water & wet shores
-  const gRe = 1.9;
+
+  // reed beds (芦苇) — Sekiro/Ghost of Tsushima atmosphere:
+  // tall billowy drifts following shorelines, dense at waterline, thinning inland.
+  // Two passes: a primary drift grid (tight spacing) and a secondary scatter for depth.
+  const gRe = 1.1;  // tighter primary grid for density
   for (let gz = Math.floor(z0 / gRe); gz * gRe < z0 + size; gz++) for (let gx = Math.floor(x0 / gRe); gx * gRe < x0 + size; gx++) {
     const x = gx * gRe + h2(gx, gz, SALT[67]) * gRe, z = gz * gRe + h2(gx, gz, SALT[68]) * gRe;
     if (!inChunk(x, z)) continue;
     const k = cellK(x, z), s = info[k];
     const shoreH = shoreHeight(s);
-    const wetShore = (shoreH > -1.1 && shoreH < 0.55 && (s.valley > 0.12 || s.lake > 0.03 || s.biome === B.LAKE || s.biome === B.RIVER));
-    if (!wetShore || s.street || s.rail > 0.1 || s.pad > 0.1) continue;
-    if (h2(gx, gz, SALT[69]) > 0.62) continue;
-    const n = 2 + Math.floor(h2(gx, gz, SALT[70]) * 3);
-    for (let j = 0; j < n; j++) {
-      const rx = x + (h2(gx, j, SALT[71]) - 0.5) * 1.6, rz = z + (h2(gz, j, SALT[72]) - 0.5) * 1.6;
+    // Wet-shore condition: near waterline (shoreH -0.8..0.7) with water body nearby
+    const wetShore = (shoreH > -0.8 && shoreH < 0.7 &&
+                      (s.valley > 0.10 || s.lake > 0.02 || s.biome === B.LAKE || s.biome === B.RIVER || s.biome === B.MARSH));
+    if (!wetShore || s.street || s.rail > 0.1 || s.pad > 0.1 || s.paddy) continue;
+    // Density gradient: highest near the waterline (shoreH near 0), tapering inland.
+    // shoreH < 0 means submerged — still grow reeds in very shallow water.
+    const shoreProximity = 1 - clamp(Math.abs(shoreH) / 0.7, 0, 1);
+    // Bias: 0.25 base + up to 0.65 near shore → very dense at waterline
+    const spawnChance = 0.25 + shoreProximity * 0.65;
+    if (h2(gx, gz, SALT[69]) > spawnChance) continue;
+    // Cluster size: 2-5 reeds per cell, more at waterline
+    const nReeds = 2 + Math.floor(shoreProximity * 3 + h2(gx, gz, SALT[70]) * 1.5);
+    // Hard per-cell budget: max 5 to avoid instance explosion
+    const budget = Math.min(nReeds, 5);
+    for (let j = 0; j < budget; j++) {
+      // Overlapping drifts: spread reeds in a disc following shore direction
+      const offR = (0.4 + h2(gx, j + 1, SALT[71]) * 0.85) * gRe;
+      const offA = h2(gx + j, gz, SALT[72]) * 6.28;
+      const rx = x + Math.cos(offA) * offR, rz = z + Math.sin(offA) * offR;
       const rk = cellK(rx, rz); if (rk < 0) continue;
       const rs = info[rk];
       const reedShoreH = shoreHeight(rs);
-      if (reedShoreH > 0.8 || reedShoreH < -1.4 || rs.street || rs.rail > 0.1 || rs.pad > 0.1) continue;
+      if (reedShoreH > 1.2 || reedShoreH < -1.6 || rs.street || rs.rail > 0.1 || rs.pad > 0.1 || rs.paddy) continue;
       const y = kit.G(rx, rz);
-      const hh = 1.5 + h2(gx, gz + j, SALT[73]) * 1.1;
-      reedPlant(rx, rz, y, hh, (h2(gx + j, gz, SALT[73]) * 1e9) | 0);
+      const seedR = (h2(gx + j, gz + 1, SALT[73]) * 1e9) | 0;
+      const noiseH = h2(gx, gz + j, SALT[84] & 0x7fffffff);
+      // Billowy height variation: short inner, tall outer, with fbm-driven wave across the stand.
+      // Sekiro reeds: 2.0–3.8m tall with clear height variation for billowy silhouette.
+      const baseH = 2.0 + shoreProximity * 1.0;
+      const hh = baseH + noiseH * 1.8 + fbm(rx * 0.18, rz * 0.18, 2, 24) * 0.5;
+      // Mix of reeds (most) and taller plume-bearing ones (kind='reed') + occasional cattail
+      const kindRoll = h2(gx + j, gz - j, SALT[85] & 0x7fffffff);
+      if (kindRoll < 0.07) {
+        // ~7% cattails for silhouette variety — use existing cattail() signature
+        cattail(rx, rz, seedR);
+      } else if (kindRoll < 0.22) {
+        // ~15% tall plume-bearing reeds (extra height, kind='reed' default)
+        reedPlant(rx, rz, y, hh + 0.6, seedR, 'reed');
+      } else {
+        reedPlant(rx, rz, y, hh, seedR, 'reed');
+      }
     }
   }
   // rocks along water, stone lanterns on lanes
@@ -3062,12 +4277,33 @@ const I18N = (() => {
     'world.sakura.name': ['花见日本', '花見日本', 'Hanami Japan'],
     'world.shanshui.badge': ['山水 · 中国', '山水 · 中国', 'SHANSHUI · CHINA'],
     'world.sakura.badge': ['花见 · 日本', '花見 · 日本', 'HANAMI · JAPAN'],
+    'mood.sunrise': ['日出', '日の出', 'Sunrise'],
     'mood.morning': ['晨雾', '朝霧', 'Morning mist'],
     'mood.golden': ['暮光', '夕映え', 'Golden hour'],
     'mood.dusk': ['薄暮', '薄暮', 'Dusk'],
     'mood.night': ['月夜', '月夜', 'Moonlit night'],
     'mood.rain': ['细雨', '小雨', 'Soft rain'],
     'mood.group': ['天气与时段', '天候と時間帯', 'Weather and time of day'],
+    'time.mode': ['自由时间', '自由時間', 'Free time'],
+    'time.mode.title': ['自由时间：拖动以观察天体运动', '自由時間：ドラッグして天体の動きを見る', 'Free time: scrub to watch the sky move'],
+    'time.slider': ['时间', '時刻', 'Time of day'],
+    'time.phase.night': ['深夜', '深夜', 'Night'],
+    'time.phase.dawn': ['黎明', '明け方', 'Dawn'],
+    'time.phase.day': ['白昼', '昼', 'Day'],
+    'time.phase.dusk': ['黄昏', '夕暮れ', 'Gloaming'],
+    'toast.time.on': ['自由时间已开启', '自由時間を開始', 'Free time on'],
+    'toast.time.off': ['自由时间已关闭', '自由時間を終了', 'Free time off'],
+    // Help panel
+    'help.title': ['漫游指南', '散策ガイド', 'Wandering the worlds'],
+    'help.drag.key': ['拖拽', 'ドラッグ', 'Drag'],
+    'help.drag.val': ['环顾四周', '見回す', 'Look around'],
+    'help.scroll.key': ['滚轮 / 双指', 'ホイール / ピンチ', 'Scroll / pinch'],
+    'help.scroll.val': ['前进 & 后退', '前後に移動', 'Move forward & back'],
+    'help.wasd.val': ['自由漫步 · Q / E 升降', '自由に歩く · Q / E で昇降', 'Walk freely · Q / E to rise & fall'],
+    'help.tm.val': ['环游 · 环境音', '周遊 · 環境音', 'Tour · Ambient sound'],
+    'help.hp.val': ['隐藏界面 · 截图', 'UI非表示 · 撮影', 'Hide interface · Screenshot'],
+    'help.footer': ['所有景色均由体素实时生成 — 无图片或模型加载', 'すべての景色はリアルタイムに生成 — 画像もモデルも読み込みません', 'Everything you see is generated live from cubes — no images or models are loaded.'],
+    'fatal.reload': ['重新加载', '再読み込み', 'Reload page'],
     'stat.altitude': ['海拔', '標高', 'ALTITUDE'],
     'stat.biome': ['群落', 'バイオーム', 'BIOME'],
     'stat.fps': ['帧率', 'フレームレート', 'FPS'],
@@ -3484,14 +4720,51 @@ const SKY_FS = /* glsl */`
   float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
     return mix(mix(h21(i), h21(i+vec2(1,0)), u.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), u.x), u.y); }
   float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ s += a * n2(p); p = p * 2.03 + 11.7; a *= 0.5; } return s; }
-  // Valley's sky uses a smooth, plain celestial disc. Keep that restrained
-  // appearance here, with a physical terminator rather than noisy craters.
+  // Analytic lunar shading. The real Moon backscatters strongly, so the lit
+  // face stays almost flat and only softens near the limb; a narrow terminator
+  // keeps the unlit face dark. Monotonically non-decreasing on [-1,1].
   float lunarRadiance(float incidence) {
-    return (0.006 + smoothstep(-0.012, 0.012, incidence) * (0.86 + 0.14 * sqrt(max(incidence, 0.0)))) * 0.60;
+    float lit = smoothstep(-0.012, 0.012, incidence);
+    return (0.006 + lit * (0.94 + 0.06 * sqrt(max(incidence, 0.0)))) * 0.62;
   }
+  // Two-lobe halo: a tight inner glow plus a broader, fainter outer veil.
+  // Both lobes vanish with amount, so lunarHalo(r,r,0) === 0 exactly, and the
+  // pair decays inside the bounds the sky test asserts at 2 and 3 radii.
   float lunarHalo(float distance, float radius, float amount) {
-    float span = max(radius * radius * (1.0 + amount * 0.7), 0.000001);
-    return exp(-distance * distance / span) * amount * 0.025;
+    float r2 = radius * radius;
+    float span1 = max(r2 * (1.0 + amount * 0.7), 0.000001);
+    float span2 = max(r2 * (1.0 + amount * 2.5), 0.000001);
+    float lobe1 = exp(-distance * distance / span1) * amount * 0.018;
+    float lobe2 = exp(-distance * distance / span2) * amount * 0.004;
+    return lobe1 + lobe2;
+  }
+  // Soft, slightly lobed analytic disc used for maria basins and highlands.
+  // h21 supplies only the lobing phase; the falloff is a smooth radial
+  // smoothstep, so features read as geology instead of per-pixel hash speckle.
+  // Edges are always passed low-to-high: the GLSL spec leaves smoothstep
+  // undefined when edge0 >= edge1, so the disc is inverted explicitly.
+  float lunarBlob(vec2 uv, vec2 center, float radius, float seed, float strength) {
+    vec2 rel = uv - center;
+    float wobble = 1.0 + 0.16 * sin(atan(rel.y, rel.x) * 3.0 + seed);
+    return (1.0 - smoothstep(radius * 0.22, radius, length(rel) * wobble)) * strength;
+  }
+  // Bounded analytic lunar albedo. Three broad maria read as the familiar
+  // "man in the moon" at a glance; everything else is a whisper of shading so
+  // the disc stays a clean, luminous orb rather than a noisy grey blotch.
+  // Fixed straight-line smoothstep/sin work: no fbm/n2 recursion, no texture
+  // fetch, no loop, no per-frame randomness.
+  float lunarPattern(vec2 uv) {
+    float albedo = 1.0;
+    // Three large, soft maria — deliberately few and low-contrast.
+    albedo -= lunarBlob(uv, vec2(-0.22, 0.26), 0.42, 1.7, 0.13);
+    albedo -= lunarBlob(uv, vec2(0.24, -0.06), 0.34, 3.1, 0.11);
+    albedo -= lunarBlob(uv, vec2(-0.06, -0.40), 0.26, 4.6, 0.09);
+    // One bright highland smudge opposite the maria.
+    albedo += lunarBlob(uv, vec2(0.30, 0.36), 0.30, 2.4, 0.05);
+    // Very low-frequency mottling only — enough to break flatness, never
+    // enough to read as dirt.
+    albedo *= 1.0 + 0.018 * sin(uv.x * 5.0 + uv.y * 3.5) * sin(uv.y * 6.5 - uv.x * 2.5);
+    return clamp(albedo, 0.82, 1.06);
   }
   vec3 giantPlanet(vec3 d, vec3 background) {
     if (uPlanetType < 0.5) return background;
@@ -3592,8 +4865,22 @@ const SKY_FS = /* glsl */`
         vec3 normal = vec3(moonUv, sqrt(max(1.0 - dot(moonUv, moonUv), 0.0)));
         vec3 lunarSun = vec3(sin(phaseAngle), 0.0, -phaseCos);
         float incidence = dot(normal, lunarSun);
-        vec3 moonCol = vec3(0.82, 0.86, 0.91) * lunarRadiance(incidence);
-        col = mix(col, moonCol * uMoon * uMoonBrightness, disc);
+        // Analytic maria/highland albedo. The disc keeps the reference colour
+        // as its base and gains soft geology, while the unlit face stays dark.
+        float surface = lunarPattern(moonUv);
+        // Limb softening: normal.z is 1 at the disc centre and 0 at the limb.
+        float limb = 0.84 + 0.16 * normal.z;
+        vec3 moonCol = vec3(0.82, 0.86, 0.91);
+        // Warm-to-cool tint: the terminator edge picks up warm ochre while the
+        // fully lit face stays cool, the way grazing sunlight reddens regolith.
+        float tintBlend = smoothstep(-0.06, 0.42, incidence);
+        vec3 moonTint = mix(vec3(1.05, 0.97, 0.87), vec3(0.82, 0.86, 0.91), tintBlend);
+        vec3 litMoon = moonCol * lunarRadiance(incidence) * surface * limb * moonTint;
+        // Earthshine: the dark face catches a faint blue earth-glow that fades
+        // out as the terminator takes over.
+        float earthshine = smoothstep(0.02, -0.30, incidence) * 0.030 * normal.z;
+        litMoon += vec3(0.40, 0.54, 0.80) * earthshine;
+        col = mix(col, litMoon * uMoon * uMoonBrightness, disc);
       }
       float halo = lunarHalo(md, uMoonRadius, uMoonHalo) * uMoonBrightness * uMoon * 0.5 * (1.0 - phaseCos) * (1.0 - disc);
       col += vec3(0.72, 0.80, 0.94) * halo;
@@ -3684,9 +4971,9 @@ for (let li = 0; li < NL; li++) {
     solid: new THREE.MeshStandardMaterial({ roughness: 0.84, metalness: 0, envMapIntensity: 0.35 }),
     lacquer: new THREE.MeshStandardMaterial({ roughness: 0.38, metalness: 0, envMapIntensity: 0.7 }),
     metal: new THREE.MeshStandardMaterial({ roughness: 0.32, metalness: 0.85, envMapIntensity: 1.2 }),
-    leaf: new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0, envMapIntensity: 0.3 }),
+    leaf: new THREE.MeshStandardMaterial({ roughness: 0.82, metalness: 0, envMapIntensity: 0.12 }),
     glow: new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, envMapIntensity: 0.2 }),
-    blossom: new THREE.MeshStandardMaterial({ roughness: 0.66, metalness: 0, envMapIntensity: 0.45 }),
+    blossom: new THREE.MeshStandardMaterial({ roughness: 0.66, metalness: 0, envMapIntensity: 0.18 }),
   };
   patchEmissive(km.glow, GLOW_U, new THREE.Color(1.0, 0.55, 0.24).multiplyScalar(2.4));
   patchEmissive(km.blossom, BLOOMSELF_U, new THREE.Color(1.0, 0.82, 0.88));
@@ -4499,13 +5786,25 @@ function cullInstances(dt, force = false) {
 //  Atmosphere: moods, volumetric light & fog, colour grading
 // =====================================================================
 const MOODS = {
+  sunrise: {
+    label: ['日出', 'Sunrise'], icon: 'sunrise',
+    // Sun just cresting the horizon: deep pink-violet zenith, vivid orange band, heavy warm mist
+    skyTop: 0x1a2a6c, skyMid: 0x6b3fa0, skyHor: 0xf97c3c, glow: 0xff6030, glowPow: 18, sunDir: [0.62, 0.04, -0.78], sunCol: 0xffa060, sunSize: 0.000032,
+    stars: 0, moon: 0, cloud: 0.28, cloudCol: 0xffc4a0, cloudShade: 0x8a6070,
+    fog: 0xd09888, fogD: 0.006, fogFall: 0.055, haze: 0.00026, fogMax: 0.87, fogGlow: 0xb85030, fogGlowPow: 18,
+    key: 0xff9060, keyI: 2.8, keyDir: [0.58, 0.20, -0.79], hemiSky: 0xd0a0c8, hemiGround: 0x5a3828, hemiI: 1.05,
+    exposure: 1.02, bloom: 0.38, lamps: 0, glowWin: 0.08, blossomSelf: 0.11, fireflies: 0, rain: 0, wet: 0,
+    vDens: 0.014, vFall: 0.17, vBase: 0, vSun: 0xff9068, vSunI: 0.95, vAmb: 0xb890b0, vAmbI: 0.55, vAniso: 0.68, vNoise: 0.8,
+    shallow: 0x6a7e80, deep: 0x1a3040, wSun: 0xffa878,
+    gLift: [0.018, 0.004, 0.028], gGain: [1.06, 0.97, 0.90], gSat: 1.08, gContrast: 1.06, vig: 0.55,
+  },
   morning: {
-    label: ['朝霧', 'Morning mist'], icon: 'sunrise',
-    skyTop: 0x3b73bd, skyMid: 0x7eaad8, skyHor: 0xdcd6d0, glow: 0xffc690, glowPow: 36, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.000018,
-    stars: 0, moon: 0, cloud: 0.3, cloudCol: 0xfff3e8, cloudShade: 0xaab7cc,
-    fog: 0xb9c6d4, fogD: 0.005, fogFall: 0.05, haze: 0.00014, fogMax: 0.82, fogGlow: 0x7a5a38, fogGlowPow: 22,
-    key: 0xffdcb8, keyI: 3.3, keyDir: [0.74, 0.36, -0.56], hemiSky: 0xb3c9ea, hemiGround: 0x5e5240, hemiI: 1.15,
-    exposure: 0.95, bloom: 0.22, lamps: 0, glowWin: 0.05, blossomSelf: 0.03, fireflies: 0, rain: 0, wet: 0,
+    label: ['晨雾', 'Morning mist'], icon: 'sunrise',
+    skyTop: 0x3d78c4, skyMid: 0x84aede, skyHor: 0xe8d3c6, glow: 0xffc08a, glowPow: 34, sunDir: [0.78, 0.14, -0.6], sunCol: 0xfff0d4, sunSize: 0.000018,
+    stars: 0, moon: 0, cloud: 0.32, cloudCol: 0xfff1e2, cloudShade: 0xa6b4cc,
+    fog: 0xbec9d6, fogD: 0.005, fogFall: 0.05, haze: 0.00019, fogMax: 0.82, fogGlow: 0x8a6440, fogGlowPow: 21,
+    key: 0xffd9b4, keyI: 3.3, keyDir: [0.74, 0.36, -0.56], hemiSky: 0xb3c9ea, hemiGround: 0x5e5240, hemiI: 1.15,
+    exposure: 0.95, bloom: 0.3, lamps: 0, glowWin: 0.05, blossomSelf: 0.09, fireflies: 0, rain: 0, wet: 0,
     vDens: 0.011, vFall: 0.16, vBase: 0, vSun: 0xffd9b0, vSunI: 0.85, vAmb: 0x9fb0c6, vAmbI: 0.5, vAniso: 0.62, vNoise: 0.75,
     shallow: 0x4d7d78, deep: 0x153743, wSun: 0xfff0d0,
     gLift: [0.0, 0.004, 0.02], gGain: [1.04, 1.0, 0.95], gSat: 1.04, gContrast: 1.04, vig: 0.5,
@@ -4516,8 +5815,9 @@ const MOODS = {
     stars: 0, moon: 0, cloud: 0.42, cloudCol: 0xffc6a0, cloudShade: 0x6f6d8f,
     fog: 0xc59a86, fogD: 0.0042, fogFall: 0.045, haze: 0.00028, fogMax: 0.88, fogGlow: 0xa8603a, fogGlowPow: 24,
     key: 0xffb27a, keyI: 3.6, keyDir: [-0.8, 0.22, -0.55], hemiSky: 0x9fb0d8, hemiGround: 0x5a4034, hemiI: 1.05,
-    exposure: 0.92, bloom: 0.3, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.06, fireflies: 0, rain: 0, wet: 0,
-    vDens: 0.0035, vFall: 0.05, vBase: 0, vSun: 0xffa868, vSunI: 0.62, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.64, vNoise: 0.5,
+    exposure: 0.92, bloom: 0.34, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.1, fireflies: 0, rain: 0, wet: 0,
+    // vDens raised to 0.009 so light shafts through foliage/buildings are visible
+    vDens: 0.009, vFall: 0.06, vBase: 0, vSun: 0xffa868, vSunI: 0.80, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.68, vNoise: 0.5,
     shallow: 0x55706a, deep: 0x1a2c38, wSun: 0xffc080,
     gLift: [0.012, 0.0, 0.03], gGain: [1.06, 0.99, 0.92], gSat: 1.06, gContrast: 1.06, vig: 0.6,
   },
@@ -4631,13 +5931,52 @@ const VOL_FS = `
   }
   float cloudSea(vec3 p) {
     if (uCloudSea.x < 0.001) return 0.0;
-    // Noise lies in [0,1], so no density exists outside these bounds.
-    if (p.y <= uCloudSea.y - 28.0 || p.y >= uCloudSea.y + uCloudSea.z + 9.0) return 0.0;
-    float billow = n3(vec3(p.xz * 0.004 - vec2(uTime * 0.002, 0.0), 0.4));
-    float top = uCloudSea.y + billow * uCloudSea.z;
-    float layer = smoothstep(top - 28.0, top - 13.0, p.y) * (1.0 - smoothstep(top - 3.0, top + 9.0, p.y));
-    float holes = smoothstep(0.22, 0.55, n3(p * vec3(0.008, 0.025, 0.008) - vec3(uTime * 0.005,0.0,uTime * 0.002)));
-    return layer * holes * uCloudSea.x;
+    // uCloudSea: x=strength, y=base altitude, z=thickness, w=unused
+    float base = uCloudSea.y;
+    float thick = uCloudSea.z;
+
+    // --- coarse billowing surface via 3-octave fBm ---
+    vec2 drift = vec2(uTime * 0.0018, uTime * 0.0009);
+    float c0 = n3(vec3(p.xz * 0.0055 + drift, 0.0));
+    float c1 = n3(vec3(p.xz * 0.013  + drift * 1.8 + 4.3, 1.7)) * 0.5;
+    float c2 = n3(vec3(p.xz * 0.031  + drift * 3.4 + 9.1, 3.5)) * 0.25;
+    float billow = (c0 + c1 + c2) / 1.75;    // normalised ~[0,1]
+
+    // Undulating cloud-top surface: rises and falls with the billow noise.
+    // Extra vertical stretch at peaks makes cauliflower-like towers.
+    float topWarp = billow * thick * 1.35;
+    float cloudTop = base + topWarp;
+
+    // Broad altitude window — early exit outside generous bounds
+    if (p.y <= base - 6.0 || p.y >= cloudTop + 12.0) return 0.0;
+
+    // Vertical profile: hard flat base → gradual falloff above lumpy top.
+    // Asymmetry (fast onset, slow top fade) matches real cumulus underbelly.
+    float belowBase = smoothstep(base - 4.0, base + 1.5, p.y);
+    float aboveTop  = 1.0 - smoothstep(cloudTop + 1.0, cloudTop + 10.0, p.y);
+    float layer = belowBase * aboveTop;
+
+    // High-frequency holes punch through the deck so it reads as a sea
+    // of individual cloud masses, not a solid slab.
+    float holeNoise = n3(vec3(p.xz * 0.009 - drift * 0.7 + 2.2, 0.55));
+    float holes = smoothstep(0.28, 0.62, holeNoise);
+
+    // Vertical density gradient: denser near the flat base, wispy at top.
+    // Clamp p.y within [base, cloudTop] before mapping to avoid NaN when
+    // cloudTop == base (degenerate billow = 0 case).
+    float invThick = 1.0 / max(topWarp, 0.5);
+    float vt = clamp((p.y - base) * invThick, 0.0, 1.0);
+    float vertGrad = 1.0 - vt * vt;   // dense at bottom, taper upward
+
+    // Camera-altitude gate: cloud sea fades out as camera descends below
+    // the base so low-altitude views see only sky, not smoggy haze.
+    // uCloudSea.w carries camY passed from JS (see updateMist).
+    float camY = uCloudSea.w;
+    // Full presence when camera is well above base; vanish when it drops
+    // more than 18 units below the base.
+    float camGate = smoothstep(base - 18.0, base + 8.0, camY);
+
+    return layer * holes * vertGrad * uCloudSea.x * camGate;
   }
   void main(){
     float d = texture2D(tDepth, vUv).x;
@@ -4845,6 +6184,83 @@ function updateMood(dt) {
   if (envTimer <= 0 || moodT >= 1) { refreshEnv(); envTimer = 0.3; updateShadow(0, true); }
 }
 
+// --- Free time mode -------------------------------------------------------
+// Drives a continuous 24-h sky by interpolating between mood anchors.
+// The sun follows a tilted arc (azimuth ~135° east of north); the moon
+// rises opposite. All sky uniforms update every frame while active.
+const FREE_TIME = { on: false, minutes: 0 }; // 0-1440
+const FT_ANCHORS = [
+  { t:   0, mood: 'night'  },
+  { t: 330, mood: 'dusk'   },  // 5:30 pre-dawn
+  { t: 360, mood: 'sunrise'},  // 6:00 sunrise
+  { t: 480, mood: 'morning'},  // 8:00 morning mist
+  { t: 720, mood: 'golden' },  // 12:00 → use golden as midday proxy
+  { t:1080, mood: 'golden' },  // 18:00 golden hour
+  { t:1170, mood: 'dusk'   },  // 19:30 dusk
+  { t:1260, mood: 'night'  },  // 21:00 night
+  { t:1440, mood: 'night'  },
+];
+function _ftBlendedMood(minutes) {
+  let lo = FT_ANCHORS[0], hi = FT_ANCHORS[FT_ANCHORS.length - 1];
+  for (let i = 0; i < FT_ANCHORS.length - 1; i++) {
+    if (minutes >= FT_ANCHORS[i].t && minutes <= FT_ANCHORS[i + 1].t) { lo = FT_ANCHORS[i]; hi = FT_ANCHORS[i + 1]; break; }
+  }
+  const span = hi.t - lo.t || 1, t = (minutes - lo.t) / span;
+  const ease = t * t * (3 - 2 * t);
+  const A = MOODC[lo.mood], B = MOODC[hi.mood];
+  for (const k of Object.keys(A)) {
+    const a = A[k], b = B[k];
+    if (typeof b === 'number') ATM[k] = lerp(a, b, ease);
+    else if (b.isVector3 && k !== 'gLift' && k !== 'gGain') ATM[k].copy(a).lerp(b, ease).normalize();
+    else ATM[k].copy(a).lerp(b, ease);
+  }
+  // Override sun direction with a proper arc: azimuth 135° east of north, max elevation ~55°
+  const noon = 720, sunAngle = ((minutes - noon) / 720) * Math.PI; // -π..π over the day
+  const elevation = Math.sin(sunAngle) * 0.88;     // max ~0.88 at noon
+  const azimuth   = Math.cos(sunAngle);
+  const sunDir = new THREE.Vector3(azimuth * 0.72, elevation, azimuth * 0.55).normalize();
+  ATM.sunDir.copy(sunDir);
+  ATM.keyDir.copy(sunDir);
+  // Moon rises 12 hours later opposite the sun
+  const moonAngle = sunAngle + Math.PI;
+  const moonElev  = Math.sin(moonAngle) * 0.75;
+  const moonAz    = Math.cos(moonAngle);
+  SKY_U.uMoonDir.value.set(moonAz * 0.72, moonElev, moonAz * 0.55).normalize();
+  // Stars fade with sun elevation
+  ATM.stars = Math.max(0, -elevation) * 1.5;
+  ATM.moon  = Math.max(0, -elevation) * 1.2;
+}
+function applyFreeTime(minutes) {
+  FREE_TIME.minutes = minutes;
+  _ftBlendedMood(minutes);
+  applyAtmosphere();
+  refreshEnv();
+  updateShadow(0, true);
+  // Update clock display
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  const el = $('timeClock'); if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  // Phase label
+  const phaseEl = $('timePhase');
+  if (phaseEl) {
+    const phase = minutes < 300 || minutes >= 1200 ? 'night' : minutes < 420 ? 'dawn' : minutes < 1080 ? 'day' : 'dusk';
+    phaseEl.textContent = I18N.t('time.phase.' + phase);
+  }
+}
+function toggleFreeTime(force) {
+  FREE_TIME.on = force !== undefined ? force : !FREE_TIME.on;
+  const dock = $('timeDock'); if (dock) dock.hidden = !FREE_TIME.on;
+  if (FREE_TIME.on) {
+    // Initialise slider position from current mood
+    const minuteMap = { sunrise:360, morning:480, golden:1080, dusk:1170, night:0, rain:720 };
+    FREE_TIME.minutes = minuteMap[moodName] ?? 720;
+    const sl = $('timeSlider'); if (sl) { sl.value = FREE_TIME.minutes; sl.dispatchEvent(new Event('input')); }
+    applyFreeTime(FREE_TIME.minutes);
+  } else {
+    setMood(moodName, true);
+  }
+  return FREE_TIME.on;
+}
+
 // A small world-space habitat atlas drives local fog inside the ray marcher.
 // It remains anchored as the camera moves; early/late light increases the
 // density above water, and wooded humid patches retain lighter ground mist.
@@ -4864,9 +6280,16 @@ function updateMist(dt, t) {
   const lowSun = 1 - smoothstep(0.12, 0.55, ATM.sunDir.y);
   u.uMistAmount.value = 0.35 + lowSun * 0.65 + ATM.rain * 0.3;
   const cloud = GEN.profile.mist;
-  const mountainView = smoothstep(25, 65, camera.position.y);
-  u.uCloudSea.value.set(cloud?.cloudSea ? (0.012 + lowSun * 0.013) * mountainView : 0, cloud?.base || 42, 20, 0);
-  u.uMaxDist.value = cloud?.cloudSea ? 1200 : 420;
+  // Cloud sea presence is gated on *camera* altitude: standing at ground level
+  // there must be no deck at all (it reads as smog), while climbing to the
+  // peaks reveals a rolling sea. The shader also fades it per-ray using
+  // camera Y (packed into .w), so both the layer and the total absence agree.
+  const camY = camera.position.y;
+  const base = cloud?.base || 42;
+  const lift = smoothstep(base - 22, base + 14, camY);
+  const strength = cloud?.cloudSea ? (0.010 + lowSun * 0.012) * lift : 0;
+  u.uCloudSea.value.set(strength, base, cloud?.thickness || 20, camY);
+  u.uMaxDist.value = strength > 0.0005 ? 1600 : 420;
   MIST.timer -= dt;
   const x = Math.floor(camera.position.x / MIST.cell) * MIST.cell - MIST.size * MIST.cell / 2;
   const z = Math.floor(camera.position.z / MIST.cell) * MIST.cell - MIST.size * MIST.cell / 2;
@@ -5109,88 +6532,199 @@ function kitToGroup(build) {
   }
   return g;
 }
-const TCOL = { black: GEN.C(0x1d1e21), iron: GEN.C(0x2b2d31), red: GEN.C(0x8e2a22), brass: GEN.C(0xb8923e), maroon: GEN.C(0x5b2a23), roof: GEN.C(0x2c2a2a), win: GEN.C(0xf3dcb0), gold: GEN.C(0xc8a14c) };
+const TCOL = { black: GEN.C(0x1d1e21), iron: GEN.C(0x35383d), red: GEN.C(0x8e2a22), brass: GEN.C(0xb8923e), maroon: GEN.C(0x5b2a23), roof: GEN.C(0x2c2a2a), win: GEN.C(0xf3dcb0), gold: GEN.C(0xc8a14c), steel: GEN.C(0x4a4e54), smoke: GEN.C(0x23262a) };
+// British-built 4-6-0 export type: tapered boiler, outside cylinders, a tall
+// copper-capped chimney and a cab with a wide front spectacle plate.
 function buildLoco(K) {
   // local frame: +x forward, y up, rails at y=0
-  for (const sx of [-3.4, -1.6, 0.2, 2.0]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.75, sz, 1.5, 1.5, 0.16, TCOL.red);
-  for (const sx of [3.9, 4.8]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.45, sz, 0.8, 0.8, 0.14, TCOL.red);
-  K.box('solid', 0, 1.35, 0, 10, 0.4, 2.4, TCOL.iron);
-  K.box('solid', 0.8, 2.25, 0, 7.4, 1.7, 1.75, TCOL.black);
-  K.box('solid', 0.8, 2.25, 0, 7.0, 1.9, 1.5, TCOL.black);
-  for (const x of [-0.8, 1.6, 3.4]) K.box('metal', x, 2.3, 0, 0.12, 2.0, 1.9, TCOL.brass);
-  K.box('solid', 4.6, 2.25, 0, 0.3, 1.8, 1.8, TCOL.iron);
-  K.box('glow', 4.85, 2.4, 0, 0.12, 0.5, 0.5, GEN.C(0xfff2c8));
-  K.box('solid', 3.6, 3.6, 0, 0.6, 1.4, 0.6, TCOL.black);
-  K.box('solid', 3.6, 4.35, 0, 0.85, 0.25, 0.85, TCOL.black);
-  K.box('metal', 1.6, 3.35, 0, 0.7, 0.6, 0.7, TCOL.brass);
-  K.box('solid', -0.4, 3.3, 0, 0.6, 0.55, 0.6, TCOL.black);
-  K.box('solid', -3.6, 2.6, 0, 2.8, 2.6, 2.5, TCOL.black);
-  K.box('solid', -3.6, 4.05, 0, 3.2, 0.25, 2.8, TCOL.roof);
-  for (const sz of [-1.26, 1.26]) K.box('glow', -3.3, 2.9, sz, 1.1, 0.8, 0.04, TCOL.win);
-  K.box('solid', 5.1, 0.6, 0, 0.5, 0.5, 2.4, TCOL.red);
-  K.box('solid', 4.7, 1.0, 0, 0.3, 0.3, 2.0, TCOL.iron);
+  const WHEEL = GEN.C(0x2a2d31), RIM = GEN.C(0x53575d);
+  // driving wheels: three axles, each a squat box with a brighter rim band
+  for (const x of [0.1, 2.05, 4.0]) for (const sz of [-1.13, 1.13]) {
+    K.box('metal', x, 0.78, sz, 1.62, 1.56, 0.17, WHEEL, 0, 0, Math.PI / 4);
+    K.box('metal', x, 0.78, sz * 1.03, 1.72, 1.66, 0.05, RIM, 0, 0, Math.PI / 4);
+  }
+  // leading bogie pair
+  for (const x of [6.35, 7.55]) for (const sz of [-1.05, 1.05]) K.box('metal', x, 0.52, sz, 1.05, 1.04, 0.16, WHEEL, 0, 0, Math.PI / 4);
+  // frames and running boards
+  for (const sz of [-1.2, 1.2]) {
+    K.box('solid', 1.6, 1.28, sz, 11.6, 0.3, 0.24, TCOL.iron);
+    K.box('solid', 1.6, 1.9, sz * 1.16, 11.9, 0.16, 0.86, TCOL.black);
+    K.box('metal', 1.6, 1.98, sz * 1.58, 11.9, 0.07, 0.07, TCOL.steel);
+  }
+  K.box('solid', 1.6, 1.5, 0, 11.2, 0.5, 2.1, TCOL.iron);
+  // tapered boiler: smokebox forward, firebox under the cab
+  const white = GEN.C(0x1a1c1f);
+  K.box('solid', 3.55, 2.62, 0, 1.5, 1.72, 1.72, white);
+  K.box('metal', 4.24, 2.62, 0, 0.22, 1.86, 1.86, TCOL.steel);
+  K.box('solid', 2.45, 2.66, 0, 1.0, 1.8, 1.86, TCOL.black);
+  K.box('solid', 1.2, 2.7, 0, 1.6, 1.78, 1.9, TCOL.black);
+  K.box('solid', -0.35, 2.72, 0, 1.7, 1.8, 1.94, TCOL.black);
+  K.box('solid', -1.5, 2.78, 0, 0.9, 1.92, 2.0, TCOL.black);
+  // boiler bands
+  if (K.detail > 0.4) for (const x of [0.25, 1.7, 3.0]) K.box('metal', x, 2.68, 0, 0.1, 1.9, 1.96, GEN.C(0x6b6250));
+  // chimney with a flared copper cap
+  K.box('solid', 3.5, 3.72, 0, 0.52, 1.0, 0.52, TCOL.black);
+  K.box('metal', 3.5, 4.28, 0, 0.78, 0.16, 0.78, GEN.C(0xa9713c));
+  K.box('solid', 3.5, 4.4, 0, 0.6, 0.1, 0.6, TCOL.iron);
+  // steam dome, sand box and whistle
+  K.box('solid', 2.3, 3.66, 0, 0.72, 0.6, 0.72, TCOL.black);
+  K.box('solid', 1.15, 3.62, 0, 0.62, 0.52, 0.62, TCOL.black);
+  K.box('metal', 0.7, 3.95, 0.22, 0.1, 0.34, 0.1, TCOL.brass);
+  // outside cylinders driving the middle axle
+  for (const sz of [-1.28, 1.28]) {
+    K.box('metal', 4.15, 1.42, sz, 1.5, 0.92, 0.62, TCOL.steel);
+    K.box('metal', 4.9, 1.42, sz, 0.34, 0.8, 0.66, TCOL.iron);
+    K.box('metal', 3.1, 1.42, sz * 0.86, 0.22, 0.2, 0.22, TCOL.brass);
+  }
+  // cab with a raised roof, side cut-outs and a glowing firebox door
+  K.box('solid', -2.6, 2.5, 0, 2.9, 2.5, 2.55, TCOL.maroon);
+  K.box('solid', -2.6, 3.86, 0, 3.4, 0.26, 2.95, TCOL.roof);
+  K.box('solid', -2.6, 3.72, 0, 3.1, 0.12, 2.7, TCOL.iron);
+  for (const sz of [-1.29, 1.29]) {
+    K.box('glow', -2.05, 2.95, sz, 1.15, 0.78, 0.05, TCOL.win);
+    K.box('glow', -3.5, 2.95, sz, 0.5, 0.72, 0.05, TCOL.win);
+  }
+  K.box('glow', -4.03, 2.3, 0, 0.06, 0.62, 0.62, GEN.C(0xffb066));
+  K.box('solid', -2.6, 1.9, 0, 2.9, 0.35, 2.55, TCOL.iron);
+  // front buffer beam, cowcatcher and headlamp
+  K.box('solid', 8.05, 1.35, 0, 0.45, 1.5, 2.5, TCOL.red);
+  K.box('metal', 8.28, 1.35, 0, 0.1, 0.42, 0.42, TCOL.steel);
+  for (const sz of [-0.82, 0.82]) K.box('metal', 7.75, 0.55, sz, 1.0, 0.85, 0.34, TCOL.steel, 0.5, 0, 0);
+  K.box('solid', 7.9, 2.9, 0, 0.5, 0.7, 0.7, TCOL.black);
+  K.box('glow', 8.14, 2.9, 0, 0.08, 0.46, 0.46, GEN.C(0xfff2c8));
+  // backhead coupling to the tender
+  K.box('metal', -4.35, 1.4, 0, 0.7, 0.3, 0.3, TCOL.steel);
 }
 function buildTender(K) {
-  for (const sx of [-1.6, 1.6]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.5, sz, 0.9, 0.9, 0.14, TCOL.red);
-  K.box('solid', 0, 1.2, 0, 5.4, 0.3, 2.4, TCOL.iron);
-  K.box('solid', 0, 2.1, 0, 5.2, 1.6, 2.4, TCOL.black);
-  K.box('solid', 0, 3.0, 0, 4.6, 0.3, 2.0, GEN.C(0x141414));
+  const WHEEL = GEN.C(0x2a2d31);
+  for (const x of [-1.5, 1.5]) for (const sz of [-1.13, 1.13]) K.box('metal', x, 0.7, sz, 1.4, 1.38, 0.17, WHEEL, 0, 0, Math.PI / 4);
+  K.box('solid', 0, 1.3, 0, 6.0, 0.4, 2.2, TCOL.iron);
+  for (const sz of [-1.2, 1.2]) K.box('solid', 0, 1.95, sz * 1.14, 6.1, 0.16, 0.8, TCOL.black);
+  // coal bunker with visible load
+  K.box('solid', 0, 2.35, 0, 5.8, 1.75, 2.35, TCOL.maroon);
+  K.box('metal', 0, 2.9, 0, 4.9, 0.42, 1.75, GEN.C(0x15171a));
+  K.box('solid', 0, 3.34, 0, 5.9, 0.2, 2.45, TCOL.roof);
+  K.box('solid', 0, 3.5, 0, 4.9, 0.16, 1.7, GEN.C(0x1b1d21));
+  for (const sz of [-1.19, 1.19]) K.box('solid', 0, 2.35, sz, 5.4, 0.1, 0.06, TCOL.gold);
+  K.box('metal', -3.1, 1.35, 0, 0.6, 0.3, 0.3, TCOL.steel);
 }
 function buildCoach(K) {
-  for (const sx of [-4.8, -3.8, 3.8, 4.8]) for (const sz of [-0.72, 0.72]) K.box('solid', sx, 0.5, sz, 0.9, 0.9, 0.14, TCOL.iron);
-  K.box('solid', 0, 1.15, 0, 12.6, 0.3, 2.5, TCOL.iron);
-  K.box('solid', 0, 2.35, 0, 12.4, 2.2, 2.6, TCOL.maroon);
-  K.box('solid', 0, 1.45, 0, 12.45, 0.12, 2.64, TCOL.gold);
-  for (let i = 0; i < 8; i++) for (const sz of [-1.31, 1.31]) K.box('glow', -5.1 + i * 1.46, 2.6, sz, 0.9, 0.85, 0.04, TCOL.win);
-  K.box('solid', 0, 3.6, 0, 12.6, 0.3, 2.7, TCOL.roof);
-  K.box('solid', 0, 3.85, 0, 11.8, 0.22, 1.8, TCOL.roof);
+  const WHEEL = GEN.C(0x2a2d31);
+  // two four-wheel bogies
+  for (const bx of [-4.3, 4.3]) {
+    K.box('solid', bx, 0.72, 0, 3.4, 0.5, 2.3, TCOL.iron);
+    for (const dx of [-1.05, 1.05]) for (const sz of [-1.1, 1.1]) K.box('metal', bx + dx, 0.6, sz, 0.95, 0.94, 0.16, WHEEL, 0, 0, Math.PI / 4);
+  }
+  // underframe and truss
+  K.box('solid', 0, 1.1, 0, 13.0, 0.28, 2.3, TCOL.iron);
+  for (const sz of [-1.18, 1.18]) K.box('metal', 0, 1.28, sz, 13.0, 0.12, 0.1, TCOL.steel);
+  // body with a gold waist line and a clerestory roof
+  K.box('solid', 0, 2.45, 0, 12.9, 2.35, 2.55, TCOL.maroon);
+  for (const sz of [-1.29, 1.29]) {
+    K.box('solid', 0, 1.45, sz, 12.9, 0.18, 0.06, TCOL.gold);
+    K.box('solid', 0, 3.52, sz, 12.9, 0.16, 0.06, TCOL.gold);
+  }
+  // window band: paired lights with a warm interior
+  for (let i = 0; i < 9; i++) {
+    const x = -5.4 + i * 1.35;
+    for (const sz of [-1.3, 1.3]) {
+      K.box('solid', x, 2.62, sz, 1.06, 1.06, 0.05, GEN.C(0x3b2f2a));
+      K.box('glow', x, 2.62, sz * 1.02, 0.88, 0.9, 0.04, TCOL.win);
+    }
+    // ventilators along the roof
+    if (i % 2 === 0) K.box('solid', x, 3.98, 0, 0.5, 0.16, 0.5, TCOL.iron);
+  }
+  // end doors with steps
+  for (const dx of [-6.42, 6.42]) {
+    K.box('solid', dx, 2.42, 0, 0.16, 2.3, 2.4, GEN.C(0x4a2520));
+    K.box('metal', dx * 1.02, 1.7, 0, 0.1, 0.5, 0.5, TCOL.steel);
+  }
+  // roof: a wide curved cap over a narrower clerestory
+  K.box('solid', 0, 3.72, 0, 13.0, 0.22, 2.75, TCOL.roof);
+  K.box('solid', 0, 3.88, 0, 12.5, 0.16, 2.15, TCOL.roof);
+  K.box('solid', 0, 4.02, 0, 11.6, 0.16, 1.5, TCOL.roof);
 }
 const TRAIN = { cars: [], speed: 13.5, period: 3400, line: null, len: 0, phase: 0, smokeT: 0 };
 {
-  const specs = [['loco', buildLoco, 11], ['tender', buildTender, 6], ['coach', buildCoach, 13.2], ['coach', buildCoach, 13.2], ['coach', buildCoach, 13.2]];
+  const specs = [['loco', buildLoco, 12.6], ['tender', buildTender, 6.6], ['coach', buildCoach, 13.4], ['coach', buildCoach, 13.4], ['coach', buildCoach, 13.4]];
   let off = 0;
   for (const [kind, fn, len] of specs) {
     const g = kitToGroup(fn);
     g.visible = false;
     scene.add(g);
-    TRAIN.cars.push({ g, off: off + len / 2, kind });
-    off += len + 0.6;
+    TRAIN.cars.push({ g, off: off + len / 2, half: len / 2, kind });
+    off += len + 0.75;
   }
   TRAIN.len = off;
   TRAIN.headLamp = new THREE.PointLight(0xffe2b0, 0, 40, 2);
   scene.add(TRAIN.headLamp);
 }
 const _ty = new THREE.Vector3();
+// Cars are aligned to the chord of the track they actually stand on. Without
+// this each carriage stayed level while the rail climbed, so a consist broke
+// apart into separate boxes floating at different heights.
+const _cAx = new THREE.Vector3(), _cAy = new THREE.Vector3(), _cAz = new THREE.Vector3(), _cUp = new THREE.Vector3(0, 1, 0), _cM = new THREE.Matrix4(), _cQ = new THREE.Quaternion();
+// Real stock has a maximum gradient. `railH` clamps its profile up to clear
+// water, which leaves hard knots in the grade; without a cap a carriage
+// straddling one of those knots pitches onto its nose against its neighbour.
+const TRAIN_MAX_GRADE = 0.075;
+function orientCar(g, n, x, half) {
+  // Sample the profile over a baseline wider than the body so a single hard
+  // knot is averaged away instead of being charged to one carriage.
+  const span = half * 1.55;
+  const xf = x + span, xb = x - span;
+  const zf = GEN.railZ(n, xf), zb = GEN.railZ(n, xb);
+  const yf = GEN.railH(n, xf), yb = GEN.railH(n, xb);
+  // Build the heading from a unit horizontal direction plus a grade, so the
+  // clamp is applied to the actual gradient rather than to a raw component.
+  const hx = xf - xb, hz = zf - zb, hl = Math.hypot(hx, hz) || 1e-4;
+  let grade = (yf - yb) / hl;
+  if (grade > TRAIN_MAX_GRADE) grade = TRAIN_MAX_GRADE;
+  else if (grade < -TRAIN_MAX_GRADE) grade = -TRAIN_MAX_GRADE;
+  _cAx.set(hx / hl, grade, hz / hl).normalize();
+  _cAy.copy(_cUp).addScaledVector(_cAx, -_cUp.dot(_cAx)).normalize();
+  _cAz.crossVectors(_cAx, _cAy);
+  _cM.makeBasis(_cAx, _cAy, _cAz);
+  _cQ.setFromRotationMatrix(_cM);
+  // Seat the body on the rail at its own centre. A rigid car riding two bogies
+  // crests a summit and sags into a dip; taking the chord average instead
+  // would float it above every crest and bury it in every dip.
+  g.position.set(x, GEN.railH(n, x) + 0.32, GEN.railZ(n, x));
+  g.quaternion.copy(_cQ);
+  g.updateMatrixWorld(true);
+}
 function updateTrain(dt, t) {
   const cx = camera.position.x, cz = camera.position.z;
-  const n = FOLLOW.target && FOLLOW.target.kind === 'train' ? FOLLOW.target.line : GEN.railLine(cz);
+  const riding = !!(FOLLOW.target && FOLLOW.target.kind === 'train');
+  const n = riding ? FOLLOW.target.line : GEN.railLine(cz);
   const near = Math.abs(GEN.railZ(n, cx) - cz) < 900;
-  if (!near) { for (const c of TRAIN.cars) c.g.visible = false; TRAIN.line = null; TRAIN.headLamp.intensity = 0; return; }
+  // While riding, the consist is the subject: never cull it on camera
+  // distance, or the train vanishes from under the viewer.
+  if (!near && !riding) { for (const c of TRAIN.cars) c.g.visible = false; TRAIN.line = null; TRAIN.headLamp.intensity = 0; return; }
   TRAIN.line = n;
   const P = TRAIN.period;
   const X = t * TRAIN.speed * (REDUCED ? 0.5 : 1) + GEN.h2(n, 5, 7) * P;
-  const k = FOLLOW.target && FOLLOW.target.kind === 'train' ? FOLLOW.target.periodK : Math.round((cx - X) / P);
+  const k = riding ? FOLLOW.target.periodK : Math.round((cx - X) / P);
   TRAIN.periodK = k;
   const head = X + k * P;
   TRAIN.headX = head; window.__headX = head;
+  const side = riding && FOLLOW.viewMode === 'side';
   for (const c of TRAIN.cars) {
     const x = head - c.off;
-    const z = GEN.railZ(n, x), y = GEN.railH(n, x) + 0.32;
-    const dz = GEN.railDZ(n, x);
-    c.g.position.set(x, y, z);
-    c.g.rotation.set(0, Math.atan2(-dz, 1), 0);
-    c.g.updateMatrixWorld(true);
-    c.g.visible = Math.abs(x - cx) < 1100;
+    orientCar(c.g, n, x, c.half);
+    // Riding hides only the carriage the eye is inside, and only in
+    // first-person; every other carriage stays in the shot.
+    c.g.visible = riding ? (side || c.g !== FOLLOW.target.g) : Math.abs(x - cx) < 1100;
   }
-  const lx = head + 6, lz = GEN.railZ(n, lx);
-  TRAIN.headLamp.position.set(lx, GEN.railH(n, lx) + 2.5, lz);
+  const lx = head + 8.4, lz = GEN.railZ(n, lx);
+  TRAIN.headLamp.position.set(lx, GEN.railH(n, lx) + 2.9, lz);
   TRAIN.headLamp.intensity = 60 * ATM.lamps;
   // chimney steam
   TRAIN.smokeT -= dt;
   if (TRAIN.smokeT <= 0 && Math.abs(head - cx) < 700) {
     TRAIN.smokeT = 0.09;
     const loco = TRAIN.cars[0].g;
-    _ty.set(3.6, 4.6, 0).applyMatrix4(loco.matrixWorld);
+    _ty.set(3.5, 4.5, 0).applyMatrix4(loco.matrixWorld);
     emitSmoke(_ty.x, _ty.y, _ty.z, 1.0, 1.6, true);
   }
 }
@@ -5721,10 +7255,10 @@ function updateBirds(t) {
 
 // City lantern colonies: fixed world-space launch sites, pooled geometry.
 // Sunlight/rain suppress release; no per-lantern lights or scene graph nodes.
-const LANTERNS = { max: 768, sites: [], x: Infinity, z: Infinity, timer: 0, active: 0, refreshes: 0 };
-const lanternBodyGeo = new THREE.CylinderGeometry(0.48, 0.33, 0.78, 6, 1);
-const lanternRimGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.045, 6, 1);
-const lanternFlameGeo = new THREE.OctahedronGeometry(0.095, 0);
+const LANTERNS = { max: 1024, sites: [], x: Infinity, z: Infinity, timer: 0, active: 0, refreshes: 0 };
+const lanternBodyGeo = new THREE.CylinderGeometry(0.46, 0.31, 0.74, 8, 1);
+const lanternRimGeo  = new THREE.CylinderGeometry(0.33, 0.33, 0.042, 8, 1);
+const lanternFlameGeo = new THREE.OctahedronGeometry(0.088, 0);
 const lanternFade = new THREE.InstancedBufferAttribute(new Float32Array(LANTERNS.max), 1);
 for (const g of [lanternBodyGeo, lanternRimGeo, lanternFlameGeo]) g.setAttribute('lanternFade', lanternFade);
 function lanternMaterial(color, intensity) {
@@ -5733,66 +7267,139 @@ function lanternMaterial(color, intensity) {
     uniforms: Object.assign({ uColor: { value: C(color).multiplyScalar(intensity) } }, THREE.UniformsUtils.clone(THREE.UniformsLib.fog)),
     vertexShader: `attribute float lanternFade; varying float vFade, vShade;
       #include <fog_pars_vertex>
-      void main(){ vec3 transformed = position; vFade = lanternFade; vShade = 0.7 + 0.3 * max(normal.y, abs(normal.x));
+      void main(){ vec3 transformed = position; vFade = lanternFade;
+        vShade = 0.65 + 0.35 * max(normal.y, abs(normal.x) * 0.6);
         gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position,1.0);
         #include <fog_vertex>
       }`,
     fragmentShader: `uniform vec3 uColor; varying float vFade, vShade;
       #include <fog_pars_fragment>
-      void main(){ if(vFade < 0.005) discard; gl_FragColor = vec4(uColor * vShade, vFade);
+      void main(){ if(vFade < 0.004) discard; gl_FragColor = vec4(uColor * vShade, vFade);
         #include <fog_fragment>
       }`,
   });
 }
-LANTERNS.body = new THREE.InstancedMesh(lanternBodyGeo, lanternMaterial(0xff9b43, 1.7), LANTERNS.max);
-LANTERNS.rim = new THREE.InstancedMesh(lanternRimGeo, lanternMaterial(0x523723, 0.6), LANTERNS.max);
-LANTERNS.flame = new THREE.InstancedMesh(lanternFlameGeo, lanternMaterial(0xffdf7a, 4.2), LANTERNS.max);
-for (const mesh of [LANTERNS.body, LANTERNS.rim, LANTERNS.flame]) {
+// Three warm tints cycle across the pool to break visual monotony.
+const LT = [
+  lanternMaterial(0xff9240, 1.8),  // amber
+  lanternMaterial(0xffba55, 1.6),  // golden
+  lanternMaterial(0xff7e38, 1.9),  // deep orange
+];
+const LT_rim = lanternMaterial(0x55321a, 0.7);
+const LT_flame = lanternMaterial(0xffe07a, 4.8);
+// Pre-create instanced meshes for all three body tints.
+LANTERNS.bodies = LT.map(mat => {
+  const m = new THREE.InstancedMesh(lanternBodyGeo, mat, LANTERNS.max);
+  m.visible = false; m.count = 0; m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(m); HIDE_IN_MIRROR.add(m); return m;
+});
+LANTERNS.rim   = new THREE.InstancedMesh(lanternRimGeo,   LT_rim,   LANTERNS.max);
+LANTERNS.flame = new THREE.InstancedMesh(lanternFlameGeo, LT_flame, LANTERNS.max);
+for (const mesh of [LANTERNS.rim, LANTERNS.flame]) {
   mesh.visible = false; mesh.count = 0; mesh.frustumCulled = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   scene.add(mesh); HIDE_IN_MIRROR.add(mesh);
 }
-const lanternMatrix = new THREE.Matrix4(), lanternQ = new THREE.Quaternion(), lanternEuler = new THREE.Euler(), lanternPos = new THREE.Vector3(), lanternScale = new THREE.Vector3();
+const lanternMatrix = new THREE.Matrix4(), lanternQ = new THREE.Quaternion(), lanternEuler = new THREE.Euler();
+const lanternPos = new THREE.Vector3(), lanternScale = new THREE.Vector3();
+
+// Per-body counters so each tint mesh tracks its own instance count.
+const bodyCounts = [0, 0, 0];
+
 function updateLanterns(dt, t) {
-  const amount = THEME === 'shanshui' && ['dusk', 'night'].includes(moodName) ? (1 - ATM.rain) * Math.min(1, ATM.lamps) : 0;
-  const meshes = [LANTERNS.body, LANTERNS.rim, LANTERNS.flame];
-  for (const mesh of meshes) mesh.visible = amount > 0.05;
-  if (amount <= 0.05) { LANTERNS.active = 0; for (const mesh of meshes) mesh.count = 0; return; }
-  const cell = 64, x = Math.floor(camera.position.x / cell), z = Math.floor(camera.position.z / cell);
+  const amount = ['dusk', 'night'].includes(moodName) ? (1 - ATM.rain) * Math.min(1, ATM.lamps) : 0;
+  const allMeshes = [...LANTERNS.bodies, LANTERNS.rim, LANTERNS.flame];
+  for (const mesh of allMeshes) mesh.visible = amount > 0.05;
+  if (amount <= 0.05) {
+    LANTERNS.active = 0;
+    for (const b of LANTERNS.bodies) b.count = 0;
+    LANTERNS.rim.count = LANTERNS.flame.count = 0; return;
+  }
+
+  const cell = 56, cx = Math.floor(camera.position.x / cell), cz = Math.floor(camera.position.z / cell);
   LANTERNS.timer -= dt;
-  if (LANTERNS.timer <= 0 && (x !== LANTERNS.x || z !== LANTERNS.z)) {
-    LANTERNS.timer = 1; LANTERNS.x = x; LANTERNS.z = z; LANTERNS.sites = [];
-    for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) {
-      const gx = x + i, gz = z + j;
-      const px = (gx + 0.15 + GEN.h2(gx, gz, GEN.seed + 407) * 0.7) * cell;
-      const pz = (gz + 0.15 + GEN.h2(gz, gx, GEN.seed + 619) * 0.7) * cell;
+  if (LANTERNS.timer <= 0 && (cx !== LANTERNS.x || cz !== LANTERNS.z)) {
+    LANTERNS.timer = 0.8; LANTERNS.x = cx; LANTERNS.z = cz; LANTERNS.sites = [];
+    // Scan a wider footprint so the sky fills with lanterns in every direction.
+    for (let j = -8; j <= 8; j++) for (let i = -8; i <= 8; i++) {
+      const gx = cx + i, gz = cz + j;
+      const px = (gx + 0.12 + GEN.h2(gx, gz, GEN.seed + 407) * 0.76) * cell;
+      const pz = (gz + 0.12 + GEN.h2(gz, gx, GEN.seed + 619) * 0.76) * cell;
       const s = GEN.sample(px, pz, {});
       if (s.biome !== GEN.B.TOWN || s.h < 0.5 || s.rail > 0.1) continue;
-      for (let k = 0; k < 20; k++) {
-        const ph = GEN.h2(gx * 20 + k, gz, GEN.seed + 827), a = ph * Math.PI * 2;
-        LANTERNS.sites.push({ x: px + Math.cos(a) * (4 + ph * 18), y: s.h + 6 + ph * 5, z: pz + Math.sin(a) * (4 + ph * 18), ph, scale: 0.7 + ph * 0.6 });
+
+      // Each town cell spawns several dense burst clusters that feel like a
+      // proper festival launch rather than scattered individual lanterns.
+      const clusters = 3 + Math.floor(GEN.h2(gx, gz, GEN.seed + 211) * 3); // 3–5 clusters
+      for (let c = 0; c < clusters; c++) {
+        const ca = GEN.h2(gx * 5 + c, gz, GEN.seed + 313) * Math.PI * 2;
+        const cr = 6 + GEN.h2(gz * 5 + c, gx, GEN.seed + 417) * 20;
+        const cx0 = px + Math.cos(ca) * cr, cz0 = pz + Math.sin(ca) * cr;
+        // Each cluster emits a burst of lanterns with tightly correlated
+        // phases so they appear to rise together from the same release point.
+        const burstPh = GEN.h2(gx * 11 + c, gz, GEN.seed + 503);
+        const burstCount = QUALITY === 'high' ? 28 : 14;
+        for (let k = 0; k < burstCount; k++) {
+          const ph = burstPh + GEN.h2(gx * 20 + c * burstCount + k, gz, GEN.seed + 827) * 0.18;
+          const spread = GEN.h2(k, c + gz * 3, GEN.seed + 911) * 8;
+          const a2 = GEN.h2(k + c * 30, gz, GEN.seed + 991) * Math.PI * 2;
+          const tint = (k + c) % 3;
+          LANTERNS.sites.push({
+            x: cx0 + Math.cos(a2) * spread, y: s.h + 5 + ph * 6, z: cz0 + Math.sin(a2) * spread,
+            ph, scale: 0.62 + ph * 0.55, tint,
+            wx: (GEN.h2(k, gz + c, GEN.seed + 731) - 0.5) * 0.06,
+            wz: (GEN.h2(gz, k + c * 2, GEN.seed + 739) - 0.5) * 0.06,
+          });
+        }
       }
     }
+    // Sort nearest-first so the display budget always shows the closest lanterns.
     LANTERNS.sites.sort((a, b) => Math.hypot(a.x - camera.position.x, a.z - camera.position.z) - Math.hypot(b.x - camera.position.x, b.z - camera.position.z));
     LANTERNS.refreshes++;
     LOG.debug('business', 'city-lantern-sites-refreshed', { sites: LANTERNS.sites.length });
   }
-  const count = Math.min(QUALITY === 'high' ? LANTERNS.max : 384, LANTERNS.sites.length);
+
+  const count = Math.min(LANTERNS.max, LANTERNS.sites.length);
   LANTERNS.active = count;
+  bodyCounts[0] = bodyCounts[1] = bodyCounts[2] = 0;
+  let rimI = 0, flameI = 0;
+
   for (let i = 0; i < count; i++) {
-    const site = LANTERNS.sites[i], age = (t * 0.5 + site.ph * 80) % 80;
-    const fade = smoothstep(0, 6, age) * (1 - smoothstep(64, 80, age)) * amount;
+    const site = LANTERNS.sites[i];
+    // Period 72 s; each lantern rises ~47 m then fades. Stagger by phase so
+    // different clusters are always at different altitudes simultaneously.
+    const age = (t * 0.48 + site.ph * 72) % 72;
+    const fade = smoothstep(0, 5, age) * (1 - smoothstep(58, 72, age)) * amount;
     lanternFade.setX(i, fade);
-    lanternPos.set(site.x + age * 0.18 + Math.sin(t * 0.3 + site.ph * 20), site.y + age * 0.65, site.z + age * 0.08);
-    lanternQ.setFromEuler(lanternEuler.set(Math.sin(t * 0.7 + site.ph * 10) * 0.05, site.ph * 6.28, Math.cos(t * 0.5 + site.ph * 9) * 0.06));
+    // Gentle individual drift per lantern in addition to the shared wind.
+    const drift = Math.sin(t * 0.28 + site.ph * 17) * 0.6;
+    lanternPos.set(
+      site.x + age * (0.16 + site.wx) + drift,
+      site.y + age * 0.66,
+      site.z + age * (0.07 + site.wz) + Math.cos(t * 0.22 + site.ph * 13) * 0.35,
+    );
+    lanternQ.setFromEuler(lanternEuler.set(
+      Math.sin(t * 0.65 + site.ph * 10) * 0.04,
+      site.ph * 6.28,
+      Math.cos(t * 0.48 + site.ph * 9) * 0.05,
+    ));
     lanternScale.setScalar(site.scale);
-    LANTERNS.body.setMatrixAt(i, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
-    lanternPos.y -= 0.39 * site.scale;
-    LANTERNS.rim.setMatrixAt(i, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
-    lanternPos.y += 0.1 * site.scale;
-    LANTERNS.flame.setMatrixAt(i, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
+    const bodyIdx = bodyCounts[site.tint]++;
+    LANTERNS.bodies[site.tint].setMatrixAt(bodyIdx, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
+    lanternPos.y -= 0.37 * site.scale;
+    LANTERNS.rim.setMatrixAt(rimI, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
+    lanternPos.y += 0.09 * site.scale;
+    LANTERNS.flame.setMatrixAt(flameI, lanternMatrix.compose(lanternPos, lanternQ, lanternScale));
+    rimI++; flameI++;
   }
+
   lanternFade.needsUpdate = true;
-  for (const mesh of meshes) { mesh.count = count; mesh.instanceMatrix.needsUpdate = true; }
+  for (let t = 0; t < 3; t++) {
+    LANTERNS.bodies[t].count = bodyCounts[t];
+    LANTERNS.bodies[t].instanceMatrix.needsUpdate = true;
+  }
+  LANTERNS.rim.count = LANTERNS.flame.count = rimI;
+  LANTERNS.rim.instanceMatrix.needsUpdate = true;
+  LANTERNS.flame.instanceMatrix.needsUpdate = true;
 }
 
 // Moving settlement assets. Geometry/materials belong to cached templates;
@@ -6295,7 +7902,12 @@ function nearbyUnits() {
   const units = FAUNA.filter(f => f.active && (f.g.visible || FOLLOW.target?.g === f.g)).map(f => ({ id: f.id, kind: f.kind, g: f.g, source: f }));
   if (typeof SETTLEMENTS !== 'undefined') for (const u of SETTLEMENTS.units) if (u.active && (u.g.visible || FOLLOW.target?.g === u.g)) units.push({ id: u.id, kind: u.kind, g: u.g, obj: u.g, source: u, eye: u.eye, label: u.label });
   FX.birds.forEach((g, i) => { if (g.visible || FOLLOW.target?.g === g) units.push({ id: 'bird-' + i, kind: 'bird', g }); });
-  TRAIN.cars.forEach((c, i) => { if (c.g.visible || FOLLOW.target?.g === c.g) units.push({ id: 'train-' + i, kind: 'train', g: c.g, line: TRAIN.line, periodK: TRAIN.periodK }); });
+  // The train is one always-present convoy. It is offered whatever the camera
+  // is doing — boarding it is how you go and find it — so carriage meshes are
+  // never filtered by their current culling state.
+  if (TRAIN.line !== null || FOLLOW.target?.kind === 'train') {
+    TRAIN.cars.forEach((c, i) => units.push({ id: 'train-' + i, kind: 'train', g: c.g, line: TRAIN.line, periodK: TRAIN.periodK }));
+  }
   return units.filter(u => u.g.position.distanceTo(camera.position) < 1100).sort((a, b) => a.g.position.distanceToSquared(camera.position) - b.g.position.distanceToSquared(camera.position));
 }
 function startFollow(unit) {
@@ -6798,8 +8410,90 @@ function createCinematicPlanner({ gen, loaded = () => [], preview = null, logger
     if (next) request.shot = next;
     return next;
   }
+
+  // --- Smooth cinematic travel between shots ---
+  // Instead of teleporting between compositions, the tour eases the camera
+  // across: position follows a gently arced path, yaw takes the shortest
+  // angular route, pitch and fov blend linearly. The outgoing and incoming
+  // poses are the shots' own start poses, so the arc lands exactly on the
+  // incoming shot with no visible discontinuity at either end.
+
+  const TRAVEL_MIN_DURATION = 3.5, TRAVEL_MAX_DURATION = 5.5;
+  const TRAVEL_ARC_BASE = 16, TRAVEL_ARC_STEP = 30, TRAVEL_ARC_LIMIT = 190;
+  const TRAVEL_CLEARANCE = 5, TRAVEL_PROBES = 24;
+
+  // Shortest angular distance between two headings.
+  const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+  // Position accessor: accepts [x, y, z] or { x, y, z } (THREE.Vector3).
+  const axis = (p, i) => p[i] !== undefined ? p[i] : [p.x, p.y, p.z][i];
+
+  // Reused result of updateTravel: the hot path must not allocate.
+  const travelOut = { pos: [0, 0, 0], yaw: 0, pitch: 0, fov: 55, renderFov: 55, done: false };
+  let travel = null;
+
+  // Begin an eased fly/dolly from `fromPose` ({ pos, yaw, pitch, fov }) to the
+  // start pose of `toShot`. Returns the travel duration in seconds.
+  // The arc is solved here, once: if the eased path would clip a ridge the
+  // mid-point is raised in steps until the whole path clears the terrain.
+  function beginTravel(fromPose, toShot) {
+    const to = pose(toShot, 0), from = fromPose.pos, toPos = to.pos;
+    const fx = axis(from, 0), fy = axis(from, 1), fz = axis(from, 2);
+    const tx = toPos[0], ty = toPos[1], tz = toPos[2];
+    const dx = to.look[0] - tx, dy = to.look[1] - ty, dz = to.look[2] - tz;
+    const dist = Math.hypot(tx - fx, ty - fy, tz - fz);
+    const duration = limit(TRAVEL_MIN_DURATION + dist / 160, TRAVEL_MIN_DURATION, TRAVEL_MAX_DURATION);
+    // Arc control point: the straight midpoint raised so the path bows upward.
+    const midY = (fy + ty) * 0.5 + TRAVEL_ARC_BASE;
+    // Raise the arc until every probe clears the ground beneath it.
+    let lift = 0;
+    while (lift < TRAVEL_ARC_LIMIT) {
+      let clear = true;
+      for (let i = 1; i < TRAVEL_PROBES; i++) {
+        const k = ease(i / TRAVEL_PROBES), inv = 1 - k;
+        const y = inv * inv * fy + 2 * inv * k * (midY + lift) + k * k * ty;
+        if (surface(mix(fx, tx, k), mix(fz, tz, k)) + 3.5 + TRAVEL_CLEARANCE > y) { clear = false; break; }
+      }
+      if (clear) break;
+      lift += TRAVEL_ARC_STEP;
+    }
+    travel = {
+      fx, fy, fz, tx, ty, tz, midY: midY + lift,
+      fYaw: fromPose.yaw, tYaw: Math.atan2(dx, dz), yawDelta: wrapAngle(Math.atan2(dx, dz) - fromPose.yaw),
+      fPitch: fromPose.pitch, tPitch: Math.atan2(dy, Math.hypot(dx, dz)),
+      fFov: fromPose.fov || 55, tFov: to.fov, duration, elapsed: 0,
+    };
+    return duration;
+  }
+
+  // Advance the travel by `dt` seconds and return the interpolated camera
+  // state ({ pos, yaw, pitch, fov, renderFov, done }), or null when idle.
+  // The eased y is clamped to the terrain so the camera can never sink below
+  // ground; `done` marks the frame the incoming pose has been reached.
+  function updateTravel(dt) {
+    if (!travel) return null;
+    const s = travel;
+    s.elapsed = Math.min(s.elapsed + dt, s.duration);
+    const raw = s.elapsed / s.duration, k = ease(raw), inv = 1 - k;
+    const x = mix(s.fx, s.tx, k), z = mix(s.fz, s.tz, k);
+    travelOut.pos[0] = x;
+    travelOut.pos[1] = Math.max(inv * inv * s.fy + 2 * inv * k * s.midY + k * k * s.ty, surface(x, z) + 3.5);
+    travelOut.pos[2] = z;
+    travelOut.yaw = s.fYaw + s.yawDelta * k;
+    travelOut.pitch = mix(s.fPitch, s.tPitch, k);
+    travelOut.fov = mix(s.fFov, s.tFov, k);
+    travelOut.renderFov = lensFov(travelOut.fov);
+    travelOut.done = raw >= 1;
+    return travelOut;
+  }
+
+  // Abandon an in-flight travel (tour stopped, destination replaced).
+  function cancelTravel() { travel = null; }
+  function isTravelling() { return travel !== null && travel.elapsed < travel.duration; }
+
   return { lensFov, dimensions, assetIndex, mergeChunks, choose, pose, assess, view, floorAt, plan, refine,
-    cancel() { preview?.cancel?.(); current = null; sceneCache = null; phase = 'idle'; progress = 0; },
+    // Smooth travel between shots (eased fly/dolly)
+    beginTravel, updateTravel, cancelTravel, isTravelling,
+    cancel() { preview?.cancel?.(); current = null; sceneCache = null; phase = 'idle'; progress = 0; cancelTravel(); },
     progress(leg, value) { phase = leg; progress = limit(value, 0, 1); },
     get state() { return { phase, progress, mode: current?.shot.mode || null, target: current ? { ...current.feature } : null }; },
   };
@@ -6995,7 +8689,7 @@ const SAKURA_CAROUSEL = [
   { key: 'rail', dwell: 0, dist: 30, h: 8, train: true },
 ];
 const CAROUSEL = THEME === 'shanshui' ? GEN.profile.landmarks.map(t => ({ key: t.key, dwell: 15, dist: 50, h: 15 })) : SAKURA_CAROUSEL;
-const car = { on: false, i: 0, t: 0, leg: 'idle', mode: 'auto', token: 0, tgt: null, check: 0, replanning: false };
+const car = { on: false, i: 0, t: 0, leg: 'idle', mode: 'auto', token: 0, tgt: null, check: 0, replanning: false, first: true };
 function updateTourButton() {
   const b = $('btnTour'); if (!b) return;
   b.setAttribute('aria-pressed', String(car.on));
@@ -7015,7 +8709,7 @@ function startTour(options = {}) {
   stopFollow(false);
   if (car.on) { stopTour(); return; }
   car.mode = ['static', 'orbit', 'pan', 'auto'].includes(options.mode) ? options.mode : 'auto';
-  car.on = true; car.i = 0; car.t = 0; car.leg = 'find'; car.tgt = null; car.replanning = false; car.token++;
+  car.on = true; car.i = 0; car.t = 0; car.leg = 'find'; car.tgt = null; car.replanning = false; car.first = true; car.token++;
   tour = false; introT = 1; keys.clear();
   document.body.classList.toggle('touring', true);
   closeMenu(); CINEMATIC.progress('finding', 0);
@@ -7049,11 +8743,39 @@ function tourChunksReady(spot) {
     p[0] >= ch.data.x0 && p[0] < ch.data.x0 + ch.data.size && p[2] >= ch.data.z0 && p[2] < ch.data.z0 + ch.data.size));
 }
 async function revealTourShot(spot, token) {
-  car.leg = 'cut'; CINEMATIC.progress('transition', 0);
-  await cutFade(async () => {
+  // Fly the camera to the incoming composition instead of dipping to black.
+  // Only the very first shot of a tour fades in, because there is no previous
+  // pose to travel from; every later hop is a continuous eased dolly.
+  const hasTravel = typeof CINEMATIC.beginTravel === 'function';
+  const canTravel = hasTravel && !car.first && !REDUCED;
+
+  if (canTravel) {
+    // --- smooth travel path ---
+    car.leg = 'travel'; CINEMATIC.progress('transition', 0);
+    const fromPose = { pos: [camS.pos.x, camS.pos.y, camS.pos.z], yaw: camS.yaw, pitch: camS.pitch, fov: camS.fov };
+    const travelDur = CINEMATIC.beginTravel(fromPose, spot.shot);
+    let elapsed = 0;
+    let lastTs = performance.now();
+    while (car.on && token === car.token) {
+      await nextFrame();
+      if (!car.on || token !== car.token) return;
+      const now = performance.now();
+      const dt = Math.min((now - lastTs) / 1000, 0.1);
+      lastTs = now;
+      elapsed += dt;
+      const frame = CINEMATIC.updateTravel(dt);
+      if (frame) {
+        const p = frame.pos;
+        snapTo(Array.isArray(p) ? p : [p.x, p.y, p.z], frame.yaw, frame.pitch, frame.fov);
+        CINEMATIC.progress('transition', Math.min(elapsed / travelDur, 1));
+      }
+      if (!frame || frame.done || elapsed >= travelDur + 0.5) break;
+    }
     if (!car.on || token !== car.token) return;
-    placeTourCamera(spot.shot); car.leg = 'loading';
-    CINEMATIC.progress('loading', 0);
+    // Arrive exactly on the planned pose, then let the local meshes catch up
+    // while the camera holds still — no fade, the shot simply resolves.
+    placeTourCamera(spot.shot);
+    car.leg = 'loading'; CINEMATIC.progress('loading', 0);
     const began = performance.now();
     while (car.on && token === car.token && !tourChunksReady(spot) && performance.now() - began < 8000) await nextFrame();
     if (!car.on || token !== car.token) return;
@@ -7063,7 +8785,24 @@ async function revealTourShot(spot, token) {
     if (!refined) { await carouselNext(); return; }
     spot.shot = refined; placeTourCamera(refined);
     car.t = 0; car.check = 0; car.leg = 'dwell'; CINEMATIC.progress('dwell', 0);
-  });
+  } else {
+    // --- first shot (or reduced motion / no travel API): fade in ---
+    car.leg = 'cut'; car.first = false; CINEMATIC.progress('transition', 0);
+    await cutFade(async () => {
+      if (!car.on || token !== car.token) return;
+      placeTourCamera(spot.shot); car.leg = 'loading';
+      CINEMATIC.progress('loading', 0);
+      const began = performance.now();
+      while (car.on && token === car.token && !tourChunksReady(spot) && performance.now() - began < 8000) await nextFrame();
+      if (!car.on || token !== car.token) return;
+      if (!tourChunksReady(spot)) LOG.warn('business', 'tour-destination-load-timeout', { x: spot.feature.x, z: spot.feature.z });
+      const refined = await CINEMATIC.refine(spot.shot, 0, true);
+      if (!car.on || token !== car.token) return;
+      if (!refined) { await carouselNext(); return; }
+      spot.shot = refined; placeTourCamera(refined);
+      car.t = 0; car.check = 0; car.leg = 'dwell'; CINEMATIC.progress('dwell', 0);
+    });
+  }
 }
 async function carouselNext() {
   if (!car.on) return;
@@ -7145,10 +8884,16 @@ function updateHUD(dt) {
   const p = camera.position;
   const b = GEN.biomeAt(p.x, p.z);
   HUD.biome = b.biome;
+  // Ambient bed follows the ground you are standing on, blended smoothly.
+  audio.setBiome(b.biome);
   $('altVal').textContent = Math.round(p.y) + ' m';
-  let name = I18N.biomeName(b.biome, THEME);
-  if (b.rail) name = I18N.t('biome.rail');
-  $('bioVal').textContent = name;
+  // The brand glyph carries the current biome: one kanji, read at a glance.
+  const glyph = $('bioGlyph');
+  if (glyph) {
+    const g = (GEN.BIOME_NAMES[b.biome] && GEN.BIOME_NAMES[b.biome][0]) || '境';
+    if (glyph.textContent !== g) glyph.textContent = g;
+    glyph.title = I18N.biomeName(b.biome, THEME);
+  }
   const load = Math.round(STREAM.readyFrac * 100);
   $('loadSnap').hidden = load >= 100;
   if (load < 100) $('loadSnap').textContent = I18N.t('loading.chunks', { percent: load });
@@ -7178,74 +8923,362 @@ async function teleport(key) {
   toastKey('toast.teleport.arrived');
 }
 // --- ambient sound ---------------------------------------------------------
+// Fully layered generative soundscape:
+//  • Continuous noise layers (wind, stream, rain, ocean, forest, crickets)
+//  • Procedural melody: pentatonic koto/guqin phrases for sakura,
+//    pentatonic erhu/xiao phrases for shanshui, each themed to mood
+//  • Stochastic events: birds, frogs, wind chime, temple bell, water drops
+//  • Biome blending: player position drives smooth layer crossfades
+//  • Mood crossfade: all gains ramp smoothly on mood change
 const audio = (() => {
-  let ctx = null, master = null, g = {}, timer = null, on = false, mood = moodName;
-  const LEVELS = {
-    morning: { stream: 0.16, wind: 0.06, rain: 0, chime: 0.3, birds: 1, insects: 0.2 },
-    golden: { stream: 0.14, wind: 0.05, rain: 0, chime: 0.5, birds: 0.6, insects: 0.6 },
-    dusk: { stream: 0.15, wind: 0.05, rain: 0, chime: 1, birds: 0.15, insects: 1 },
-    night: { stream: 0.1, wind: 0.07, rain: 0, chime: 0.4, birds: 0, insects: 1 },
-    rain: { stream: 0.11, wind: 0.09, rain: 0.34, chime: 0.15, birds: 0, insects: 0 },
+  let ctx = null, master = null, on = false, schedTimer = null;
+  let currentMood = moodName, currentBiome = -1, theme = THEME;
+
+  // Shared node references — rebuilt on first toggle
+  const layers = {}; // name -> GainNode feeding master
+  const FADE = 2.0;  // seconds for mood/biome crossfade
+
+  // ---------------------------------------------------------------------------
+  //  Noise palette
+  // ---------------------------------------------------------------------------
+  function makeNoiseBuf(seconds = 4, tint = 'white') {
+    const sr = ctx.sampleRate, len = sr * seconds;
+    const buf = ctx.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      if (tint === 'pink') { lp = lp * 0.98 + w * 0.02; d[i] = w * 0.5 + lp * 8; }
+      else if (tint === 'brown') { lp = lp * 0.995 + w * 0.005; d[i] = lp * 20; }
+      else d[i] = w;
+    }
+    // normalise
+    let peak = 0; for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(d[i]));
+    if (peak > 0) for (let i = 0; i < len; i++) d[i] /= peak;
+    return buf;
+  }
+
+  function loopNoise(buf, offset = 0) {
+    const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = offset; s.start(0); return s;
+  }
+
+  function makeLayer(name, src, ...filterDefs) {
+    // filterDefs: [{type, freq, Q, gain}]
+    let node = src;
+    for (const f of filterDefs) {
+      const bq = ctx.createBiquadFilter(); bq.type = f.type;
+      bq.frequency.value = f.freq; if (f.Q) bq.Q.value = f.Q; if (f.gain != null) bq.gain.value = f.gain;
+      node.connect(bq); node = bq;
+    }
+    const g = ctx.createGain(); g.gain.value = 0; node.connect(g); g.connect(master);
+    layers[name] = g; return g;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Melodic helpers
+  // ---------------------------------------------------------------------------
+  // Pentatonic scales: root-relative semitones
+  const PENTA_MINOR = [0, 3, 5, 7, 10]; // classic pentatonic minor (erhu/guqin)
+  const PENTA_MAJOR = [0, 2, 4, 7, 9];  // pentatonic major (koto)
+  function midiToHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function pentatonicNote(rootMidi, scale, degree) { const oct = Math.floor(degree / scale.length), d = degree % scale.length; return rootMidi + oct * 12 + scale[d]; }
+
+  // A very gentle triangle-wave pluck with natural exponential decay
+  function pluck(freq, attack, decay, vol, when) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle'; o.frequency.value = freq;
+    // Slight vibrato for erhu warmth
+    const vib = ctx.createOscillator(), vg = ctx.createGain();
+    vib.frequency.value = 5.5; vg.gain.value = freq * 0.008;
+    vib.connect(vg); vg.connect(o.frequency); vib.start(when); vib.stop(when + decay + 0.1);
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(vol, when + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + decay);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when + decay + 0.05);
+  }
+
+  // A soft sine bell/chime
+  function bell(freq, decay, vol, when) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    // Add a subtle 2nd partial
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type = 'sine'; o2.frequency.value = freq * 2.756; g2.gain.value = vol * 0.18;
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + decay);
+    g2.gain.setValueAtTime(0, when); g2.gain.linearRampToValueAtTime(vol * 0.18, when + 0.004);
+    g2.gain.exponentialRampToValueAtTime(0.0001, when + decay * 0.7);
+    o.connect(g); g.connect(master); o2.connect(g2); g2.connect(master);
+    o.start(when); o.stop(when + decay + 0.05); o2.start(when); o2.stop(when + decay * 0.8);
+  }
+
+  // Soft bird chirp — two-note warble, no harsh frequencies
+  function bird(vol, when) {
+    const f0 = 2200 + Math.random() * 1400, up = 1.12 + Math.random() * 0.22;
+    const notes = Math.random() < 0.4 ? [[f0, 0.06], [f0 * up, 0.08], [f0 * up * 0.97, 0.06]]
+                                        : [[f0, 0.07], [f0 * up, 0.06]];
+    let t = when;
+    for (const [f, dur] of notes) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.06, t + dur);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02); t += dur + 0.04 + Math.random() * 0.05;
+    }
+  }
+
+  // Frog croak
+  function frog(vol, when) {
+    const f = 180 + Math.random() * 60;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500; lp.Q.value = 2;
+    o.frequency.setValueAtTime(f, when); o.frequency.exponentialRampToValueAtTime(f * 0.7, when + 0.18);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.22);
+    o.connect(lp); lp.connect(g); g.connect(master); o.start(when); o.stop(when + 0.25);
+  }
+
+  // Water drip for mountain/river ambience
+  function drip(vol, when) {
+    const f = 800 + Math.random() * 600;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f, when); o.frequency.exponentialRampToValueAtTime(f * 0.4, when + 0.12);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.18);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.2);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Level tables: [noise layers] keyed by mood, biome-adaptive in setLevels()
+  // ---------------------------------------------------------------------------
+  //  Each entry: { stream, wind, rain, ocean, forest, cricket, vol }
+  const MOOD_LEVELS = {
+    morning: { stream:0.12, wind:0.04, rain:0, ocean:0.02, forest:0.10, cricket:0.05, vol:0.80 },
+    golden:  { stream:0.11, wind:0.04, rain:0, ocean:0.02, forest:0.08, cricket:0.18, vol:0.85 },
+    dusk:    { stream:0.08, wind:0.05, rain:0, ocean:0.02, forest:0.04, cricket:0.35, vol:0.90 },
+    night:   { stream:0.06, wind:0.06, rain:0, ocean:0.02, forest:0.02, cricket:0.42, vol:0.75 },
+    rain:    { stream:0.08, wind:0.08, rain:0.32, ocean:0.01, forest:0.06, cricket:0,    vol:0.80 },
   };
-  function noiseBuf(c) { const b = c.createBuffer(1, c.sampleRate * 3, c.sampleRate), d = b.getChannelData(0); let last = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = w * 0.6 + last * 3.0; } return b; }
-  function chain(src, nodes, gain) { let n = src; for (const x of nodes) { n.connect(x); n = x; } const gg = ctx.createGain(); gg.gain.value = gain; n.connect(gg); gg.connect(master); return gg; }
+
+  // Biome multipliers (applied on top of mood baseline)
+  const BIOME_MUL = {
+    [0/*OCEAN*/]:  { stream:0.1, wind:1.5, ocean:3.0, forest:0, cricket:0.2 },
+    [1/*BEACH*/]:  { stream:0.2, wind:1.2, ocean:2.2, forest:0, cricket:0.1 },
+    [2/*SATO*/]:   { stream:0.8, wind:0.8, ocean:0,   forest:1.2, cricket:1.0 },
+    [3/*SAKURA*/]: { stream:0.6, wind:0.6, ocean:0,   forest:1.4, cricket:0.8 },
+    [4/*PADDY*/]:  { stream:1.0, wind:0.5, ocean:0,   forest:0.8, cricket:1.4 },
+    [5/*TOWN*/]:   { stream:0.5, wind:0.5, ocean:0,   forest:0.6, cricket:0.6 },
+    [6/*CEDAR*/]:  { stream:0.5, wind:1.0, ocean:0,   forest:1.8, cricket:0.4 },
+    [7/*BAMBOO*/]: { stream:0.4, wind:1.3, ocean:0,   forest:1.4, cricket:0.6 },
+    [8/*SNOW*/]:   { stream:0.1, wind:2.0, ocean:0,   forest:0.3, cricket:0   },
+    [9/*LAKE*/]:   { stream:0.3, wind:0.7, ocean:0,   forest:0.8, cricket:1.0 },
+    [10/*RIVER*/]: { stream:2.0, wind:0.5, ocean:0,   forest:0.9, cricket:0.8 },
+    [11/*MEADOW*/]:{ stream:0.4, wind:0.8, ocean:0,   forest:1.0, cricket:1.2 },
+    [12/*MARSH*/]: { stream:0.6, wind:0.4, ocean:0,   forest:1.0, cricket:1.6 },
+    [13/*PINE*/]:  { stream:0.3, wind:1.4, ocean:0,   forest:1.6, cricket:0.3 },
+  };
+
+  function setLevels(fade = FADE) {
+    if (!ctx) return;
+    const M = MOOD_LEVELS[currentMood] || MOOD_LEVELS.golden;
+    const bm = BIOME_MUL[currentBiome] || BIOME_MUL[2];
+    const t = ctx.currentTime, tc = fade / 3;
+    const apply = (name, base, mul = 1) => {
+      if (!layers[name]) return;
+      layers[name].gain.setTargetAtTime(base * (bm[name] ?? mul) * M.vol, t, tc);
+    };
+    apply('stream',  M.stream);
+    apply('wind',    M.wind);
+    apply('rain',    M.rain, 1);
+    apply('ocean',   M.ocean);
+    apply('forest',  M.forest);
+    apply('cricket', M.cricket);
+    master.gain.setTargetAtTime(M.vol, t, tc);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Melodic phrase scheduling
+  // ---------------------------------------------------------------------------
+  // Melody parameters driven by mood + theme
+  function melodyParams() {
+    const isShanshui = theme === 'shanshui';
+    // Root MIDI: morning bright, dusk/night lower register
+    const rootMap = { morning: 64, golden: 62, dusk: 59, night: 57, rain: 60 };
+    const root = rootMap[currentMood] ?? 62;
+    const scale = isShanshui ? PENTA_MINOR : PENTA_MAJOR;
+    const speed = currentMood === 'night' ? 1.8 : currentMood === 'morning' ? 1.2 : 1.5;
+    const vol = currentMood === 'rain' ? 0.012 : currentMood === 'night' ? 0.018 : 0.022;
+    const noteCount = 3 + Math.floor(Math.random() * 3);
+    return { root, scale, speed, vol, noteCount, isShanshui };
+  }
+
+  function playPhrase() {
+    if (!on || !ctx) return;
+    const { root, scale, speed, vol, noteCount, isShanshui } = melodyParams();
+    const now = ctx.currentTime;
+    let t = now + 0.1;
+    // Choose a contiguous ascending or descending run with a leap at the end
+    const start = Math.floor(Math.random() * scale.length);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    for (let i = 0; i < noteCount; i++) {
+      const degree = start + dir * i;
+      const midi = pentatonicNote(root, scale, ((degree % scale.length) + scale.length * 2) % scale.length)
+                   + Math.floor(degree / scale.length) * 12;
+      const freq = midiToHz(midi);
+      const dur = (isShanshui ? 1.6 : 1.2) * speed * (1 + Math.random() * 0.3);
+      const decay = dur * 2.8;
+      if (isShanshui) pluck(freq, 0.015, decay, vol * (0.7 + Math.random() * 0.3), t);
+      else             bell(freq, decay, vol * (0.7 + Math.random() * 0.3), t);
+      t += dur + (Math.random() < 0.35 ? speed * 0.5 : 0); // occasional rest
+    }
+    // Temple bell in dusk/night
+    if ((currentMood === 'dusk' || currentMood === 'night') && Math.random() < 0.12) {
+      const bellMidi = isShanshui ? 36 : 41; // low D or F
+      bell(midiToHz(bellMidi), 6.5, 0.03, ctx.currentTime + 0.5 + Math.random() * 2);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Stochastic event scheduling
+  // ---------------------------------------------------------------------------
+  function scheduleEvents() {
+    if (!on) return;
+    const M = MOOD_LEVELS[currentMood] || MOOD_LEVELS.golden;
+    const bm = BIOME_MUL[currentBiome] || BIOME_MUL[2];
+    const isMorning = currentMood === 'morning';
+    const isNight = currentMood === 'night' || currentMood === 'dusk';
+    const isRain = currentMood === 'rain';
+
+    // Birds — morning/golden and forested biomes
+    const birdMul = ((bm.forest ?? 1) + (bm.cricket ?? 1)) / 2;
+    if (!isRain && !isNight && Math.random() < 0.45 * (isMorning ? 1.6 : 1) * birdMul * M.vol)
+      bird(0.016 + Math.random() * 0.008, ctx.currentTime + Math.random() * 0.5);
+
+    // Frogs — marsh/lake/paddy and dusk/night
+    const frogBiomes = new Set([4, 9, 12]);
+    if (isNight && frogBiomes.has(currentBiome) && Math.random() < 0.5)
+      frog(0.02, ctx.currentTime + Math.random() * 1.2);
+
+    // Water drip — river/mountain/rain
+    if ((currentBiome === 10 || currentBiome === 6 || isRain) && Math.random() < 0.3)
+      drip(0.018, ctx.currentTime + Math.random() * 0.8);
+
+    // Melodic phrase — quieter moods more frequent, avoid in loud rain
+    const phraseProbability = isRain ? 0.08 : isNight ? 0.18 : 0.22;
+    if (Math.random() < phraseProbability) playPhrase();
+
+    const interval = isNight ? 2800 + Math.random() * 3500
+                   : isRain  ? 3500 + Math.random() * 4000
+                              : 1800 + Math.random() * 2800;
+    schedTimer = setTimeout(scheduleEvents, interval);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Build / wire Web Audio graph
+  // ---------------------------------------------------------------------------
   function build() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
-    const buf = noiseBuf(ctx);
-    const src = () => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, Math.random() * 2); return s; };
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 0.6;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
-    g.stream = chain(src(), [bp, lp], 0);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.13; const lg = ctx.createGain(); lg.gain.value = 260; lfo.connect(lg); lg.connect(bp.frequency); lfo.start();
-    const wl = ctx.createBiquadFilter(); wl.type = 'lowpass'; wl.frequency.value = 340;
-    g.wind = chain(src(), [wl], 0);
-    const rh = ctx.createBiquadFilter(); rh.type = 'highpass'; rh.frequency.value = 1200;
-    const rl = ctx.createBiquadFilter(); rl.type = 'lowpass'; rl.frequency.value = 7500;
-    g.rain = chain(src(), [rh, rl], 0);
+
+    // --- noise buffers (created once, looped) ---
+    const white = makeNoiseBuf(5, 'white');
+    const pink  = makeNoiseBuf(6, 'pink');
+    const brown = makeNoiseBuf(7, 'brown');
+
+    // stream — bandpass centred on babbling-brook frequencies with slow LFO
+    const streamSrc = loopNoise(pink, 1.3);
+    const bp1 = ctx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.value = 700; bp1.Q.value = 0.5;
+    const bp2 = ctx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.value = 1400; bp2.Q.value = 0.8;
+    const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.09;
+    const lg1 = ctx.createGain(); lg1.gain.value = 280; lfo1.connect(lg1); lg1.connect(bp1.frequency); lfo1.start();
+    streamSrc.connect(bp1); bp1.connect(bp2);
+    const sgain = ctx.createGain(); sgain.gain.value = 0; bp2.connect(sgain); sgain.connect(master); layers.stream = sgain;
+
+    // wind — low-frequency brown noise, slight high-frequency shimmer
+    const windSrc = loopNoise(brown, 0.7);
+    const wlp = ctx.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 480;
+    const wshim = ctx.createBiquadFilter(); wshim.type = 'highpass'; wshim.frequency.value = 2400;
+    const whiteW = loopNoise(white, 2.1);
+    windSrc.connect(wlp);
+    const wgain = ctx.createGain(); wgain.gain.value = 0;
+    const wsg = ctx.createGain(); wsg.gain.value = 0.1;
+    whiteW.connect(wshim); wshim.connect(wsg); wlp.connect(wgain); wsg.connect(wgain); wgain.connect(master); layers.wind = wgain;
+
+    // rain — shaped white noise, higher frequencies
+    const rainSrc = loopNoise(white, 1.8);
+    const rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 1500;
+    const rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 9000;
+    rainSrc.connect(rhp); rhp.connect(rlp);
+    const rgain = ctx.createGain(); rgain.gain.value = 0; rlp.connect(rgain); rgain.connect(master); layers.rain = rgain;
+
+    // ocean — slow surf swell: low rumble + white spray
+    const oceanSrc = loopNoise(brown, 4.2);
+    const olp = ctx.createBiquadFilter(); olp.type = 'lowpass'; olp.frequency.value = 260;
+    const oSpray = loopNoise(white, 3.1);
+    const oSlp = ctx.createBiquadFilter(); oSlp.type = 'bandpass'; oSlp.frequency.value = 800; oSlp.Q.value = 0.3;
+    const lfo2 = ctx.createOscillator(); lfo2.frequency.value = 0.07;
+    const lg2 = ctx.createGain(); lg2.gain.value = 0.12; lfo2.connect(lg2); lfo2.start();
+    const ogain = ctx.createGain(); ogain.gain.value = 0;
+    oceanSrc.connect(olp); olp.connect(ogain); oSpray.connect(oSlp); oSlp.connect(ogain); ogain.connect(master); layers.ocean = ogain;
+
+    // forest — mid pink noise filtered to sound like leaves
+    const forestSrc = loopNoise(pink, 3.5);
+    const flp = ctx.createBiquadFilter(); flp.type = 'bandpass'; flp.frequency.value = 1100; flp.Q.value = 0.4;
+    const lfo3 = ctx.createOscillator(); lfo3.frequency.value = 0.21;
+    const lg3 = ctx.createGain(); lg3.gain.value = 160; lfo3.connect(lg3); lg3.connect(flp.frequency); lfo3.start();
+    const fgain = ctx.createGain(); fgain.gain.value = 0; forestSrc.connect(flp); flp.connect(fgain); fgain.connect(master); layers.forest = fgain;
+
+    // cricket — amplitude-modulated high-pitched narrow band
+    const cricketSrc = loopNoise(white, 2.0);
+    const cbp = ctx.createBiquadFilter(); cbp.type = 'bandpass'; cbp.frequency.value = 4800; cbp.Q.value = 4;
+    const cam = ctx.createOscillator(); cam.frequency.value = 22;
+    const camg = ctx.createGain(); camg.gain.value = 0;
+    const cenv = ctx.createGain(); cenv.gain.value = 1;
+    cam.connect(camg); camg.connect(cenv.gain); cenv.gain.setValueAtTime(0.5, ctx.currentTime);
+    cam.start(); cricketSrc.connect(cbp); cbp.connect(cenv); cenv.connect(camg);
+    const cgain = ctx.createGain(); cgain.gain.value = 0; cbp.connect(cgain); cgain.connect(master); layers.cricket = cgain;
   }
-  function chime() {
-    const t = ctx.currentTime, base = [1568, 2093, 2349, 2637][Math.floor(Math.random() * 4)];
-    for (const [mul, a] of [[1, 0.05], [2.76, 0.018], [5.4, 0.008]]) {
-      const o = ctx.createOscillator(), gg = ctx.createGain();
-      o.frequency.value = base * mul; o.type = 'sine';
-      gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(a, t + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
-      o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 3);
-    }
-  }
-  function bird() {
-    const t0 = ctx.currentTime, n = 2 + Math.floor(Math.random() * 3), f = 2600 + Math.random() * 1600;
-    for (let i = 0; i < n; i++) {
-      const t = t0 + i * 0.14, o = ctx.createOscillator(), gg = ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.45, t + 0.07);
-      gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.025, t + 0.015); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 0.13);
-    }
-  }
-  function insect() {
-    const t = ctx.currentTime, o = ctx.createOscillator(), am = ctx.createOscillator(), ag = ctx.createGain(), gg = ctx.createGain();
-    o.frequency.value = 4200 + Math.random() * 600; am.frequency.value = 38; ag.gain.value = 0.5;
-    am.connect(ag); ag.connect(gg.gain);
-    gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.006, t + 0.3); gg.gain.linearRampToValueAtTime(0, t + 1.6);
-    o.connect(gg); gg.connect(master); o.start(t); am.start(t); o.stop(t + 1.7); am.stop(t + 1.7);
-  }
-  function schedule() {
-    const L = LEVELS[mood] || LEVELS.dusk;
-    if (Math.random() < 0.35 * L.chime) chime();
-    if (Math.random() < 0.5 * L.birds) bird();
-    if (Math.random() < 0.4 * L.insects) insect();
-    timer = setTimeout(schedule, 1800 + Math.random() * 3200);
-  }
-  function levels(fade = 2) { if (!ctx) return; const L = LEVELS[mood] || LEVELS.dusk, t = ctx.currentTime; for (const k of ['stream', 'wind', 'rain']) g[k].gain.setTargetAtTime(L[k], t, fade / 3); }
+
+  // ---------------------------------------------------------------------------
+  //  Public API
+  // ---------------------------------------------------------------------------
   return {
     async toggle() {
-      if (!on) { if (!ctx) build(); await ctx.resume(); on = true; levels(0.5); master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.6); schedule(); }
-      else { on = false; clearTimeout(timer); master.gain.setTargetAtTime(0, ctx.currentTime, 0.3); setTimeout(() => { if (!on && ctx) ctx.suspend(); }, 1500); }
+      if (!on) {
+        if (!ctx) build();
+        await ctx.resume();
+        on = true;
+        theme = THEME;
+        setLevels(0.8);
+        scheduleEvents();
+      } else {
+        on = false;
+        clearTimeout(schedTimer);
+        master.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        setTimeout(() => { if (!on && ctx) ctx.suspend(); }, 2000);
+      }
       const b = $('btnSound');
-      if (b) { b.setAttribute('aria-pressed', String(on)); const o1 = b.querySelector('.snd-on'), o2 = b.querySelector('.snd-off'); if (o1) o1.style.display = on ? '' : 'none'; if (o2) o2.style.display = on ? 'none' : ''; }
+      if (b) {
+        b.setAttribute('aria-pressed', String(on));
+        const o1 = b.querySelector('.snd-on'), o2 = b.querySelector('.snd-off');
+        if (o1) o1.style.display = on ? '' : 'none';
+        if (o2) o2.style.display = on ? 'none' : '';
+      }
       return on;
     },
-    setMood(m) { mood = m; levels(); },
+
+    // Called when mood changes — smooth crossfade
+    setMood(m) {
+      currentMood = m;
+      setLevels(FADE);
+    },
+
+    // Called from updateHUD — biome has changed, smooth blend
+    setBiome(b) {
+      if (b === currentBiome) return;
+      currentBiome = b;
+      setLevels(FADE * 1.5);
+    },
+
+    setTheme(t) { theme = t; },
   };
 })();
 if ($('btnTour')) $('btnTour').addEventListener('click', () => startTour());
@@ -7253,7 +9286,32 @@ if ($('btnShot')) $('btnShot').addEventListener('click', saveImage);
 if ($('btnSound')) $('btnSound').addEventListener('click', async () => {
   try { const on = await audio.toggle(); toastKey(on ? 'toast.sound.on' : 'toast.sound.off'); } catch (e) { LOG.warn('error', 'audio-unavailable', { message: String(e.message || e) }); toastKey('toast.sound.failed'); }
 });
-document.querySelectorAll('#moods button').forEach((b) => b.addEventListener('click', () => setMood(b.dataset.mood)));
+document.querySelectorAll('#moods button').forEach((b) => b.addEventListener('click', () => {
+  if (typeof FREE_TIME !== 'undefined' && FREE_TIME.on) toggleFreeTime(false);
+  setMood(b.dataset.mood);
+}));
+// Free-time slider
+if ($('timeSlider')) {
+  $('timeSlider').addEventListener('input', (e) => {
+    if (typeof applyFreeTime === 'function') applyFreeTime(Number(e.target.value));
+  });
+}
+// Add free-time toggle button to tools bar if it exists
+(function() {
+  const tools = document.querySelector('.tools');
+  if (!tools) return;
+  const btn = document.createElement('button');
+  btn.className = 'ib'; btn.id = 'btnTime'; btn.setAttribute('aria-pressed', 'false');
+  btn.setAttribute('data-tip', I18N.t('time.mode.title'));
+  btn.setAttribute('aria-label', I18N.t('time.mode'));
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+  btn.addEventListener('click', () => {
+    const on = typeof toggleFreeTime === 'function' ? toggleFreeTime() : false;
+    btn.setAttribute('aria-pressed', String(on));
+    toastKey(on ? 'toast.time.on' : 'toast.time.off');
+  });
+  tools.appendChild(btn);
+})();
 // --- main loop -----------------------------------------------------------
 let clockT = 0, lastNow = performance.now(), fpsN = 0, fpsT = 0, fpsShow = 60, autoChecked = QS.has('q');
 let mirrorFrame = 0;

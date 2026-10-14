@@ -241,8 +241,90 @@ function createCinematicPlanner({ gen, loaded = () => [], preview = null, logger
     if (next) request.shot = next;
     return next;
   }
+
+  // --- Smooth cinematic travel between shots ---
+  // Instead of teleporting between compositions, the tour eases the camera
+  // across: position follows a gently arced path, yaw takes the shortest
+  // angular route, pitch and fov blend linearly. The outgoing and incoming
+  // poses are the shots' own start poses, so the arc lands exactly on the
+  // incoming shot with no visible discontinuity at either end.
+
+  const TRAVEL_MIN_DURATION = 3.5, TRAVEL_MAX_DURATION = 5.5;
+  const TRAVEL_ARC_BASE = 16, TRAVEL_ARC_STEP = 30, TRAVEL_ARC_LIMIT = 190;
+  const TRAVEL_CLEARANCE = 5, TRAVEL_PROBES = 24;
+
+  // Shortest angular distance between two headings.
+  const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+  // Position accessor: accepts [x, y, z] or { x, y, z } (THREE.Vector3).
+  const axis = (p, i) => p[i] !== undefined ? p[i] : [p.x, p.y, p.z][i];
+
+  // Reused result of updateTravel: the hot path must not allocate.
+  const travelOut = { pos: [0, 0, 0], yaw: 0, pitch: 0, fov: 55, renderFov: 55, done: false };
+  let travel = null;
+
+  // Begin an eased fly/dolly from `fromPose` ({ pos, yaw, pitch, fov }) to the
+  // start pose of `toShot`. Returns the travel duration in seconds.
+  // The arc is solved here, once: if the eased path would clip a ridge the
+  // mid-point is raised in steps until the whole path clears the terrain.
+  function beginTravel(fromPose, toShot) {
+    const to = pose(toShot, 0), from = fromPose.pos, toPos = to.pos;
+    const fx = axis(from, 0), fy = axis(from, 1), fz = axis(from, 2);
+    const tx = toPos[0], ty = toPos[1], tz = toPos[2];
+    const dx = to.look[0] - tx, dy = to.look[1] - ty, dz = to.look[2] - tz;
+    const dist = Math.hypot(tx - fx, ty - fy, tz - fz);
+    const duration = limit(TRAVEL_MIN_DURATION + dist / 160, TRAVEL_MIN_DURATION, TRAVEL_MAX_DURATION);
+    // Arc control point: the straight midpoint raised so the path bows upward.
+    const midY = (fy + ty) * 0.5 + TRAVEL_ARC_BASE;
+    // Raise the arc until every probe clears the ground beneath it.
+    let lift = 0;
+    while (lift < TRAVEL_ARC_LIMIT) {
+      let clear = true;
+      for (let i = 1; i < TRAVEL_PROBES; i++) {
+        const k = ease(i / TRAVEL_PROBES), inv = 1 - k;
+        const y = inv * inv * fy + 2 * inv * k * (midY + lift) + k * k * ty;
+        if (surface(mix(fx, tx, k), mix(fz, tz, k)) + 3.5 + TRAVEL_CLEARANCE > y) { clear = false; break; }
+      }
+      if (clear) break;
+      lift += TRAVEL_ARC_STEP;
+    }
+    travel = {
+      fx, fy, fz, tx, ty, tz, midY: midY + lift,
+      fYaw: fromPose.yaw, tYaw: Math.atan2(dx, dz), yawDelta: wrapAngle(Math.atan2(dx, dz) - fromPose.yaw),
+      fPitch: fromPose.pitch, tPitch: Math.atan2(dy, Math.hypot(dx, dz)),
+      fFov: fromPose.fov || 55, tFov: to.fov, duration, elapsed: 0,
+    };
+    return duration;
+  }
+
+  // Advance the travel by `dt` seconds and return the interpolated camera
+  // state ({ pos, yaw, pitch, fov, renderFov, done }), or null when idle.
+  // The eased y is clamped to the terrain so the camera can never sink below
+  // ground; `done` marks the frame the incoming pose has been reached.
+  function updateTravel(dt) {
+    if (!travel) return null;
+    const s = travel;
+    s.elapsed = Math.min(s.elapsed + dt, s.duration);
+    const raw = s.elapsed / s.duration, k = ease(raw), inv = 1 - k;
+    const x = mix(s.fx, s.tx, k), z = mix(s.fz, s.tz, k);
+    travelOut.pos[0] = x;
+    travelOut.pos[1] = Math.max(inv * inv * s.fy + 2 * inv * k * s.midY + k * k * s.ty, surface(x, z) + 3.5);
+    travelOut.pos[2] = z;
+    travelOut.yaw = s.fYaw + s.yawDelta * k;
+    travelOut.pitch = mix(s.fPitch, s.tPitch, k);
+    travelOut.fov = mix(s.fFov, s.tFov, k);
+    travelOut.renderFov = lensFov(travelOut.fov);
+    travelOut.done = raw >= 1;
+    return travelOut;
+  }
+
+  // Abandon an in-flight travel (tour stopped, destination replaced).
+  function cancelTravel() { travel = null; }
+  function isTravelling() { return travel !== null && travel.elapsed < travel.duration; }
+
   return { lensFov, dimensions, assetIndex, mergeChunks, choose, pose, assess, view, floorAt, plan, refine,
-    cancel() { preview?.cancel?.(); current = null; sceneCache = null; phase = 'idle'; progress = 0; },
+    // Smooth travel between shots (eased fly/dolly)
+    beginTravel, updateTravel, cancelTravel, isTravelling,
+    cancel() { preview?.cancel?.(); current = null; sceneCache = null; phase = 'idle'; progress = 0; cancelTravel(); },
     progress(leg, value) { phase = leg; progress = limit(value, 0, 1); },
     get state() { return { phase, progress, mode: current?.shot.mode || null, target: current ? { ...current.feature } : null }; },
   };

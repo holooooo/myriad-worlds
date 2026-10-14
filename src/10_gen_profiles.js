@@ -46,7 +46,7 @@ const WORLD_PROFILES = Object.freeze({
       [B.BAMBOO]: ['deer', 'sparrow'], [B.MEADOW]: ['deer', 'sparrow', 'butterfly'], [B.MARSH]: ['crane', 'buffalo', 'butterfly', 'fish'],
       [B.LAKE]: ['fish', 'crane', 'hawk'], [B.RIVER]: ['fish', 'crane', 'butterfly'], [B.BEACH]: ['sparrow', 'hawk'], [B.SNOW]: ['hawk'],
     },
-    mist: { cloudSea: true, base: 44, thickness: 15, density: 0.017, mountainThreshold: 0.35 },
+    mist: { cloudSea: true, base: 44, thickness: 28, density: 0.017, mountainThreshold: 0.35 },
     water: { shallow: 0x75c7b5, deep: 0x125366, lake: 0x42bbae, river: 0x559c91, ocean: 0x386b7a },
     spawnOrder: ['changan', 'monastery', 'mountainPavilion', 'terraceFarm', 'waterPavilion'],
   }),

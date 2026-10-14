@@ -4,16 +4,12 @@
 
 在浏览器里探索由种子生成的山河、城镇与生物群落。步行、飞行，或将第一视角绑定到火车、仙鹤、鱼、居民和船只，随它们行游。
 
-[![万境实机演示视频](docs/media/myriad-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/myriad-worlds.mp4)
+[![构建与发布](https://github.com/holooooo/myriad-worlds/actions/workflows/cloudflare-pages.yml/badge.svg)](https://github.com/holooooo/myriad-worlds/actions/workflows/cloudflare-pages.yml)
+[![Cloudflare 在线预览](https://img.shields.io/badge/preview-Cloudflare%20Pages-f38020?logo=cloudflare&logoColor=white)](https://myriad-worlds.pages.dev/)
 
-**[观看演示视频 · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/myriad-worlds.mp4)**：从运行中的世界录制，场景均实时生成。
+**[打开在线世界 →](https://myriad-worlds.pages.dev/)**：WebGL 2 实时生成，无预渲染场景，无需账号或后端，内置中、日、英三种界面语言。
 
-| World / 世界 | 16:9 | 9:16 |
-| --- | --- | --- |
-| Shanshui China / 山水中国 | [Landscape](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/china-16x9.mp4) | [Portrait](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/china-9x16.mp4) |
-| Hanami Japan / 花见日本 | [Landscape](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/japan-16x9.mp4) | [Portrait](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/japan-9x16.mp4) |
-
-四支脚本录屏展示巡游运镜、时间天气切换、天空滑块渐变，以及火车两种视角。可使用 [scripts/record_demos.py](scripts/record_demos.py)、Playwright CLI 与 ffmpeg 重录。
+下方截图均来自实机。[录屏脚本](scripts/record_demos.py)可配合 Playwright CLI 与 ffmpeg 生成横屏、竖屏视频；生成的视频不包含在本仓库中。
 
 ![中式王宫与长安城镇](docs/screenshots/shanshui-palace.jpg)
 
@@ -84,23 +80,25 @@ python3 -m http.server 8765 --directory dist --bind 127.0.0.1
 
 ## Cloudflare 发布
 
-[GitHub Actions 流水线](.github/workflows/cloudflare-pages.yml)执行回归、构建、归档，再把成功的 `main` 构建发布到 Cloudflare Pages。PR 只执行验证。
+[GitHub Actions 流水线](.github/workflows/cloudflare-pages.yml)对各分支与 PR 执行测试、构建、归档，再发布：
 
-仓库需配置两个 Secrets：
+- `main` 更新正式站：**https://myriad-worlds.pages.dev/**。
+- 其他分支生成隔离的 Cloudflare 预览；固定分支别名和本次部署链接显示在 Actions 运行摘要及 GitHub 环境中。
+- 同仓库 PR 生成 `pr-<编号>` 预览，例如 `https://pr-12.myriad-worlds.pages.dev/`。外部 fork 的 PR 仅测试、构建，不会获得发布凭据。
+- 也可在 **Actions → Verify and publish Myriad Worlds → Run workflow** 选择分支手动部署。
 
-- `CLOUDFLARE_ACCOUNT_ID`：目标账户 ID。
-- `CLOUDFLARE_API_TOKEN`：仅允许该账户 **Cloudflare Pages Edit** 的 API token。
+仓库 Secrets 为 `CLOUDFLARE_ACCOUNT_ID` 和仅具目标账户 **Cloudflare Pages Edit** 权限的 `CLOUDFLARE_API_TOKEN`。缺少凭据时仍执行测试与构建归档，明确提示并跳过发布。
 
-首次创建项目后，本机可发布：
+现有 Pages 项目的生产分支为 `main`。新账户首次使用时，先执行 `npx wrangler pages project create myriad-worlds --production-branch main` 创建项目。本机发布：
 
 ```sh
+npm ci
 npx wrangler login
-npx wrangler pages project create myriad-worlds --production-branch main
-npm run build
-npm run deploy
+npm run deploy          # 先构建，再发布正式站（main）
+npm run deploy:preview  # 先构建，再发布 preview.myriad-worlds.pages.dev
 ```
 
-缺少发布凭据时流水线仍执行验证和构建归档，明确提示并跳过自动部署。凭据、token、构建目录和浏览器测试录屏不会提交到 Git；文档中的实机视频单独保留。
+两个本地命令都会重新构建，并显式指定分支，避免本机 `master` 分支误选环境。预览链接公开可访问，请勿在其中发布隐私数据。凭据、token、构建目录和浏览器测试录屏均不提交到 Git。
 
 ## 实景参考
 

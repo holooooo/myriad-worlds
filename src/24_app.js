@@ -129,7 +129,7 @@ const SAKURA_CAROUSEL = [
   { key: 'rail', dwell: 0, dist: 30, h: 8, train: true },
 ];
 const CAROUSEL = THEME === 'shanshui' ? GEN.profile.landmarks.map(t => ({ key: t.key, dwell: 15, dist: 50, h: 15 })) : SAKURA_CAROUSEL;
-const car = { on: false, i: 0, t: 0, leg: 'idle', mode: 'auto', token: 0, tgt: null, check: 0, replanning: false };
+const car = { on: false, i: 0, t: 0, leg: 'idle', mode: 'auto', token: 0, tgt: null, check: 0, replanning: false, first: true };
 function updateTourButton() {
   const b = $('btnTour'); if (!b) return;
   b.setAttribute('aria-pressed', String(car.on));
@@ -149,7 +149,7 @@ function startTour(options = {}) {
   stopFollow(false);
   if (car.on) { stopTour(); return; }
   car.mode = ['static', 'orbit', 'pan', 'auto'].includes(options.mode) ? options.mode : 'auto';
-  car.on = true; car.i = 0; car.t = 0; car.leg = 'find'; car.tgt = null; car.replanning = false; car.token++;
+  car.on = true; car.i = 0; car.t = 0; car.leg = 'find'; car.tgt = null; car.replanning = false; car.first = true; car.token++;
   tour = false; introT = 1; keys.clear();
   document.body.classList.toggle('touring', true);
   closeMenu(); CINEMATIC.progress('finding', 0);
@@ -183,11 +183,39 @@ function tourChunksReady(spot) {
     p[0] >= ch.data.x0 && p[0] < ch.data.x0 + ch.data.size && p[2] >= ch.data.z0 && p[2] < ch.data.z0 + ch.data.size));
 }
 async function revealTourShot(spot, token) {
-  car.leg = 'cut'; CINEMATIC.progress('transition', 0);
-  await cutFade(async () => {
+  // Fly the camera to the incoming composition instead of dipping to black.
+  // Only the very first shot of a tour fades in, because there is no previous
+  // pose to travel from; every later hop is a continuous eased dolly.
+  const hasTravel = typeof CINEMATIC.beginTravel === 'function';
+  const canTravel = hasTravel && !car.first && !REDUCED;
+
+  if (canTravel) {
+    // --- smooth travel path ---
+    car.leg = 'travel'; CINEMATIC.progress('transition', 0);
+    const fromPose = { pos: [camS.pos.x, camS.pos.y, camS.pos.z], yaw: camS.yaw, pitch: camS.pitch, fov: camS.fov };
+    const travelDur = CINEMATIC.beginTravel(fromPose, spot.shot);
+    let elapsed = 0;
+    let lastTs = performance.now();
+    while (car.on && token === car.token) {
+      await nextFrame();
+      if (!car.on || token !== car.token) return;
+      const now = performance.now();
+      const dt = Math.min((now - lastTs) / 1000, 0.1);
+      lastTs = now;
+      elapsed += dt;
+      const frame = CINEMATIC.updateTravel(dt);
+      if (frame) {
+        const p = frame.pos;
+        snapTo(Array.isArray(p) ? p : [p.x, p.y, p.z], frame.yaw, frame.pitch, frame.fov);
+        CINEMATIC.progress('transition', Math.min(elapsed / travelDur, 1));
+      }
+      if (!frame || frame.done || elapsed >= travelDur + 0.5) break;
+    }
     if (!car.on || token !== car.token) return;
-    placeTourCamera(spot.shot); car.leg = 'loading';
-    CINEMATIC.progress('loading', 0);
+    // Arrive exactly on the planned pose, then let the local meshes catch up
+    // while the camera holds still — no fade, the shot simply resolves.
+    placeTourCamera(spot.shot);
+    car.leg = 'loading'; CINEMATIC.progress('loading', 0);
     const began = performance.now();
     while (car.on && token === car.token && !tourChunksReady(spot) && performance.now() - began < 8000) await nextFrame();
     if (!car.on || token !== car.token) return;
@@ -197,7 +225,24 @@ async function revealTourShot(spot, token) {
     if (!refined) { await carouselNext(); return; }
     spot.shot = refined; placeTourCamera(refined);
     car.t = 0; car.check = 0; car.leg = 'dwell'; CINEMATIC.progress('dwell', 0);
-  });
+  } else {
+    // --- first shot (or reduced motion / no travel API): fade in ---
+    car.leg = 'cut'; car.first = false; CINEMATIC.progress('transition', 0);
+    await cutFade(async () => {
+      if (!car.on || token !== car.token) return;
+      placeTourCamera(spot.shot); car.leg = 'loading';
+      CINEMATIC.progress('loading', 0);
+      const began = performance.now();
+      while (car.on && token === car.token && !tourChunksReady(spot) && performance.now() - began < 8000) await nextFrame();
+      if (!car.on || token !== car.token) return;
+      if (!tourChunksReady(spot)) LOG.warn('business', 'tour-destination-load-timeout', { x: spot.feature.x, z: spot.feature.z });
+      const refined = await CINEMATIC.refine(spot.shot, 0, true);
+      if (!car.on || token !== car.token) return;
+      if (!refined) { await carouselNext(); return; }
+      spot.shot = refined; placeTourCamera(refined);
+      car.t = 0; car.check = 0; car.leg = 'dwell'; CINEMATIC.progress('dwell', 0);
+    });
+  }
 }
 async function carouselNext() {
   if (!car.on) return;
@@ -279,10 +324,16 @@ function updateHUD(dt) {
   const p = camera.position;
   const b = GEN.biomeAt(p.x, p.z);
   HUD.biome = b.biome;
+  // Ambient bed follows the ground you are standing on, blended smoothly.
+  audio.setBiome(b.biome);
   $('altVal').textContent = Math.round(p.y) + ' m';
-  let name = I18N.biomeName(b.biome, THEME);
-  if (b.rail) name = I18N.t('biome.rail');
-  $('bioVal').textContent = name;
+  // The brand glyph carries the current biome: one kanji, read at a glance.
+  const glyph = $('bioGlyph');
+  if (glyph) {
+    const g = (GEN.BIOME_NAMES[b.biome] && GEN.BIOME_NAMES[b.biome][0]) || '境';
+    if (glyph.textContent !== g) glyph.textContent = g;
+    glyph.title = I18N.biomeName(b.biome, THEME);
+  }
   const load = Math.round(STREAM.readyFrac * 100);
   $('loadSnap').hidden = load >= 100;
   if (load < 100) $('loadSnap').textContent = I18N.t('loading.chunks', { percent: load });
@@ -312,74 +363,362 @@ async function teleport(key) {
   toastKey('toast.teleport.arrived');
 }
 // --- ambient sound ---------------------------------------------------------
+// Fully layered generative soundscape:
+//  • Continuous noise layers (wind, stream, rain, ocean, forest, crickets)
+//  • Procedural melody: pentatonic koto/guqin phrases for sakura,
+//    pentatonic erhu/xiao phrases for shanshui, each themed to mood
+//  • Stochastic events: birds, frogs, wind chime, temple bell, water drops
+//  • Biome blending: player position drives smooth layer crossfades
+//  • Mood crossfade: all gains ramp smoothly on mood change
 const audio = (() => {
-  let ctx = null, master = null, g = {}, timer = null, on = false, mood = moodName;
-  const LEVELS = {
-    morning: { stream: 0.16, wind: 0.06, rain: 0, chime: 0.3, birds: 1, insects: 0.2 },
-    golden: { stream: 0.14, wind: 0.05, rain: 0, chime: 0.5, birds: 0.6, insects: 0.6 },
-    dusk: { stream: 0.15, wind: 0.05, rain: 0, chime: 1, birds: 0.15, insects: 1 },
-    night: { stream: 0.1, wind: 0.07, rain: 0, chime: 0.4, birds: 0, insects: 1 },
-    rain: { stream: 0.11, wind: 0.09, rain: 0.34, chime: 0.15, birds: 0, insects: 0 },
+  let ctx = null, master = null, on = false, schedTimer = null;
+  let currentMood = moodName, currentBiome = -1, theme = THEME;
+
+  // Shared node references — rebuilt on first toggle
+  const layers = {}; // name -> GainNode feeding master
+  const FADE = 2.0;  // seconds for mood/biome crossfade
+
+  // ---------------------------------------------------------------------------
+  //  Noise palette
+  // ---------------------------------------------------------------------------
+  function makeNoiseBuf(seconds = 4, tint = 'white') {
+    const sr = ctx.sampleRate, len = sr * seconds;
+    const buf = ctx.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      if (tint === 'pink') { lp = lp * 0.98 + w * 0.02; d[i] = w * 0.5 + lp * 8; }
+      else if (tint === 'brown') { lp = lp * 0.995 + w * 0.005; d[i] = lp * 20; }
+      else d[i] = w;
+    }
+    // normalise
+    let peak = 0; for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(d[i]));
+    if (peak > 0) for (let i = 0; i < len; i++) d[i] /= peak;
+    return buf;
+  }
+
+  function loopNoise(buf, offset = 0) {
+    const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = offset; s.start(0); return s;
+  }
+
+  function makeLayer(name, src, ...filterDefs) {
+    // filterDefs: [{type, freq, Q, gain}]
+    let node = src;
+    for (const f of filterDefs) {
+      const bq = ctx.createBiquadFilter(); bq.type = f.type;
+      bq.frequency.value = f.freq; if (f.Q) bq.Q.value = f.Q; if (f.gain != null) bq.gain.value = f.gain;
+      node.connect(bq); node = bq;
+    }
+    const g = ctx.createGain(); g.gain.value = 0; node.connect(g); g.connect(master);
+    layers[name] = g; return g;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Melodic helpers
+  // ---------------------------------------------------------------------------
+  // Pentatonic scales: root-relative semitones
+  const PENTA_MINOR = [0, 3, 5, 7, 10]; // classic pentatonic minor (erhu/guqin)
+  const PENTA_MAJOR = [0, 2, 4, 7, 9];  // pentatonic major (koto)
+  function midiToHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function pentatonicNote(rootMidi, scale, degree) { const oct = Math.floor(degree / scale.length), d = degree % scale.length; return rootMidi + oct * 12 + scale[d]; }
+
+  // A very gentle triangle-wave pluck with natural exponential decay
+  function pluck(freq, attack, decay, vol, when) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle'; o.frequency.value = freq;
+    // Slight vibrato for erhu warmth
+    const vib = ctx.createOscillator(), vg = ctx.createGain();
+    vib.frequency.value = 5.5; vg.gain.value = freq * 0.008;
+    vib.connect(vg); vg.connect(o.frequency); vib.start(when); vib.stop(when + decay + 0.1);
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(vol, when + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + decay);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when + decay + 0.05);
+  }
+
+  // A soft sine bell/chime
+  function bell(freq, decay, vol, when) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    // Add a subtle 2nd partial
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type = 'sine'; o2.frequency.value = freq * 2.756; g2.gain.value = vol * 0.18;
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + decay);
+    g2.gain.setValueAtTime(0, when); g2.gain.linearRampToValueAtTime(vol * 0.18, when + 0.004);
+    g2.gain.exponentialRampToValueAtTime(0.0001, when + decay * 0.7);
+    o.connect(g); g.connect(master); o2.connect(g2); g2.connect(master);
+    o.start(when); o.stop(when + decay + 0.05); o2.start(when); o2.stop(when + decay * 0.8);
+  }
+
+  // Soft bird chirp — two-note warble, no harsh frequencies
+  function bird(vol, when) {
+    const f0 = 2200 + Math.random() * 1400, up = 1.12 + Math.random() * 0.22;
+    const notes = Math.random() < 0.4 ? [[f0, 0.06], [f0 * up, 0.08], [f0 * up * 0.97, 0.06]]
+                                        : [[f0, 0.07], [f0 * up, 0.06]];
+    let t = when;
+    for (const [f, dur] of notes) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.06, t + dur);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02); t += dur + 0.04 + Math.random() * 0.05;
+    }
+  }
+
+  // Frog croak
+  function frog(vol, when) {
+    const f = 180 + Math.random() * 60;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500; lp.Q.value = 2;
+    o.frequency.setValueAtTime(f, when); o.frequency.exponentialRampToValueAtTime(f * 0.7, when + 0.18);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.22);
+    o.connect(lp); lp.connect(g); g.connect(master); o.start(when); o.stop(when + 0.25);
+  }
+
+  // Water drip for mountain/river ambience
+  function drip(vol, when) {
+    const f = 800 + Math.random() * 600;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f, when); o.frequency.exponentialRampToValueAtTime(f * 0.4, when + 0.12);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.18);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.2);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Level tables: [noise layers] keyed by mood, biome-adaptive in setLevels()
+  // ---------------------------------------------------------------------------
+  //  Each entry: { stream, wind, rain, ocean, forest, cricket, vol }
+  const MOOD_LEVELS = {
+    morning: { stream:0.12, wind:0.04, rain:0, ocean:0.02, forest:0.10, cricket:0.05, vol:0.80 },
+    golden:  { stream:0.11, wind:0.04, rain:0, ocean:0.02, forest:0.08, cricket:0.18, vol:0.85 },
+    dusk:    { stream:0.08, wind:0.05, rain:0, ocean:0.02, forest:0.04, cricket:0.35, vol:0.90 },
+    night:   { stream:0.06, wind:0.06, rain:0, ocean:0.02, forest:0.02, cricket:0.42, vol:0.75 },
+    rain:    { stream:0.08, wind:0.08, rain:0.32, ocean:0.01, forest:0.06, cricket:0,    vol:0.80 },
   };
-  function noiseBuf(c) { const b = c.createBuffer(1, c.sampleRate * 3, c.sampleRate), d = b.getChannelData(0); let last = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = w * 0.6 + last * 3.0; } return b; }
-  function chain(src, nodes, gain) { let n = src; for (const x of nodes) { n.connect(x); n = x; } const gg = ctx.createGain(); gg.gain.value = gain; n.connect(gg); gg.connect(master); return gg; }
+
+  // Biome multipliers (applied on top of mood baseline)
+  const BIOME_MUL = {
+    [0/*OCEAN*/]:  { stream:0.1, wind:1.5, ocean:3.0, forest:0, cricket:0.2 },
+    [1/*BEACH*/]:  { stream:0.2, wind:1.2, ocean:2.2, forest:0, cricket:0.1 },
+    [2/*SATO*/]:   { stream:0.8, wind:0.8, ocean:0,   forest:1.2, cricket:1.0 },
+    [3/*SAKURA*/]: { stream:0.6, wind:0.6, ocean:0,   forest:1.4, cricket:0.8 },
+    [4/*PADDY*/]:  { stream:1.0, wind:0.5, ocean:0,   forest:0.8, cricket:1.4 },
+    [5/*TOWN*/]:   { stream:0.5, wind:0.5, ocean:0,   forest:0.6, cricket:0.6 },
+    [6/*CEDAR*/]:  { stream:0.5, wind:1.0, ocean:0,   forest:1.8, cricket:0.4 },
+    [7/*BAMBOO*/]: { stream:0.4, wind:1.3, ocean:0,   forest:1.4, cricket:0.6 },
+    [8/*SNOW*/]:   { stream:0.1, wind:2.0, ocean:0,   forest:0.3, cricket:0   },
+    [9/*LAKE*/]:   { stream:0.3, wind:0.7, ocean:0,   forest:0.8, cricket:1.0 },
+    [10/*RIVER*/]: { stream:2.0, wind:0.5, ocean:0,   forest:0.9, cricket:0.8 },
+    [11/*MEADOW*/]:{ stream:0.4, wind:0.8, ocean:0,   forest:1.0, cricket:1.2 },
+    [12/*MARSH*/]: { stream:0.6, wind:0.4, ocean:0,   forest:1.0, cricket:1.6 },
+    [13/*PINE*/]:  { stream:0.3, wind:1.4, ocean:0,   forest:1.6, cricket:0.3 },
+  };
+
+  function setLevels(fade = FADE) {
+    if (!ctx) return;
+    const M = MOOD_LEVELS[currentMood] || MOOD_LEVELS.golden;
+    const bm = BIOME_MUL[currentBiome] || BIOME_MUL[2];
+    const t = ctx.currentTime, tc = fade / 3;
+    const apply = (name, base, mul = 1) => {
+      if (!layers[name]) return;
+      layers[name].gain.setTargetAtTime(base * (bm[name] ?? mul) * M.vol, t, tc);
+    };
+    apply('stream',  M.stream);
+    apply('wind',    M.wind);
+    apply('rain',    M.rain, 1);
+    apply('ocean',   M.ocean);
+    apply('forest',  M.forest);
+    apply('cricket', M.cricket);
+    master.gain.setTargetAtTime(M.vol, t, tc);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Melodic phrase scheduling
+  // ---------------------------------------------------------------------------
+  // Melody parameters driven by mood + theme
+  function melodyParams() {
+    const isShanshui = theme === 'shanshui';
+    // Root MIDI: morning bright, dusk/night lower register
+    const rootMap = { morning: 64, golden: 62, dusk: 59, night: 57, rain: 60 };
+    const root = rootMap[currentMood] ?? 62;
+    const scale = isShanshui ? PENTA_MINOR : PENTA_MAJOR;
+    const speed = currentMood === 'night' ? 1.8 : currentMood === 'morning' ? 1.2 : 1.5;
+    const vol = currentMood === 'rain' ? 0.012 : currentMood === 'night' ? 0.018 : 0.022;
+    const noteCount = 3 + Math.floor(Math.random() * 3);
+    return { root, scale, speed, vol, noteCount, isShanshui };
+  }
+
+  function playPhrase() {
+    if (!on || !ctx) return;
+    const { root, scale, speed, vol, noteCount, isShanshui } = melodyParams();
+    const now = ctx.currentTime;
+    let t = now + 0.1;
+    // Choose a contiguous ascending or descending run with a leap at the end
+    const start = Math.floor(Math.random() * scale.length);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    for (let i = 0; i < noteCount; i++) {
+      const degree = start + dir * i;
+      const midi = pentatonicNote(root, scale, ((degree % scale.length) + scale.length * 2) % scale.length)
+                   + Math.floor(degree / scale.length) * 12;
+      const freq = midiToHz(midi);
+      const dur = (isShanshui ? 1.6 : 1.2) * speed * (1 + Math.random() * 0.3);
+      const decay = dur * 2.8;
+      if (isShanshui) pluck(freq, 0.015, decay, vol * (0.7 + Math.random() * 0.3), t);
+      else             bell(freq, decay, vol * (0.7 + Math.random() * 0.3), t);
+      t += dur + (Math.random() < 0.35 ? speed * 0.5 : 0); // occasional rest
+    }
+    // Temple bell in dusk/night
+    if ((currentMood === 'dusk' || currentMood === 'night') && Math.random() < 0.12) {
+      const bellMidi = isShanshui ? 36 : 41; // low D or F
+      bell(midiToHz(bellMidi), 6.5, 0.03, ctx.currentTime + 0.5 + Math.random() * 2);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Stochastic event scheduling
+  // ---------------------------------------------------------------------------
+  function scheduleEvents() {
+    if (!on) return;
+    const M = MOOD_LEVELS[currentMood] || MOOD_LEVELS.golden;
+    const bm = BIOME_MUL[currentBiome] || BIOME_MUL[2];
+    const isMorning = currentMood === 'morning';
+    const isNight = currentMood === 'night' || currentMood === 'dusk';
+    const isRain = currentMood === 'rain';
+
+    // Birds — morning/golden and forested biomes
+    const birdMul = ((bm.forest ?? 1) + (bm.cricket ?? 1)) / 2;
+    if (!isRain && !isNight && Math.random() < 0.45 * (isMorning ? 1.6 : 1) * birdMul * M.vol)
+      bird(0.016 + Math.random() * 0.008, ctx.currentTime + Math.random() * 0.5);
+
+    // Frogs — marsh/lake/paddy and dusk/night
+    const frogBiomes = new Set([4, 9, 12]);
+    if (isNight && frogBiomes.has(currentBiome) && Math.random() < 0.5)
+      frog(0.02, ctx.currentTime + Math.random() * 1.2);
+
+    // Water drip — river/mountain/rain
+    if ((currentBiome === 10 || currentBiome === 6 || isRain) && Math.random() < 0.3)
+      drip(0.018, ctx.currentTime + Math.random() * 0.8);
+
+    // Melodic phrase — quieter moods more frequent, avoid in loud rain
+    const phraseProbability = isRain ? 0.08 : isNight ? 0.18 : 0.22;
+    if (Math.random() < phraseProbability) playPhrase();
+
+    const interval = isNight ? 2800 + Math.random() * 3500
+                   : isRain  ? 3500 + Math.random() * 4000
+                              : 1800 + Math.random() * 2800;
+    schedTimer = setTimeout(scheduleEvents, interval);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Build / wire Web Audio graph
+  // ---------------------------------------------------------------------------
   function build() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
-    const buf = noiseBuf(ctx);
-    const src = () => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, Math.random() * 2); return s; };
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 0.6;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
-    g.stream = chain(src(), [bp, lp], 0);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.13; const lg = ctx.createGain(); lg.gain.value = 260; lfo.connect(lg); lg.connect(bp.frequency); lfo.start();
-    const wl = ctx.createBiquadFilter(); wl.type = 'lowpass'; wl.frequency.value = 340;
-    g.wind = chain(src(), [wl], 0);
-    const rh = ctx.createBiquadFilter(); rh.type = 'highpass'; rh.frequency.value = 1200;
-    const rl = ctx.createBiquadFilter(); rl.type = 'lowpass'; rl.frequency.value = 7500;
-    g.rain = chain(src(), [rh, rl], 0);
+
+    // --- noise buffers (created once, looped) ---
+    const white = makeNoiseBuf(5, 'white');
+    const pink  = makeNoiseBuf(6, 'pink');
+    const brown = makeNoiseBuf(7, 'brown');
+
+    // stream — bandpass centred on babbling-brook frequencies with slow LFO
+    const streamSrc = loopNoise(pink, 1.3);
+    const bp1 = ctx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.value = 700; bp1.Q.value = 0.5;
+    const bp2 = ctx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.value = 1400; bp2.Q.value = 0.8;
+    const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.09;
+    const lg1 = ctx.createGain(); lg1.gain.value = 280; lfo1.connect(lg1); lg1.connect(bp1.frequency); lfo1.start();
+    streamSrc.connect(bp1); bp1.connect(bp2);
+    const sgain = ctx.createGain(); sgain.gain.value = 0; bp2.connect(sgain); sgain.connect(master); layers.stream = sgain;
+
+    // wind — low-frequency brown noise, slight high-frequency shimmer
+    const windSrc = loopNoise(brown, 0.7);
+    const wlp = ctx.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 480;
+    const wshim = ctx.createBiquadFilter(); wshim.type = 'highpass'; wshim.frequency.value = 2400;
+    const whiteW = loopNoise(white, 2.1);
+    windSrc.connect(wlp);
+    const wgain = ctx.createGain(); wgain.gain.value = 0;
+    const wsg = ctx.createGain(); wsg.gain.value = 0.1;
+    whiteW.connect(wshim); wshim.connect(wsg); wlp.connect(wgain); wsg.connect(wgain); wgain.connect(master); layers.wind = wgain;
+
+    // rain — shaped white noise, higher frequencies
+    const rainSrc = loopNoise(white, 1.8);
+    const rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 1500;
+    const rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 9000;
+    rainSrc.connect(rhp); rhp.connect(rlp);
+    const rgain = ctx.createGain(); rgain.gain.value = 0; rlp.connect(rgain); rgain.connect(master); layers.rain = rgain;
+
+    // ocean — slow surf swell: low rumble + white spray
+    const oceanSrc = loopNoise(brown, 4.2);
+    const olp = ctx.createBiquadFilter(); olp.type = 'lowpass'; olp.frequency.value = 260;
+    const oSpray = loopNoise(white, 3.1);
+    const oSlp = ctx.createBiquadFilter(); oSlp.type = 'bandpass'; oSlp.frequency.value = 800; oSlp.Q.value = 0.3;
+    const lfo2 = ctx.createOscillator(); lfo2.frequency.value = 0.07;
+    const lg2 = ctx.createGain(); lg2.gain.value = 0.12; lfo2.connect(lg2); lfo2.start();
+    const ogain = ctx.createGain(); ogain.gain.value = 0;
+    oceanSrc.connect(olp); olp.connect(ogain); oSpray.connect(oSlp); oSlp.connect(ogain); ogain.connect(master); layers.ocean = ogain;
+
+    // forest — mid pink noise filtered to sound like leaves
+    const forestSrc = loopNoise(pink, 3.5);
+    const flp = ctx.createBiquadFilter(); flp.type = 'bandpass'; flp.frequency.value = 1100; flp.Q.value = 0.4;
+    const lfo3 = ctx.createOscillator(); lfo3.frequency.value = 0.21;
+    const lg3 = ctx.createGain(); lg3.gain.value = 160; lfo3.connect(lg3); lg3.connect(flp.frequency); lfo3.start();
+    const fgain = ctx.createGain(); fgain.gain.value = 0; forestSrc.connect(flp); flp.connect(fgain); fgain.connect(master); layers.forest = fgain;
+
+    // cricket — amplitude-modulated high-pitched narrow band
+    const cricketSrc = loopNoise(white, 2.0);
+    const cbp = ctx.createBiquadFilter(); cbp.type = 'bandpass'; cbp.frequency.value = 4800; cbp.Q.value = 4;
+    const cam = ctx.createOscillator(); cam.frequency.value = 22;
+    const camg = ctx.createGain(); camg.gain.value = 0;
+    const cenv = ctx.createGain(); cenv.gain.value = 1;
+    cam.connect(camg); camg.connect(cenv.gain); cenv.gain.setValueAtTime(0.5, ctx.currentTime);
+    cam.start(); cricketSrc.connect(cbp); cbp.connect(cenv); cenv.connect(camg);
+    const cgain = ctx.createGain(); cgain.gain.value = 0; cbp.connect(cgain); cgain.connect(master); layers.cricket = cgain;
   }
-  function chime() {
-    const t = ctx.currentTime, base = [1568, 2093, 2349, 2637][Math.floor(Math.random() * 4)];
-    for (const [mul, a] of [[1, 0.05], [2.76, 0.018], [5.4, 0.008]]) {
-      const o = ctx.createOscillator(), gg = ctx.createGain();
-      o.frequency.value = base * mul; o.type = 'sine';
-      gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(a, t + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
-      o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 3);
-    }
-  }
-  function bird() {
-    const t0 = ctx.currentTime, n = 2 + Math.floor(Math.random() * 3), f = 2600 + Math.random() * 1600;
-    for (let i = 0; i < n; i++) {
-      const t = t0 + i * 0.14, o = ctx.createOscillator(), gg = ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.45, t + 0.07);
-      gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.025, t + 0.015); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      o.connect(gg); gg.connect(master); o.start(t); o.stop(t + 0.13);
-    }
-  }
-  function insect() {
-    const t = ctx.currentTime, o = ctx.createOscillator(), am = ctx.createOscillator(), ag = ctx.createGain(), gg = ctx.createGain();
-    o.frequency.value = 4200 + Math.random() * 600; am.frequency.value = 38; ag.gain.value = 0.5;
-    am.connect(ag); ag.connect(gg.gain);
-    gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.006, t + 0.3); gg.gain.linearRampToValueAtTime(0, t + 1.6);
-    o.connect(gg); gg.connect(master); o.start(t); am.start(t); o.stop(t + 1.7); am.stop(t + 1.7);
-  }
-  function schedule() {
-    const L = LEVELS[mood] || LEVELS.dusk;
-    if (Math.random() < 0.35 * L.chime) chime();
-    if (Math.random() < 0.5 * L.birds) bird();
-    if (Math.random() < 0.4 * L.insects) insect();
-    timer = setTimeout(schedule, 1800 + Math.random() * 3200);
-  }
-  function levels(fade = 2) { if (!ctx) return; const L = LEVELS[mood] || LEVELS.dusk, t = ctx.currentTime; for (const k of ['stream', 'wind', 'rain']) g[k].gain.setTargetAtTime(L[k], t, fade / 3); }
+
+  // ---------------------------------------------------------------------------
+  //  Public API
+  // ---------------------------------------------------------------------------
   return {
     async toggle() {
-      if (!on) { if (!ctx) build(); await ctx.resume(); on = true; levels(0.5); master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.6); schedule(); }
-      else { on = false; clearTimeout(timer); master.gain.setTargetAtTime(0, ctx.currentTime, 0.3); setTimeout(() => { if (!on && ctx) ctx.suspend(); }, 1500); }
+      if (!on) {
+        if (!ctx) build();
+        await ctx.resume();
+        on = true;
+        theme = THEME;
+        setLevels(0.8);
+        scheduleEvents();
+      } else {
+        on = false;
+        clearTimeout(schedTimer);
+        master.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+        setTimeout(() => { if (!on && ctx) ctx.suspend(); }, 2000);
+      }
       const b = $('btnSound');
-      if (b) { b.setAttribute('aria-pressed', String(on)); const o1 = b.querySelector('.snd-on'), o2 = b.querySelector('.snd-off'); if (o1) o1.style.display = on ? '' : 'none'; if (o2) o2.style.display = on ? 'none' : ''; }
+      if (b) {
+        b.setAttribute('aria-pressed', String(on));
+        const o1 = b.querySelector('.snd-on'), o2 = b.querySelector('.snd-off');
+        if (o1) o1.style.display = on ? '' : 'none';
+        if (o2) o2.style.display = on ? 'none' : '';
+      }
       return on;
     },
-    setMood(m) { mood = m; levels(); },
+
+    // Called when mood changes — smooth crossfade
+    setMood(m) {
+      currentMood = m;
+      setLevels(FADE);
+    },
+
+    // Called from updateHUD — biome has changed, smooth blend
+    setBiome(b) {
+      if (b === currentBiome) return;
+      currentBiome = b;
+      setLevels(FADE * 1.5);
+    },
+
+    setTheme(t) { theme = t; },
   };
 })();
 if ($('btnTour')) $('btnTour').addEventListener('click', () => startTour());
@@ -387,7 +726,32 @@ if ($('btnShot')) $('btnShot').addEventListener('click', saveImage);
 if ($('btnSound')) $('btnSound').addEventListener('click', async () => {
   try { const on = await audio.toggle(); toastKey(on ? 'toast.sound.on' : 'toast.sound.off'); } catch (e) { LOG.warn('error', 'audio-unavailable', { message: String(e.message || e) }); toastKey('toast.sound.failed'); }
 });
-document.querySelectorAll('#moods button').forEach((b) => b.addEventListener('click', () => setMood(b.dataset.mood)));
+document.querySelectorAll('#moods button').forEach((b) => b.addEventListener('click', () => {
+  if (typeof FREE_TIME !== 'undefined' && FREE_TIME.on) toggleFreeTime(false);
+  setMood(b.dataset.mood);
+}));
+// Free-time slider
+if ($('timeSlider')) {
+  $('timeSlider').addEventListener('input', (e) => {
+    if (typeof applyFreeTime === 'function') applyFreeTime(Number(e.target.value));
+  });
+}
+// Add free-time toggle button to tools bar if it exists
+(function() {
+  const tools = document.querySelector('.tools');
+  if (!tools) return;
+  const btn = document.createElement('button');
+  btn.className = 'ib'; btn.id = 'btnTime'; btn.setAttribute('aria-pressed', 'false');
+  btn.setAttribute('data-tip', I18N.t('time.mode.title'));
+  btn.setAttribute('aria-label', I18N.t('time.mode'));
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+  btn.addEventListener('click', () => {
+    const on = typeof toggleFreeTime === 'function' ? toggleFreeTime() : false;
+    btn.setAttribute('aria-pressed', String(on));
+    toastKey(on ? 'toast.time.on' : 'toast.time.off');
+  });
+  tools.appendChild(btn);
+})();
 // --- main loop -----------------------------------------------------------
 let clockT = 0, lastNow = performance.now(), fpsN = 0, fpsT = 0, fpsShow = 60, autoChecked = QS.has('q');
 let mirrorFrame = 0;

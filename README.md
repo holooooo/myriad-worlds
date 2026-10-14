@@ -4,16 +4,12 @@
 
 Living, seed-generated landscapes in your browser. Wander on foot, fly above the clouds, or experience the world through the eyes of a train, crane, fish, resident or boat.
 
-[![Watch the landscape film](docs/media/myriad-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/myriad-worlds.mp4)
+[![Build and deploy](https://github.com/holooooo/myriad-worlds/actions/workflows/cloudflare-pages.yml/badge.svg)](https://github.com/holooooo/myriad-worlds/actions/workflows/cloudflare-pages.yml)
+[![Cloudflare Pages](https://img.shields.io/badge/preview-Cloudflare%20Pages-f38020?logo=cloudflare&logoColor=white)](https://myriad-worlds.pages.dev/)
 
-**[Watch the video · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/myriad-worlds.mp4)** — recorded from the running world, with no pre-rendered scenery.
+**[Explore the live world →](https://myriad-worlds.pages.dev/)** — real-time WebGL 2, no pre-rendered scenery, account or backend required. Chinese, Japanese and English interfaces are included.
 
-| World / 世界 | 16:9 | 9:16 |
-| --- | --- | --- |
-| Shanshui China / 山水中国 | [Landscape](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/china-16x9.mp4) | [Portrait](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/china-9x16.mp4) |
-| Hanami Japan / 花见日本 | [Landscape](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/japan-16x9.mp4) | [Portrait](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/japan-9x16.mp4) |
-
-The four scripted recordings demonstrate cinematic touring, time/weather transitions, smooth sky sliders and both train views. Reproduce them with [scripts/record_demos.py](scripts/record_demos.py) using Playwright CLI and ffmpeg.
+Screenshots below are captured from the running world. The optional [recording script](scripts/record_demos.py) can produce landscape and portrait films with Playwright CLI and ffmpeg; generated videos are not included in this repository.
 
 ![Shanshui palace and city](docs/screenshots/shanshui-palace.jpg)
 
@@ -84,23 +80,25 @@ See [validation and performance notes](docs/validation.md) for measured conditio
 
 ## Cloudflare deployment
 
-The [GitHub Actions workflow](.github/workflows/cloudflare-pages.yml) runs regression checks, builds the vendored site and deploys successful `main` builds to Cloudflare Pages. Pull requests only verify the build.
+The [GitHub Actions workflow](.github/workflows/cloudflare-pages.yml) tests, builds and archives every branch and pull request before deployment:
 
-Configure repository secrets:
+- `main` publishes production at **https://myriad-worlds.pages.dev/**.
+- Other branches publish isolated Cloudflare previews; the stable branch alias and immutable deployment URL appear in the Actions run summary and GitHub environment.
+- Same-repository pull requests publish a `pr-<number>` preview, such as `https://pr-12.myriad-worlds.pages.dev/`. Fork PRs only test and build: deployment secrets are never provided.
+- **Actions → Verify and publish Myriad Worlds → Run workflow** can redeploy the selected branch manually.
 
-- `CLOUDFLARE_ACCOUNT_ID`: the target account.
-- `CLOUDFLARE_API_TOKEN`: an account-scoped token with **Cloudflare Pages Edit** permission.
+Repository secrets: `CLOUDFLARE_ACCOUNT_ID` and an account-scoped `CLOUDFLARE_API_TOKEN` with **Cloudflare Pages Edit** permission. Without these, tests and artifact uploads still run, but deployment is explicitly skipped.
 
-Create the Pages project once, then deploy locally:
+The existing Pages project uses `main` as its production branch. For a new account, create it once with `npx wrangler pages project create myriad-worlds --production-branch main`. To deploy locally:
 
 ```sh
+npm ci
 npx wrangler login
-npx wrangler pages project create myriad-worlds --production-branch main
-npm run build
-npm run deploy
+npm run deploy          # Build, then publish production (main)
+npm run deploy:preview  # Build, then publish preview.myriad-worlds.pages.dev
 ```
 
-When deployment credentials are absent, the workflow verifies and archives the build, then skips deployment with a notice. Tokens, local credentials, build output and browser test recordings are excluded from Git.
+Both local commands rebuild first and set the branch explicitly, so a local `master` checkout cannot accidentally select the wrong environment. Preview URLs are public; do not publish private data in them. Tokens, local credentials, build output and browser test recordings are excluded from Git.
 
 ## Landscape references
 

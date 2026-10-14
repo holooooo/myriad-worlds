@@ -181,28 +181,144 @@ function shanshuiAnchor(a, n, r, roll, rd) {
   if (a.type === 'changan' || a.type === 'palace' || a.type === 'monastery' || a.type === 'paifang') a.yaw = Math.round(a.yaw / (Math.PI / 2)) * (Math.PI / 2);
 }
 
-// Terrain materials belong to the world rules, alongside their ecology.
+// Terrain materials for the shanshui world.
+// Palette principle: ink-and-mineral pigments.  Every colour is desaturated
+// enough to read as natural rock, earth, water and vegetation rather than
+// painted swatches.  The town's ground treatment gives each surface type a
+// distinct but harmonious tonal identity.
 const SHANSHUI_TERRAIN = {
-  grass: C(0x81936a), grassDark: C(0x5c7555), granite: C(0xb3b2a5), graniteDark: C(0x818a85), moss: C(0x65745a),
-  pine: C(0x5b715c), bamboo: C(0x728564), earth: C(0x6c604d), mud: C(0x585345), stone: C(0xaaa99e),
-  paleSand: C(0xb8c4ab), lakeBed: C(0x56796f), deepBed: C(0x294c4a), snow: C(0xe8ecea),
+  // Vegetation
+  grass: C(0x7f9066), grassDark: C(0x5a7151), meadow: C(0x8a9e6c),
+  pine: C(0x586e56), bamboo: C(0x6e8460), moss: C(0x5e6e52),
+  // Rock and cliff
+  granite: C(0xb0ada2), graniteDark: C(0x7e8580), graniteLight: C(0xc0bdb4),
+  // Earth, paths, paving
+  earth: C(0x6a5c4a), earthLight: C(0x857566),
+  mud: C(0x56503e), mudDark: C(0x3e3a2e),
+  // Town surfaces: three distinct registers
+  streetPave: C(0x9e9890),   // dressed stone slabs — the main ward avenue
+  streetMortar: C(0x7a7670), // joint / worn mortar tone
+  courtEarth: C(0x8a7e6e),   // packed earth inside a courtyard
+  lot: C(0x857666),          // undeveloped lot or alley
+  // Water margins
+  bank: C(0x727068),         // stone embankment at the water's edge
+  bankWet: C(0x525550),      // wet stone a half-step below the waterline
+  lakeBed: C(0x4e6b65), deepBed: C(0x27474a),
+  paleSand: C(0xb2bfaa),     // shallow shore / sandy lacustrine bed
+  // Snow / beach
+  snow: C(0xe6ebe8), beach: C(0xcdc3a5),
 };
 function shanshuiCellColor(x, z, s, slope, lod, out) {
-  const p = SHANSHUI_TERRAIN, r = h2(Math.floor(x * 2), Math.floor(z * 2), 77);
-  const n = fbm(x * 0.035, z * 0.035, 2, 16);
-  if (s.waterLevel !== null && !s.paddy) return out.copy(p.paleSand).lerp(p.deepBed, smoothstep(0.1, 5.0, s.waterLevel - s.h)).multiplyScalar(0.94 + n * 0.06);
-  if (s.rail > 0.3 && !s.tunnel) return out.copy(p.graniteDark).multiplyScalar(0.8 + r * 0.12);
-  if (s.street) return out.copy(p.stone).multiplyScalar(0.9 + r * 0.1);
-  if (s.snow) return out.copy(p.snow).lerp(p.graniteDark, clamp((slope - 2.5) * 0.15, 0, 0.35));
-  if (s.biome === B.CEDAR || slope > 1.5) return out.copy(p.granite).lerp(p.graniteDark, clamp(0.35 + n * 0.5, 0, 1)).lerp(p.moss, slope < 2.3 ? 0.16 : 0);
-  if (s.path > 0.35) return out.copy(p.stone).lerp(p.earth, 0.35 + n * 0.1);
-  switch (s.biome) {
-    case B.PADDY: return out.copy(p.mud).multiplyScalar(0.92 + r * 0.12);
-    case B.TOWN: return out.copy(p.earth).lerp(p.stone, 0.3).multiplyScalar(0.92 + r * 0.12);
-    case B.BAMBOO: return out.copy(p.bamboo).lerp(p.earth, 0.16).multiplyScalar(0.95 + n * 0.08);
-    case B.PINE: return out.copy(p.pine).lerp(p.granite, clamp(n + 0.2, 0, 0.35));
-    case B.BEACH: return out.copy(p.paleSand).lerp(p.grass, smoothstep(1.5, 2.8, s.h));
-    case B.MARSH: return out.copy(p.grassDark).lerp(p.mud, s.h < 0.7 ? 0.35 : 0.12);
+  const p = SHANSHUI_TERRAIN;
+  // Per-cell hash jitter: two independent values for tonal variety.
+  const r  = h2(Math.floor(x * 2),     Math.floor(z * 2),     77);
+  const r2 = h2(Math.floor(x * 2) + 1, Math.floor(z * 2) + 1, 78);
+  const n  = fbm(x * 0.035, z * 0.035, 2, 16);
+  const n2 = fbm(x * 0.07,  z * 0.07,  2, 17);
+
+  // --- Water bed ---
+  if (s.waterLevel !== null && !s.paddy) {
+    const depth = s.waterLevel - s.h;
+    out.copy(p.paleSand).lerp(p.deepBed, smoothstep(0.1, 5.0, depth));
+    // A thin strip of stone-bank colour right at the shoreline.
+    if (depth < 0.6) out.lerp(p.bankWet, smoothstep(0.6, 0.1, depth) * 0.6);
+    return out.multiplyScalar(0.93 + n * 0.06);
   }
-  return out.copy(p.grass).lerp(p.grassDark, clamp(0.4 + n * 0.65, 0, 1)).multiplyScalar(0.94 + r * 0.08);
+
+  // --- Rail ballast ---
+  if (s.rail > 0.3 && !s.tunnel) return out.copy(p.graniteDark).multiplyScalar(0.8 + r * 0.12);
+
+  // --- Town streets: ward avenue (along Z) vs cross-streets (along X) ---
+  if (s.street) {
+    // The ward grid is 34 × 26.  The main avenue runs on the Z axis (gx < 3.6),
+    // the cross-streets on X (gz < 3.2).  Give each a distinct stone tone.
+    const gx = ((x % 34) + 34) % 34, gz = ((z % 26) + 26) % 26;
+    const mainAve = gx < 3.6;
+    const slabKey = h2(Math.floor(x / 2.1), Math.floor(z / 1.8), 80);
+    if (mainAve) {
+      // Main avenue: laid stone slabs, pale and formal.
+      out.copy(p.streetPave).lerp(p.graniteLight, slabKey * 0.35);
+    } else {
+      // Cross-streets: worn packed earth with a few stone patches.
+      out.copy(p.streetMortar).lerp(p.courtEarth, slabKey * 0.45);
+    }
+    return out.multiplyScalar(0.91 + r * 0.1);
+  }
+
+  // --- Snow ---
+  if (s.snow) return out.copy(p.snow).lerp(p.graniteDark, clamp((slope - 2.5) * 0.15, 0, 0.35));
+
+  // --- Cliff / steep rock face ---
+  if (s.biome === B.CEDAR || slope > 1.55) {
+    out.copy(p.granite).lerp(p.graniteDark, clamp(0.3 + n * 0.55, 0, 1));
+    if (slope < 2.4) out.lerp(p.moss, 0.18);
+    return out;
+  }
+
+  // --- Paths ---
+  if (s.path > 0.35) {
+    // Mountain paths: reddish-brown earth packed between stones.
+    out.copy(p.earth).lerp(p.granite, 0.22 + n2 * 0.18);
+    return out.multiplyScalar(0.91 + r * 0.1);
+  }
+
+  // --- Biome ground colours ---
+  switch (s.biome) {
+    case B.PADDY: {
+      // Young fields: slightly blue-green mud (flooded); ripe: warmer mud.
+      out.copy(p.mud).lerp(p.mudDark, smoothstep(0.3, 0.8, n2));
+      return out.multiplyScalar(0.90 + r * 0.12);
+    }
+    case B.TOWN: {
+      // Inside the built fabric: packed courtyard earth, not a generic brown.
+      // Structural pads (palace etc.) slightly lighter and smoother.
+      if (lod > 0) return out.copy(p.courtEarth).lerp(p.lot, clamp(n, 0, 1) * 0.4);
+      const slab = h2(Math.floor(x / 2.4), Math.floor(z / 2.0), 81);
+      out.copy(p.courtEarth).lerp(p.lot, slab * 0.5).lerp(p.moss, r2 > 0.85 ? 0.18 : 0);
+      // Water-facing lots: a thin stone-bank strip at the edge.
+      if (s.valley > 0.06 || s.lake > 0.04) out.lerp(p.bank, 0.22);
+      return out.multiplyScalar(0.91 + r * 0.1);
+    }
+    case B.BAMBOO: {
+      out.copy(p.bamboo).lerp(p.earth, 0.18).multiplyScalar(0.95 + n * 0.08);
+      return out;
+    }
+    case B.PINE: {
+      out.copy(p.pine).lerp(p.granite, clamp(n + 0.18, 0, 0.35));
+      return out;
+    }
+    case B.BEACH: {
+      out.copy(p.beach).lerp(p.grass, smoothstep(1.5, 2.8, s.h));
+      return out.multiplyScalar(0.95 + n * 0.06);
+    }
+    case B.MARSH: {
+      // Wetland at the water edge: dark reedy mud; higher margins: dark grass.
+      out.copy(p.grassDark).lerp(p.mud, s.h < 0.7 ? 0.4 : 0.15);
+      if (s.h < 0.4) out.lerp(p.bankWet, smoothstep(0.4, 0.0, s.h) * 0.45);
+      return out;
+    }
+    case B.MEADOW: {
+      out.copy(p.meadow).lerp(p.grassDark, clamp(0.4 + n * 0.55, 0, 1));
+      return out.multiplyScalar(0.95 + n * 0.06);
+    }
+  }
+
+  // --- Default grass / sato ---
+  const g = clamp(0.42 + n * 0.72, 0, 1);
+  out.copy(p.grassDark).lerp(p.grass, g);
+  if (lod > 0) {
+    if (s.biome === B.SAKURA) out.lerp(C(0xd4a8a8), 0.5 + r * 0.18);
+    else out.lerp(p.grassDark, 0.35);
+    return out;
+  }
+  if (s.biome === B.SAKURA) {
+    // Peach-blossom carpet: warm pink wash on the ground beneath the groves.
+    // s.sak is already copied flat from the natural result in sample().
+    const sakField = s.sak !== undefined ? s.sak : 0;
+    const pk = clamp(sakField * 2.0 - 0.2, 0, 0.55);
+    if (r2 < pk * 0.6) out.lerp(C(0xe8b8ae), 0.65 + r * 0.18); else out.lerp(C(0xe8b8ae), pk * 0.25 + 0.04);
+  } else if (slope > 0.85) {
+    out.lerp(p.earth, (slope - 0.85) * 0.5);
+  }
+  return out.multiplyScalar(0.94 + r * 0.08);
 }

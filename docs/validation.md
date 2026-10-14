@@ -1,8 +1,8 @@
 # Validation · 验收记录
 
-The release is a WebGL 2 browser application. All images and the README film are captured from the running procedural world.
+The release is a WebGL 2 browser application. Repository screenshots are captured from the running procedural world. Generated demo videos are not included.
 
-本版本为 WebGL 2 浏览器应用。README 截图和演示视频均来自实机运行中的世界。
+本版本为 WebGL 2 浏览器应用。仓库截图来自实机运行中的世界；生成的演示视频不包含在仓库中。
 
 ## Regression coverage
 
@@ -46,4 +46,4 @@ The lake reflection target follows the nearest visible water level. Other lake l
 
 ## Publishing
 
-GitHub Actions verifies the complete test chain and archives the locally vendored release. Automatic Pages deployment requires a separate repository API-token secret. Local publication uses the signed-in Wrangler OAuth session. The API-token secret is currently absent; CI verifies and archives builds while its deployment step is skipped.
+GitHub Actions verifies the complete test chain and archives the locally vendored release before publishing. The repository has Cloudflare account/token secrets configured: `main` targets production, other branches and same-repository PRs target isolated previews. Deployment links appear in the run summary and GitHub environment. Fork PRs verify and archive without deployment credentials. Local publication can instead use the signed-in Wrangler OAuth session. If secrets are removed, CI explicitly skips deployment rather than failing verification.
