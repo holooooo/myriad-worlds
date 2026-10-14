@@ -9,7 +9,11 @@
 
 **[打开在线世界 →](https://myriad-worlds.pages.dev/)**：WebGL 2 实时生成，无预渲染场景，无需账号或后端，内置中、日、英三种界面语言。
 
-下方截图均来自实机。[录屏脚本](scripts/record_demos.py)可配合 Playwright CLI 与 ffmpeg 生成横屏、竖屏视频；生成的视频不包含在本仓库中。
+[![天气与景点实机演示](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)
+
+**[观看 70 秒景色演示 · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)**：十段真实浏览器录屏，覆盖两种世界的彩湖、王宫、竹海、亭榭、灯市、山寺、樱林、湖畔、神社和城下町，以及晨雾、暮光、细雨、薄暮和月夜。
+
+使用 [scripts/record_scenery.py](scripts/record_scenery.py)复录或自定义片单；[录屏指南](docs/recording.md)说明如何修改天气、景点、种子和竖屏格式。视频旁的 JSON 保留实机录制信息。下方截图也来自运行中的世界。
 
 ![中式王宫与长安城镇](docs/screenshots/shanshui-palace.jpg)
 

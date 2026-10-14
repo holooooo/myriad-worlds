@@ -9,7 +9,11 @@ Living, seed-generated landscapes in your browser. Wander on foot, fly above the
 
 **[Explore the live world →](https://myriad-worlds.pages.dev/)** — real-time WebGL 2, no pre-rendered scenery, account or backend required. Chinese, Japanese and English interfaces are included.
 
-Screenshots below are captured from the running world. The optional [recording script](scripts/record_demos.py) can produce landscape and portrait films with Playwright CLI and ffmpeg; generated videos are not included in this repository.
+[![Weather and scenery film](docs/media/scenery-tour-preview.gif)](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)
+
+**[Watch the 70-second scenery film · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)** — ten real browser recordings across both worlds: mineral lakes, palace gardens, bamboo, pavilions, lantern markets, temples, blossom forests, lakesides, shrines and castle towns, under morning mist, golden hour, rain, dusk and moonlight.
+
+Re-record or customize the shot list with [scripts/record_scenery.py](scripts/record_scenery.py); the [recording guide](docs/recording.md) covers weather, destinations, seeds and portrait output. Capture metadata is saved alongside the film. Screenshots below also come from the running world.
 
 ![Shanshui palace and city](docs/screenshots/shanshui-palace.jpg)
 
