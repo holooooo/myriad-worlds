@@ -64,6 +64,12 @@ python3 scripts/record_scenery.py --url http://127.0.0.1:8765/
 
 同一景点重复配置不同 `mood` 即可录制天气对比。`distance` 与 `height` 控制取景距离和离地高度；脚本调用引擎的地形视线取景函数，在同一景点寻找通透的机位，然后做轻微横移。
 
+## X 发布
+
+[`media/myriad-worlds-x.mp4`](media/myriad-worlds-x.mp4)为 40 秒短版：保留全部十个景点与天气镜头，每镜 4 秒，H.264、1280 × 720、30 FPS，无音轨，约 6.4 MiB，可直接上传 X。搭配 [`x-post.txt`](x-post.txt)中的简短文案使用。短版从 70 秒实机录屏逐镜裁切；也可用 `--seconds 4`重新录制 40 秒片单。
+
+参考宝玉的提示词与开发模型分工已写入文案和 README。X 发布完成后，使用帖文的公开链接更新 README 视频入口。
+
 ## 产物
 
 `docs/media/` 保留最终 MP4、短 GIF 预览、JPG 封面和 JSON 录制清单；原始 WebM、逐镜 MP4／截图写入被 Git 忽略的 `output/scenery/`。JSON 包含来源 URL、种子、机位、景点、天气、分辨率、实际帧数和错误列表，便于复录与核验。
