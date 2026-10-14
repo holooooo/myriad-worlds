@@ -126,14 +126,21 @@ assert.equal(Object.keys(settingsApi.get()).length, 19);
 assert.ok(fixture('{broken').logs.some(log => log.level === 'warn'));
 const failing = fixture('{}', true); failing.SKY_SETTINGS.set('golden', 'clouds', false); assert.ok(failing.logs.some(log => log.level === 'warn'));
 
-const hg = (c, g) => (1 - g * g) / (4 * Math.PI * Math.pow(1 + g * g - 2 * g * c, 1.5));
+// Run the scalar GLSL functions themselves, so the energy check cannot drift
+// from the renderer when the phase model changes.
+const phaseSource = atmo.slice(atmo.indexOf('float hg('), atmo.indexOf('float localMist('))
+  .replace(/float (\w+)\(([^)]*)\)/g, (_, name, args) => `function ${name}(${args.replace(/float\s+/g, '')})`)
+  .replace(/\bfloat\b/g, 'let');
+const scatteringPhase = new Function('pow', 'min', phaseSource + '\nreturn scatteringPhase;')(Math.pow, Math.min);
 let maxScatter = 0;
 for (const mood of Object.values(api.MOODS)) for (let c = -1; c <= 1.00001; c += 0.005) {
-  const phase = 0.08 + Math.min(hg(c, mood.vAniso) * 1.7, 0.7) + hg(c, -0.25) * 0.45;
-  maxScatter = Math.max(maxScatter, phase * mood.vSunI); assert.ok(phase < 0.87);
+  const phase = scatteringPhase(c, mood.vAniso);
+  assert.ok(Number.isFinite(phase) && phase >= 0 && phase <= 0.64, 'Scattering must stay finite and bounded');
+  maxScatter = Math.max(maxScatter, phase * mood.vSunI);
 }
 assert.ok(maxScatter < 0.78, 'Solar scattering peak must remain bounded in all moods');
-assert.match(atmo, /min\(hg\(cosT, uAniso\) \* 1\.7, 0\.7\)/);
+assert.ok(scatteringPhase(1, .75) > scatteringPhase(0, .75), 'Forward light shafts must retain directional contrast');
+assert.match(atmo, /float phase = scatteringPhase\(cosT, uAniso\)/);
 assert.match(api.SKY_FS, /i < 4/); assert.doesNotMatch(api.SKY_FS, /for\s*\([^)]*uStar/);
 assert.match(api.SKY_FS, /uStarCount \* uStarDensity \/ 25600\.0/);
 assert.match(api.SKY_FS, /vec3 lunarSun = vec3\(sin\(phaseAngle\), 0\.0, -phaseCos\)/);

@@ -10,7 +10,8 @@ const MOODS = {
     fog: 0xd09888, fogD: 0.006, fogFall: 0.055, haze: 0.00026, fogMax: 0.87, fogGlow: 0xb85030, fogGlowPow: 18,
     key: 0xff9060, keyI: 2.8, keyDir: [0.58, 0.20, -0.79], hemiSky: 0xd0a0c8, hemiGround: 0x5a3828, hemiI: 1.05,
     exposure: 1.02, bloom: 0.38, lamps: 0, glowWin: 0.08, blossomSelf: 0.11, fireflies: 0, rain: 0, wet: 0,
-    vDens: 0.014, vFall: 0.17, vBase: 0, vSun: 0xff9068, vSunI: 0.95, vAmb: 0xb890b0, vAmbI: 0.55, vAniso: 0.68, vNoise: 0.8,
+    // Enhanced volumetric god rays for dramatic sunrise beams
+    vDens: 0.018, vFall: 0.17, vBase: 0, vSun: 0xff9068, vSunI: 1.15, vAmb: 0xb890b0, vAmbI: 0.60, vAniso: 0.72, vNoise: 0.85,
     shallow: 0x6a7e80, deep: 0x1a3040, wSun: 0xffa878,
     gLift: [0.018, 0.004, 0.028], gGain: [1.06, 0.97, 0.90], gSat: 1.08, gContrast: 1.06, vig: 0.55,
   },
@@ -32,8 +33,8 @@ const MOODS = {
     fog: 0xc59a86, fogD: 0.0042, fogFall: 0.045, haze: 0.00028, fogMax: 0.88, fogGlow: 0xa8603a, fogGlowPow: 24,
     key: 0xffb27a, keyI: 3.6, keyDir: [-0.8, 0.22, -0.55], hemiSky: 0x9fb0d8, hemiGround: 0x5a4034, hemiI: 1.05,
     exposure: 0.92, bloom: 0.34, lamps: 0.55, glowWin: 0.45, blossomSelf: 0.1, fireflies: 0, rain: 0, wet: 0,
-    // vDens raised to 0.009 so light shafts through foliage/buildings are visible
-    vDens: 0.009, vFall: 0.06, vBase: 0, vSun: 0xffa868, vSunI: 0.80, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.68, vNoise: 0.5,
+    // Enhanced volumetric light for visible god rays through gaps/foliage
+    vDens: 0.016, vFall: 0.06, vBase: 0, vSun: 0xffa868, vSunI: 1.2, vAmb: 0x8a7a90, vAmbI: 0.25, vAniso: 0.75, vNoise: 0.6,
     shallow: 0x55706a, deep: 0x1a2c38, wSun: 0xffc080,
     gLift: [0.012, 0.0, 0.03], gGain: [1.06, 0.99, 0.92], gSat: 1.06, gContrast: 1.06, vig: 0.6,
   },
@@ -44,7 +45,8 @@ const MOODS = {
     fog: 0x63759f, fogD: 0.0042, fogFall: 0.034, haze: 0.0003, fogMax: 0.93, fogGlow: 0x3a2630, fogGlowPow: 8,
     key: 0xaebcf5, keyI: 0.85, keyDir: [-0.5, 0.62, -0.62], hemiSky: 0x8ea4dc, hemiGround: 0x2b2a35, hemiI: 2.0,
     exposure: 1.2, bloom: 0.42, lamps: 1, glowWin: 1.0, blossomSelf: 0.12, fireflies: 1, rain: 0, wet: 0,
-    vDens: 0.006, vFall: 0.06, vBase: 0, vSun: 0x8ea4e8, vSunI: 0.8, vAmb: 0x4a5a86, vAmbI: 0.4, vAniso: 0.45, vNoise: 0.6,
+    // Enhanced volumetric scattering for lantern glow and twilight rays
+    vDens: 0.012, vFall: 0.06, vBase: 0, vSun: 0x8ea4e8, vSunI: 1.0, vAmb: 0x4a5a86, vAmbI: 0.5, vAniso: 0.55, vNoise: 0.65,
     shallow: 0x3a6468, deep: 0x0a1c29, wSun: 0x8f8fb8,
     gLift: [0.0, 0.006, 0.03], gGain: [1.03, 0.99, 1.0], gSat: 1.02, gContrast: 1.05, vig: 0.62,
   },
@@ -55,7 +57,8 @@ const MOODS = {
     fog: 0x1c2740, fogD: 0.004, fogFall: 0.03, haze: 0.00028, fogMax: 0.92, fogGlow: 0x1a2a4a, fogGlowPow: 10,
     key: 0x8aa2e8, keyI: 0.75, keyDir: [0.35, 0.62, -0.7], hemiSky: 0x50628f, hemiGround: 0x15151e, hemiI: 1.3,
     exposure: 1.45, bloom: 0.55, lamps: 1.25, glowWin: 1.25, blossomSelf: 0.1, fireflies: 1, rain: 0, wet: 0,
-    vDens: 0.005, vFall: 0.05, vBase: 0, vSun: 0x7f98e0, vSunI: 0.9, vAmb: 0x1f2a48, vAmbI: 0.38, vAniso: 0.55, vNoise: 0.6,
+    // Strong volumetric scattering for moonlight and lantern light sources
+    vDens: 0.010, vFall: 0.05, vBase: 0, vSun: 0x7f98e0, vSunI: 1.1, vAmb: 0x1f2a48, vAmbI: 0.45, vAniso: 0.60, vNoise: 0.65,
     shallow: 0x223848, deep: 0x050c16, wSun: 0x9fb2ff,
     gLift: [0.0, 0.004, 0.02], gGain: [0.98, 1.0, 1.06], gSat: 0.94, gContrast: 1.06, vig: 0.7,
   },
@@ -127,7 +130,21 @@ const VOL_FS = `
   float n3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
     return mix(mix(mix(h31(i), h31(i+vec3(1,0,0)), f.x), mix(h31(i+vec3(0,1,0)), h31(i+vec3(1,1,0)), f.x), f.y),
                mix(mix(h31(i+vec3(0,0,1)), h31(i+vec3(1,0,1)), f.x), mix(h31(i+vec3(0,1,1)), h31(i+vec3(1,1,1)), f.x), f.y), f.z); }
-  float hg(float c, float g){ float g2 = g * g; return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * c, 1.5)); }
+  // Henyey–Greenstein phase feeds a dual-lobe scattering model.
+  float hg(float c, float g){
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * c, 1.5));
+  }
+  // Dual-lobe phase: tight forward peak + soft backward scatter for natural atmosphere
+  float dualLobePhase(float cosT, float g) {
+    float forward = hg(cosT, g);
+    float backward = hg(cosT, -0.3);
+    return forward * 0.85 + backward * 0.15;
+  }
+  float scatteringPhase(float cosT, float g) {
+    // With the strongest preset (vSunI=1.2), scattered sunlight stays below 0.78.
+    return min(0.12 + dualLobePhase(cosT, g) * 2.2 + hg(cosT, -0.25) * 0.5, 0.64);
+  }
   float localMist(vec3 p) {
     vec2 uv = (p.xz - uMistOrigin) / uMistSpan;
     if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return 0.0;
@@ -208,9 +225,8 @@ const VOL_FS = `
     const int STEPS = VOL_STEPS;
     float stepLen = dist / float(STEPS);
     float cosT = dot(rd, uSunDir);
-    // Keep the forward phase peak bounded so warm fog retains depth instead
-    // of producing a screen-sized white/yellow halo around low sunlight.
-    float phase = 0.08 + min(hg(cosT, uAniso) * 1.7, 0.7) + hg(cosT, -0.25) * 0.45;
+    // Keep the stronger dual-lobe lighting bounded around the sun.
+    float phase = scatteringPhase(cosT, uAniso);
     vec3 sunL = uSunCol * phase;
     float T = 1.0; vec3 S = vec3(0.0);
     for (int i = 0; i < STEPS; i++) {
@@ -218,14 +234,24 @@ const VOL_FS = `
       vec3 p = uCamPos + rd * t;
       float h = p.y - uBase;
       float dens = uDens * exp(-max(h, -8.0) * uFall);
-      if (uNoise > 0.0 && dens > 0.0000001) dens *= max(0.0, 1.0 + uNoise * (n3(p * 0.045 + vec3(uTime * 0.35, 0.0, uTime * 0.12)) * 1.6 - 0.8 + (n3(p * 0.13 - uTime * 0.2) - 0.5) * 0.6));
+      // Enhanced noise modulation for visible shafts through gaps
+      if (uNoise > 0.0 && dens > 0.0000001) {
+        float n1 = n3(p * 0.045 + vec3(uTime * 0.35, 0.0, uTime * 0.12));
+        float n2 = n3(p * 0.13 - uTime * 0.2);
+        // Higher amplitude variation creates stronger contrast between lit and shadowed volumes
+        dens *= max(0.0, 1.0 + uNoise * (n1 * 2.0 - 1.0 + (n2 - 0.5) * 0.8));
+      }
       dens += localMist(p) + cloudSea(p);
       if (dens < 0.0000001) continue;
       float vis = 1.0;
       if (uShadowOn > 0.5) {
         vec4 sc = uShadowM * vec4(p, 1.0);
         sc.xyz /= sc.w;
-        if (sc.x > 0.0 && sc.x < 1.0 && sc.y > 0.0 && sc.y < 1.0 && sc.z < 1.0) vis = step(sc.z - 0.0015, unpackRGBAToDepth(texture2D(tShadow, sc.xy)));
+        if (sc.x > 0.0 && sc.x < 1.0 && sc.y > 0.0 && sc.y < 1.0 && sc.z < 1.0) {
+          vis = step(sc.z - 0.0015, unpackRGBAToDepth(texture2D(tShadow, sc.xy)));
+          // Soften shadow boundaries for more natural god ray falloff
+          vis = mix(0.15, 1.0, vis);
+        }
       }
       vec3 Ls = sunL * vis + uAmb;
       float tr = exp(-dens * stepLen);
