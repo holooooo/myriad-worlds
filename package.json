@@ -1,7 +1,8 @@
 {
   "name": "myriad-worlds",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
+  "license": "MIT",
   "description": "Living procedural landscapes, from Shanshui China to Hanami Japan",
   "scripts": {
     "build": "python3 build.py --out dist",

@@ -95,6 +95,8 @@ try:
         shell = shell.replace('https://unpkg.com/three@0.171.0/build/three.module.js', './vendor/three.module.js')
         shell = shell.replace('https://unpkg.com/three@0.171.0/examples/jsm/', './vendor/addons/')
         shutil.copy2(root / 'public' / '_headers', destination / '_headers')
+        if (root / 'LICENSE').is_file():
+            shutil.copy2(root / 'LICENSE', destination / 'PROJECT-LICENSE.txt')
     out = destination / 'index.html'
     out.write_text(shell)
     logging.info('business: assembled %s (%s bytes)', out.name, f'{len(shell):,}')

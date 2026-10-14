@@ -34,6 +34,10 @@ SHOTS = [
 PREPARE = r"""async shot => {
   const s = window.__sv;
   s.stopTour(); s.stopFollow(false); s.I18N.setLanguage('zh');
+  if (shot.theme === 'shanshui') {
+    s.GEN.profile.mist.cloudSea = Boolean(shot.cloudSea);
+    if (!shot.cloudSea) s.volPass.mat.uniforms.uCloudSea.value.x = 0;
+  }
   s.setMood(shot.mood, true);
   document.querySelector('[data-sky-reset]')?.click();
   const key = s.GEN.B[shot.place] ?? shot.place;
@@ -71,9 +75,11 @@ PREPARE = r"""async shot => {
 RECORD = r"""async seconds => {
   const s = window.__sv, record = window.__recordShot;
   const {pos, target} = record.vantage;
-  const start = performance.now(); let previous = start;
+  const start = performance.now(); let previous = start, maxCloudSeaStrength = 0;
   while (performance.now() - start < seconds * 1000) {
     await new Promise(requestAnimationFrame);
+    maxCloudSeaStrength = Math.max(maxCloudSeaStrength, s.volPass.mat.uniforms.uCloudSea.value.x);
+    if (record.shot.theme === 'shanshui' && !record.shot.cloudSea && maxCloudSeaStrength > 0) throw Error('Cloud sea must stay disabled during Chinese recording');
     const now = performance.now(), t = Math.min(1, (now - start) / (seconds * 1000));
     record.intervals.push(now - previous); previous = now; record.frameCount++;
     // A tiny lateral drift keeps terrain/building clearance from the inspected vantage.
@@ -89,7 +95,9 @@ RECORD = r"""async seconds => {
   const elapsed = (performance.now() - start) / 1000;
   return {...record.shot, seed:s.state.seed, quality:s.state.quality,
     camera:pos, target, feature:{x:record.feature.x,z:record.feature.z,h:record.feature.h},
-    viewport:[innerWidth,innerHeight], recordedLive:true, renderFrames:record.frameCount,
+    viewport:[innerWidth,innerHeight], canvas:[s.renderer.domElement.width,s.renderer.domElement.height],
+    pixelRatio:s.renderer.getPixelRatio(), cloudSeaEnabled:Boolean(s.GEN.profile.mist.cloudSea),
+    maxCloudSeaStrength, recordedLive:true, renderFrames:record.frameCount,
     elapsedSeconds:elapsed, meanRenderFPS:record.frameCount/elapsed, errors};
 }"""
 
@@ -105,6 +113,7 @@ def main():
     parser.add_argument('--seconds', type=float, default=7)
     parser.add_argument('--format', choices=['landscape','portrait'], default='landscape')
     parser.add_argument('--quality', choices=['high','lite'], default='high')
+    parser.add_argument('--resolution', choices=['720p','1080p'], default='1080p')
     parser.add_argument('--themes', nargs='+', choices=['shanshui','sakura'], default=['shanshui','sakura'])
     parser.add_argument('--shots', type=Path, help='Custom JSON array using the preset shot schema')
     parser.add_argument('--dry-run', action='store_true', help='Print the validated shot plan without opening a browser')
@@ -149,7 +158,8 @@ def main():
     args.out.mkdir(parents=True,exist_ok=True)
     work = ROOT / 'output' / 'scenery' / args.session / args.format
     work.mkdir(parents=True,exist_ok=True)
-    width,height = (1280,720) if args.format == 'landscape' else (720,1280)
+    width,height = (1920,1080) if args.resolution == '1080p' else (1280,720)
+    if args.format == 'portrait': width,height = height,width
     name = 'scenery-tour' + ('' if args.format == 'landscape' else '-portrait')
     manifest = {'sourceURL':args.url,'seed':args.seed,'encodedFPS':30,'recordedLive':True,'shots':[]}
     recording = opened = False

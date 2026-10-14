@@ -13,7 +13,7 @@
 
 **[观看 70 秒景色演示 · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)**：十段真实浏览器录屏，覆盖两种世界的彩湖、王宫、竹海、亭榭、灯市、山寺、樱林、湖畔、神社和城下町，以及晨雾、暮光、细雨、薄暮和月夜。
 
-使用 [scripts/record_scenery.py](scripts/record_scenery.py)复录或自定义片单；[录屏指南](docs/recording.md)说明如何修改天气、景点、种子和竖屏格式。视频旁的 JSON 保留实机录制信息。下方截图也来自运行中的世界。
+使用 [scripts/record_scenery.py](scripts/record_scenery.py)复录或自定义片单；[录屏指南](docs/recording.md)说明如何修改天气、景点、种子和竖屏格式。当前视频和截图均采用 **1920 × 1080 高清模式**；中国场景关闭云海，保留局部晨雾和天气。JSON 清单记录实际画布、质量和云海强度。截图由 [scripts/capture_screenshots.py](scripts/capture_screenshots.py)直接导出实机渲染画布。
 
 ![中式王宫与长安城镇](docs/screenshots/shanshui-palace.jpg)
 
@@ -103,6 +103,10 @@ npm run deploy:preview  # 先构建，再发布 preview.myriad-worlds.pages.dev
 ```
 
 两个本地命令都会重新构建，并显式指定分支，避免本机 `master` 分支误选环境。预览链接公开可访问，请勿在其中发布隐私数据。凭据、token、构建目录和浏览器测试录屏均不提交到 Git。
+
+## 许可证
+
+项目采用 [MIT 许可证](LICENSE)，© 2026 holooooo。Three.js 的 MIT 许可声明保留在发布包的 `vendor/THREE-LICENSE.txt` 中。
 
 ## 致谢
 

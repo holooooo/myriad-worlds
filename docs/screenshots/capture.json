@@ -1,0 +1,171 @@
+{
+  "sourceURL": "https://myriad-worlds.pages.dev/",
+  "quality": "high",
+  "chineseCloudSea": false,
+  "screenshots": [
+    {
+      "file": "shanshui-palace.jpg",
+      "theme": "shanshui",
+      "place": "palace",
+      "mood": "golden",
+      "title": "王宫御苑",
+      "distance": 100,
+      "height": 30,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        754.8115516807884,
+        33.07078954571393,
+        229.0839870478958
+      ],
+      "boatId": null,
+      "errors": []
+    },
+    {
+      "file": "shanshui-lakes.jpg",
+      "theme": "shanshui",
+      "place": "LAKE",
+      "mood": "morning",
+      "title": "九寨彩湖",
+      "distance": 210,
+      "height": 43,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        -233.017228910962,
+        52.85086447408192,
+        38.624358997574404
+      ],
+      "boatId": null,
+      "errors": []
+    },
+    {
+      "file": "teahouse.jpg",
+      "theme": "shanshui",
+      "place": "chineseTeahouse",
+      "mood": "golden",
+      "title": "临风茶楼",
+      "distance": 65,
+      "height": 20,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        193.8345451519149,
+        29.449717539378234,
+        -64.04757326749046
+      ],
+      "boatId": null,
+      "errors": []
+    },
+    {
+      "file": "boats.jpg",
+      "theme": "shanshui",
+      "place": "LAKE",
+      "mood": "golden",
+      "title": "渔舟与湖岸",
+      "distance": 35,
+      "height": 12,
+      "boats": true,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        -206.78191715122907,
+        19.65911082231048,
+        258.42557978365414
+      ],
+      "boatId": "settlement-fishingBoat-0",
+      "errors": []
+    },
+    {
+      "file": "giant-planet.jpg",
+      "theme": "shanshui",
+      "place": "palace",
+      "mood": "dusk",
+      "title": "星环与山水",
+      "distance": 110,
+      "height": 30,
+      "planet": true,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        754.8115516807884,
+        33.10506606373348,
+        239.0839870478958
+      ],
+      "boatId": null,
+      "errors": []
+    },
+    {
+      "file": "hanami-castle.jpg",
+      "theme": "sakura",
+      "place": "castle",
+      "mood": "golden",
+      "title": "大名城下町",
+      "distance": 95,
+      "height": 30,
+      "quality": "high",
+      "canvas": [
+        1920,
+        1080
+      ],
+      "viewport": [
+        1920,
+        1080
+      ],
+      "pixelRatio": 1,
+      "cloudSeaStrength": 0,
+      "camera": [
+        775.4580881505782,
+        33.384439391952625,
+        221.81327331605186
+      ],
+      "boatId": null,
+      "errors": []
+    }
+  ]
+}

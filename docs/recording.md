@@ -17,7 +17,7 @@
 | 花见日本 | 朱红神社 | 薄暮 |
 | 花见日本 | 大名城下町 | 月夜 |
 
-默认每镜 7 秒，横屏 1280 × 720。录屏封装为 30 FPS；实际 WebGL 帧率取决于机器，记录在 JSON 中，不能将视频编码帧率当作渲染性能。
+默认每镜 7 秒，横屏 1920 × 1080，使用当前 `q=high` 高清模式；中国场景默认关闭云海，晨雾、雨雾和其他天气设置继续生效。逐帧核验中国云海的 shader 强度始终为零。录屏封装为 30 FPS；实际 WebGL 帧率取决于机器，记录在 JSON 中，不能将视频编码帧率当作渲染性能。`--resolution 720p` 可选择较小输出。
 
 ## 运行
 
@@ -64,9 +64,17 @@ python3 scripts/record_scenery.py --url http://127.0.0.1:8765/
 
 同一景点重复配置不同 `mood` 即可录制天气对比。`distance` 与 `height` 控制取景距离和离地高度；脚本调用引擎的地形视线取景函数，在同一景点寻找通透的机位，然后做轻微横移。
 
+## 高清截图
+
+[`scripts/capture_screenshots.py`](../scripts/capture_screenshots.py)使用当前 `q=high` 模式重新捕获文档中的六张截图。中国云海关闭；截图调用应用的 PNG 导出功能，保存实际渲染画布，再编码 JPG，不放大旧截图。`docs/screenshots/capture.json`记录分辨率、像素比例、机位、质量与云海强度。运行：
+
+```sh
+python3 scripts/capture_screenshots.py --url https://myriad-worlds.pages.dev/
+```
+
 ## X 发布
 
-[`media/myriad-worlds-x.mp4`](media/myriad-worlds-x.mp4)为 40 秒短版：保留全部十个景点与天气镜头，每镜 4 秒，H.264、1280 × 720、30 FPS，无音轨，约 6.4 MiB，可直接上传 X。搭配 [`x-post.txt`](x-post.txt)中的简短文案使用。短版从 70 秒实机录屏逐镜裁切；也可用 `--seconds 4`重新录制 40 秒片单。
+[`media/myriad-worlds-x.mp4`](media/myriad-worlds-x.mp4)为 40 秒短版：保留全部十个景点与天气镜头，每镜 4 秒，H.264、1920 × 1080、30 FPS，无音轨，可直接上传 X。录制采用当前高清模式，中国云海关闭。搭配 [`x-post.txt`](x-post.txt)中的简短文案使用。短版从 70 秒实机录屏逐镜裁切；也可用 `--seconds 4`重新录制 40 秒片单。
 
 参考宝玉的提示词与开发模型分工已写入文案和 README。X 发布完成后，使用帖文的公开链接更新 README 视频入口。
 

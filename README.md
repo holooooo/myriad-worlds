@@ -13,7 +13,7 @@ Living, seed-generated landscapes in your browser. Wander on foot, fly above the
 
 **[Watch the 70-second scenery film · MP4](https://github.com/holooooo/myriad-worlds/raw/refs/heads/main/docs/media/scenery-tour.mp4)** — ten real browser recordings across both worlds: mineral lakes, palace gardens, bamboo, pavilions, lantern markets, temples, blossom forests, lakesides, shrines and castle towns, under morning mist, golden hour, rain, dusk and moonlight.
 
-Re-record or customize the shot list with [scripts/record_scenery.py](scripts/record_scenery.py); the [recording guide](docs/recording.md) covers weather, destinations, seeds and portrait output. Capture metadata is saved alongside the film. Screenshots below also come from the running world.
+Re-record or customize the shot list with [scripts/record_scenery.py](scripts/record_scenery.py); the [recording guide](docs/recording.md) covers weather, destinations, seeds and portrait output. The current film and screenshots use **high mode at 1920 × 1080**; Chinese captures disable the cloud sea while retaining local mist and weather. Capture manifests record the actual canvas, quality and cloud-sea strength. Screenshots are exported from the running render canvas with [scripts/capture_screenshots.py](scripts/capture_screenshots.py).
 
 ![Shanshui palace and city](docs/screenshots/shanshui-palace.jpg)
 
@@ -103,6 +103,10 @@ npm run deploy:preview  # Build, then publish preview.myriad-worlds.pages.dev
 ```
 
 Both local commands rebuild first and set the branch explicitly, so a local `master` checkout cannot accidentally select the wrong environment. Preview URLs are public; do not publish private data in them. Tokens, local credentials, build output and browser test recordings are excluded from Git.
+
+## License
+
+[MIT](LICENSE) © 2026 holooooo. Three.js retains its own MIT notice, included in release builds as `vendor/THREE-LICENSE.txt`.
 
 ## Credits
 

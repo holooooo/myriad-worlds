@@ -36,7 +36,7 @@ Current improvements include dense instance submission, stable chunk scheduling,
 
 同一高画质、1.6 像素比例下，本机实测约 43–58 FPS，尚未实现全路线稳定 60 FPS。没有为提高数字降低雾采样、反射更新频率或渲染比例。原始测量包含路线起止坐标、GPU、实例数量和错误计数，见 [performance](performance/)。
 
-Recording frame rate is separate from rendering performance. The current [scenery film](media/scenery-tour.mp4) is H.264 at 1280 × 720, encoded at 30 FPS for 70 seconds. Its ten shots cover both themes and all five moods; each waits for local camera/target chunks before capture. The [capture manifest](media/scenery-tour.json) records the actual per-shot requestAnimationFrame rate, camera, seed and empty application error lists. These short recordings are not controlled performance benchmarks. Reproduction instructions are in the [recording guide](recording.md).
+Recording frame rate is separate from rendering performance. The current [scenery film](media/scenery-tour.mp4) is H.264 at 1920 × 1080, encoded at 30 FPS for 70 seconds, using the current `high` setting. Its ten shots cover both themes and all five moods; each waits for local camera/target chunks before capture. Chinese shots disable the cloud sea while keeping local fog and weather; the recorder checks the actual cloud-sea uniform on every frame. The [capture manifest](media/scenery-tour.json) records canvas size, quality, pixel ratio, maximum cloud-sea strength, camera, seed, actual requestAnimationFrame rate and empty application error lists. The [screenshot manifest](screenshots/capture.json) records equivalent evidence for native canvas exports. These short recordings are not controlled performance benchmarks. Reproduction instructions are in the [recording guide](recording.md).
 
 ## Practical limits
 
