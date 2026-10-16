@@ -10,14 +10,14 @@ function environment(languages, saved, denyStorage = false) {
   const writes = [], logs = [], elements = [], events = {}, values = new Map(saved ? [[storageKey, saved]] : []);
   for (const tag of shell.matchAll(/<[^>]+data-i18n[^>]*>/g)) {
     const dataset = {};
-    for (const attr of tag[0].matchAll(/data-(i18n(?:-title|-aria)?)="([^"]+)"/g)) {
+    for (const attr of tag[0].matchAll(/data-(i18n(?:-title|-aria|-alt)?)="([^"]+)"/g)) {
       dataset[attr[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = attr[2];
     }
     elements.push({ dataset, attributes: {}, textContent: '', setAttribute(k,v) { this.attributes[k] = v; } });
   }
   const selector = { value: '', addEventListener(k,fn) { events[k] = fn; } }, flag = { textContent: '' };
   const document = { documentElement: { lang: '' }, getElementById: id => id === 'languageSelect' ? selector : id === 'languageFlag' ? flag : null,
-    querySelectorAll: selector => elements.filter(el => selector === '[data-i18n]' ? el.dataset.i18n : selector === '[data-i18n-title]' ? el.dataset.i18nTitle : el.dataset.i18nAria) };
+    querySelectorAll: selector => elements.filter(el => selector === '[data-i18n]' ? el.dataset.i18n : selector === '[data-i18n-title]' ? el.dataset.i18nTitle : selector === '[data-i18n-aria]' ? el.dataset.i18nAria : el.dataset.i18nAlt) };
   const localStorage = { getItem(k) { if (denyStorage) throw new Error('disabled'); return values.get(k) || null; },
     setItem(k,v) { if (denyStorage) throw new Error('disabled'); writes.push([k,v]); values.set(k,v); } };
   // No render, world or unit globals are supplied: the language module must be boot-safe.
@@ -50,6 +50,7 @@ for (const lang of ['zh','ja','en']) {
     if (el.dataset.i18n) assert.equal(el.textContent, e.I18N.t(el.dataset.i18n));
     if (el.dataset.i18nTitle) assert.equal(el.attributes.title, e.I18N.t(el.dataset.i18nTitle));
     if (el.dataset.i18nAria) assert.equal(el.attributes['aria-label'], e.I18N.t(el.dataset.i18nAria));
+    if (el.dataset.i18nAlt) assert.equal(el.attributes.alt, e.I18N.t(el.dataset.i18nAlt));
   }
   for (const theme of ['sakura','shanshui']) {
     for (let id=0;id<14;id++) assert(e.I18N.biomeName(id,theme) !== `biome.${theme}.${id}`);

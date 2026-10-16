@@ -87,3 +87,15 @@ $('btnWorld').addEventListener('click', openWorldMenu);
 $('btnHelp').addEventListener('click', openGuideMenu);
 $('btnTele').addEventListener('click', openPlacesMenu);
 I18N.onChange(refreshNavigationLanguage);
+document.querySelectorAll('.social-links a, .creator-card a').forEach(link => link.addEventListener('click', () => {
+  LOG.info('access', 'creator-link-opened', { destination: new URL(link.href).hostname });
+}));
+const creatorAvatar = $('creatorAvatar');
+if (creatorAvatar) {
+  const recordAvatar = () => {
+    if (creatorAvatar.naturalWidth) LOG.info('business', 'creator-avatar-loaded', { width: creatorAvatar.naturalWidth });
+    else LOG.warn('error', 'creator-avatar-load-failed', { path: creatorAvatar.getAttribute('src') });
+  };
+  if (creatorAvatar.complete) recordAvatar();
+  else { creatorAvatar.addEventListener('load', recordAvatar, { once: true }); creatorAvatar.addEventListener('error', recordAvatar, { once: true }); }
+}

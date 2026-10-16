@@ -95,6 +95,10 @@ try:
         shell = shell.replace('https://unpkg.com/three@0.171.0/build/three.module.js', './vendor/three.module.js')
         shell = shell.replace('https://unpkg.com/three@0.171.0/examples/jsm/', './vendor/addons/')
         shutil.copy2(root / 'public' / '_headers', destination / '_headers')
+        for static_file in (root / 'public').iterdir():
+            if static_file.is_file() and static_file.name != '_headers':
+                (destination / 'public').mkdir(exist_ok=True)
+                shutil.copy2(static_file, destination / 'public' / static_file.name)
         if (root / 'LICENSE').is_file():
             shutil.copy2(root / 'LICENSE', destination / 'PROJECT-LICENSE.txt')
     out = destination / 'index.html'

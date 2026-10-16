@@ -10,6 +10,11 @@ const I18N = (() => {
     'social.links': ['作者与源码', '作者とソースコード', 'Creator and source code'],
     'social.github': ['GitHub · 项目源码（新标签页）', 'GitHub · ソースコード（新しいタブ）', 'GitHub · source code (opens in a new tab)'],
     'social.x': ['X · @holooooox（新标签页）', 'X · @holooooox（新しいタブ）', 'X · @holooooox (opens in a new tab)'],
+    'creator.card': ['创作者与账号', '作者とアカウント', 'Creator and account'],
+    'creator.name': ['粑粑柑（梭哈AI版）', '粑粑柑（梭哈AI版）', '粑粑柑（梭哈AI版）'],
+    'creator.avatar': ['粑粑柑头像', '粑粑柑のアバター', 'Baba Gan avatar'],
+    'creator.douyinLabel': ['抖音', 'Douyin', 'Douyin'],
+    'creator.douyin': ['抖音搜索 · 粑粑柑（梭哈AI版）（新标签页）', 'Douyinで粑粑柑（梭哈AI版）を検索（新しいタブ）', 'Find 粑粑柑（梭哈AI版） on Douyin (opens in a new tab)'],
     'world.shanshui.name': ['山水中国', '山水中国', 'Shanshui China'],
     'world.sakura.name': ['花见日本', '花見日本', 'Hanami Japan'],
     'world.shanshui.badge': ['山水 · 中国', '山水 · 中国', 'SHANSHUI · CHINA'],
@@ -240,8 +245,8 @@ const I18N = (() => {
   }
   function applyLabels(root = document) {
     root.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
-    for (const [attribute, data] of [['title', 'i18nTitle'], ['aria-label', 'i18nAria']]) {
-      root.querySelectorAll(attribute === 'title' ? '[data-i18n-title]' : '[data-i18n-aria]').forEach(el => el.setAttribute(attribute, t(el.dataset[data])));
+    for (const [attribute, data, selector] of [['title', 'i18nTitle', '[data-i18n-title]'], ['aria-label', 'i18nAria', '[data-i18n-aria]'], ['alt', 'i18nAlt', '[data-i18n-alt]']]) {
+      root.querySelectorAll(selector).forEach(el => el.setAttribute(attribute, t(el.dataset[data])));
     }
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
     const selector = document.getElementById('languageSelect'); if (selector) selector.value = lang;
